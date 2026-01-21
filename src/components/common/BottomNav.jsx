@@ -3,11 +3,11 @@ import './BottomNav.css';
 
 const BottomNav = () => {
   const navItems = [
-    { id: 1, icon: '🏠', label: '홈', path: '/', isActive: false },
-    { id: 2, icon: '📋', label: '피드', path: '/feed', isActive: false },
-    { id: 3, icon: '❄️', label: 'my 냉장고', path: '/main', isActive: true },
-    { id: 4, icon: '🔖', label: '레시피 저장', path: '/recipe-saved', isActive: false },
-    { id: 5, icon: '👤', label: '마이페이지', path: '/profile', isActive: false },
+    { id: 1, icon: 'home', label: '홈', path: '/', isActive: false },
+    { id: 2, icon: 'list_alt', label: '피드', path: '/feed', isActive: false },
+    { id: 3, icon: 'kitchen', label: 'my 냉장고', path: '/main', isActive: true },
+    { id: 4, icon: 'bookmark', label: '레시피 저장', path: '/recipe-saved', isActive: false },
+    { id: 5, icon: 'person', label: '마이페이지', path: '/profile', isActive: false },
   ];
 
   return (
@@ -17,7 +17,10 @@ const BottomNav = () => {
           key={item.id}
           className={`nav-item ${item.isActive ? 'active' : ''}`}
         >
-          <span className="nav-icon">{item.icon}</span>
+          {/* 구글 매터리얼 심볼 적용 부분 */}
+          <span className="material-symbols-outlined nav-icon">
+            {item.icon}
+          </span>
           <span className="nav-label">{item.label}</span>
         </div>
       ))}
