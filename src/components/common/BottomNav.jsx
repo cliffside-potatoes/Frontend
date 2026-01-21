@@ -4,7 +4,7 @@ import './BottomNav.css';
 const BottomNav = () => {
   const navItems = [
     { id: 1, icon: 'home', label: '홈', path: '/', isActive: false },
-    { id: 2, icon: 'list_alt', label: '피드', path: '/feed', isActive: false },
+    { id: 2, icon: 'comment', label: '피드', path: '/feed', isActive: false },
     { id: 3, icon: 'kitchen', label: 'my 냉장고', path: '/main', isActive: true },
     { id: 4, icon: 'bookmark', label: '레시피 저장', path: '/recipe-saved', isActive: false },
     { id: 5, icon: 'person', label: '마이페이지', path: '/profile', isActive: false },

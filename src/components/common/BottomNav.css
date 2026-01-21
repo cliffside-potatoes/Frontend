@@ -6,7 +6,7 @@
   transform: translateX(-50%);
   width: 100%;
   max-width: var(--app-max-width);
-  background-color: #2d2d2d;
+  background-color: #ffffff;
   display: flex;
   justify-content: space-around;
   align-items: center;
@@ -46,16 +46,21 @@
   transition: transform 0.2s;
 }
 
-.nav-item.active .nav-icon {
+/* .nav-item.active .nav-icon {
   font-size: 24px;
-}
+} */
 
 .nav-label {
-  font-size: 10px;
-  color: #ffffff;
+  font-size: 11px;
+  color: #000000;
   line-height: 1.2;
   text-align: center;
   word-break: keep-all;
+  font-weight: 500;
+  margin-top: 2px;
+  font-weight: 500;
+  margin-top: 2px;
+  display: flex;
 }
 
 /* iPhone 14 기준 반응형 (390px) */
@@ -80,5 +85,6 @@
 
   .nav-label {
     font-size: 9px;
+    display: flex;
   }
 }
