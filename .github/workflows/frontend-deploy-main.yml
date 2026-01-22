@@ -22,6 +22,6 @@ jobs:
 
       - name: Build and push Docker image
         run: |
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/studyspot-frontend:latest .
-          docker push ${{ secrets.DOCKER_USERNAME }}/studyspot-frontend:latest
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/naeng-gu-frontend:latest .
+          docker push ${{ secrets.DOCKER_USERNAME }}/naeng-gu-frontend:latest
 
