@@ -14,7 +14,7 @@ RUN npm run build
 FROM nginx:alpine
 
 # React 빌드 결과물을 복사
-COPY --from=builder /app/build /usr/share/nginx/html
+COPY --from=builder /app/dist /usr/share/nginx/html
 
 # SPA 라우팅 지원 
 RUN echo 'server { \
