@@ -11,6 +11,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+lerna-debug.log*
 
 # OS 및 에디터 관련
 .DS_Store
@@ -22,6 +23,7 @@ pnpm-debug.log*
 *.njsproj
 *.sln
 *.sw?
+*~
 
 # 환경 변수 (보안을 위해 비밀 키 등을 저장하는 파일)
 .env
@@ -32,3 +34,41 @@ pnpm-debug.log*
 
 # 테일윈드/빌드 도구 관련
 .turbo/
+
+# Vite 캐시
+.vite/
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# 테스트 커버리지
+coverage/
+*.lcov
+.nyc_output/
+
+# 빌드 관련
+build/
+.cache/
+.parcel-cache/
+.next/
+out/
+
+# 임시 파일
+*.tmp
+*.temp
+.tmp/
+.temp/
+
+# 에러 로그
+*.err
+
+# 맥 OS
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
