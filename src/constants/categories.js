@@ -1,8 +1,8 @@
+// 상황별 레시피 카테고리 상수
 export const RECIPE_CATEGORIES = [
-  { id: 1, icon: '🍳', label: '간단 요리' },
-  { id: 2, icon: '🥗', label: '샐러드' },
-  { id: 3, icon: '🍜', label: '국물 요리' },
-  { id: 4, icon: '🥘', label: '메인 요리' },
-  { id: 5, icon: '🍰', label: '디저트' },
-  { id: 6, icon: '🥤', label: '음료' },
-];
+  { id: 1, label: '초스피드', icon: '⚡' },
+  { id: 2, label: '갓성비', icon: '💰' },
+  { id: 3, label: '원팬', icon: '🍳' },
+  { id: 4, label: '안주', icon: '🍺' },
+  { id: 5, label: '해장', icon: '🥣' },
+ ];
