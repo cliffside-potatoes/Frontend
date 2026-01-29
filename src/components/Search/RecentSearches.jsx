@@ -2,11 +2,13 @@ import React from 'react';
 import './RecentSearches.css';
 
 const RecentSearches = ({ searches, onRemove }) => {
+  const list = Array.isArray(searches) ? searches : [];
+
   return (
     <section className="recent-searches-container">
       <h2>최근 검색어</h2>
       <div className="search-tags">
-        {searches.map((item, index) => (
+        {list.map((item, index) => (
           <span key={index} className="search-tag">
             {item}
             <button onClick={() => onRemove(item)}>x</button>
