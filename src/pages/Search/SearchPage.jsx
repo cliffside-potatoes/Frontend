@@ -27,6 +27,32 @@ const SearchPage = () => {
   const observerRef = useRef(null);
   const loadMoreTriggerRef = useRef(null);
 
+  // 다음 페이지 로드 (무한 스크롤) - useEffect보다 위에 정의해야 함
+  const loadMore = useCallback(async () => {
+    if (!hasNext || loadingMore || !nextCursor || !searchText) return;
+
+    setLoadingMore(true);
+
+    try {
+      const result = await searchRecipes(searchText, {
+        size: 20,
+        sort: 'LATEST',
+        cursorCreatedAt: nextCursor?.cursorCreatedAt,
+        cursorId: nextCursor?.cursorId
+      });
+
+      const data = result?.data;
+      const newRecipes = Array.isArray(data?.Recipes) ? data.Recipes : [];
+      setSearchResults(prev => [...prev, ...newRecipes]);
+      setHasNext(Boolean(data?.hasNext));
+      setNextCursor(data?.nextCursor ?? null);
+    } catch (err) {
+      console.error('추가 로딩 실패:', err);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [hasNext, loadingMore, nextCursor, searchText]);
+
   // 초기 데이터 로드
   useEffect(() => {
     loadInitialData();
@@ -38,7 +64,7 @@ const SearchPage = () => {
 
     const options = {
       root: null,
-      rootMargin: '100px', // 하단 100px 전에 미리 로드
+      rootMargin: '100px',
       threshold: 0.1
     };
 
@@ -65,11 +91,12 @@ const SearchPage = () => {
         getRecommendedSearches()
       ]);
       
-      setRecentSearches(recentData.data);
-      setRecommendedSearches(recommendedData.data);
+      setRecentSearches(Array.isArray(recentData?.data) ? recentData.data : []);
+      setRecommendedSearches(Array.isArray(recommendedData?.data) ? recommendedData.data : []);
     } catch (err) {
       console.error('초기 데이터 로드 실패:', err);
-      // 에러가 나도 기본 UI는 보여줌
+      setRecentSearches([]);
+      setRecommendedSearches([]);
     }
   };
 
@@ -87,11 +114,11 @@ const SearchPage = () => {
       // 첫 검색 API 호출 (커서 없이)
       const result = await searchRecipes(text, { size: 20, sort: 'LATEST' });
       
-      if (result.success && result.data) {
-        setSearchResults(result.data.Recipes || []);
-        setHasNext(result.data.hasNext || false);
-        setNextCursor(result.data.nextCursor);
-      }
+      const data = result?.data;
+      const recipes = Array.isArray(data?.Recipes) ? data.Recipes : [];
+      setSearchResults(recipes);
+      setHasNext(Boolean(data?.hasNext));
+      setNextCursor(data?.nextCursor ?? null);
 
       // 최근 검색어에 추가
       if (!recentSearches.includes(text)) {
@@ -106,33 +133,6 @@ const SearchPage = () => {
       setLoading(false);
     }
   };
-
-  // 다음 페이지 로드 (무한 스크롤)
-  const loadMore = useCallback(async () => {
-    if (!hasNext || loadingMore || !nextCursor || !searchText) return;
-
-    setLoadingMore(true);
-    
-    try {
-      const result = await searchRecipes(searchText, {
-        size: 20,
-        sort: 'LATEST',
-        cursorCreatedAt: nextCursor.cursorCreatedAt,
-        cursorId: nextCursor.cursorId
-      });
-
-      if (result.success && result.data) {
-        // 기존 결과에 새 결과 추가
-        setSearchResults(prev => [...prev, ...(result.data.Recipes || [])]);
-        setHasNext(result.data.hasNext || false);
-        setNextCursor(result.data.nextCursor);
-      }
-    } catch (err) {
-      console.error('추가 로딩 실패:', err);
-    } finally {
-      setLoadingMore(false);
-    }
-  }, [hasNext, loadingMore, nextCursor, searchText]);
 
   const handleRemoveRecentSearch = async (itemToRemove) => {
     try {
