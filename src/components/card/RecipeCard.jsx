@@ -1,53 +1,68 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './RecipeCard.css';
 
-const RecipeCard = ({ recipe }) => {
+const RecipeCard = ({ recipe, onToggleLike }) => {
   const {
-    id,
+    recipeId,
     title,
+    thumbnailImage,
     source,
-    servings,
-    time,
+    cookingTime,
     difficulty,
-    ingredientsStatus,
-    likes,
-    reviews,
-    image,
-    isLiked,
+    likeCount,
+    reviewCount,
+    totalIngredientCount,
+    matchedIngredientCount,
+    liked,
   } = recipe;
 
-  const isComplete =
-    ingredientsStatus.available === ingredientsStatus.total;
+  const [isLiked, setIsLiked] = useState(liked);
+
+  const isComplete = matchedIngredientCount === totalIngredientCount;
+  const displayLikeCount =
+    likeCount +
+    (isLiked && !liked ? 1 : 0) -
+    (!isLiked && liked ? 1 : 0);
 
   return (
     <div className="recipe-card">
       <div className="recipe-image-container">
-        {image ? (
-          <img src={image} alt={title} className="recipe-image" />
+        {thumbnailImage ? (
+          <img src={thumbnailImage} alt={title} className="recipe-image" />
         ) : (
           <div className="recipe-image-placeholder"></div>
         )}
-        <button className={`like-button ${isLiked ? 'liked' : ''}`}>
-          ❤️
+        <button
+          type="button"
+          className={`like-button ${isLiked ? 'liked' : ''}`}
+          onClick={() => {
+            setIsLiked((prev) => {
+              const next = !prev;
+              if (onToggleLike) {
+                onToggleLike(recipeId, next);
+              }
+              return next;
+            });
+          }}
+        >
+          <span className="material-symbols-outlined" aria-hidden="true">favorite</span>
         </button>
       </div>
       <div className="recipe-info">
         <h3 className="recipe-title">{title}</h3>
         <p className="recipe-source">{source}</p>
         <div className="recipe-meta">
-          <span className="meta-item">👤 {servings}인분</span>
-          <span className="meta-item">🍲 {time}분</span>
+          <span className="meta-item">🍲 {cookingTime}분</span>
           <span className="meta-item">🔥 난이도 {difficulty}</span>
         </div>
         <p
           className={`ingredients-status ${isComplete ? 'complete' : 'incomplete'}`}
         >
-          내 냉장고 재료상황 ({ingredientsStatus.available}/
-          {ingredientsStatus.total})
+          내 냉장고 재료상황 ({matchedIngredientCount}/{totalIngredientCount})
         </p>
         <div className="recipe-stats">
-          <span className="stat-item">❤️ 찜 {likes}</span>
-          <span className="stat-item">💬 후기 {reviews}</span>
+          <span className="stat-item">❤️ 찜 {displayLikeCount}</span>
+          <span className="stat-item">💬 후기 {reviewCount}</span>
         </div>
       </div>
     </div>
