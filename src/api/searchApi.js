@@ -1,5 +1,12 @@
-// 백엔드 API URL 설정
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+// 백엔드 API URL 설정 (import.meta 미지원 환경 방어)
+let API_BASE_URL = 'http://localhost:8080/api';
+try {
+  if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) {
+    API_BASE_URL = import.meta.env.VITE_API_URL;
+  }
+} catch (_) {
+  // ignore
+}
 
 // Mock 데이터 사용 여부 (실제 API 준비되면 false로 변경)
 const USE_MOCK_DATA = false;
