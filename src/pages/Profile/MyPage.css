@@ -1,0 +1,332 @@
+.mypage {
+  width: 100%;
+  max-width: var(--app-max-width);
+  margin: 0 auto;
+  min-height: 100vh;
+  background-color: #ffffff;
+  padding-bottom: calc(var(--bottom-nav-base-height) + var(--safe-bottom));
+  position: relative;
+}
+
+.mypage-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #f3f3f3;
+}
+
+.mypage-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.icon-button {
+  font-weight: 100;
+  border: none;
+  background: none;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  outline: none;
+}
+
+.icon-button .material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 200, 'GRAD' 0, 'opsz' 24;
+}
+
+.icon-button.small {
+  padding: 0;
+}
+
+.mypage-content {
+  padding: 16px;
+}
+
+.profile-section {
+  background-color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 60px;
+  margin-bottom: 60px;
+}
+
+.profile-main {
+  display: grid;
+  grid-template-columns: 70px 1fr;
+  grid-template-rows: auto auto;
+  gap: 6px 40px;
+  align-items: start;
+  width: 100%
+}
+
+.profile-avatar {
+  grid-column: 1;
+  grid-row: 1;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  border: 2px solid #efefef;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 20px;
+}
+
+.profile-avatar-image {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}
+
+.profile-info-line{
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.profile-nickname {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.profile-id {
+  margin: 0;
+  font-size: 13px;
+  color: #888;
+}
+.profile-count-div{
+  text-align: left;
+
+}
+.profile-count {
+  margin: 0;
+  font-size: 13px;
+  color: #444;
+}
+
+.profile-count .highlight {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.profile-bio-div{
+  text-align: left;
+  width: 100%;
+}
+.profile-bio {
+  margin: 12px 0 16px;
+  font-size: 13px;
+  color: #666;
+  /* text-align: center; */
+}
+
+.profile-edit-button {
+  width: 100%;
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #e5e5e5;
+  background-color: #ffffff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.profile-shortcuts {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  width: 100%;
+}
+
+.shortcut-card {
+  flex: 1;
+  border-radius: 5px;
+  border: none;
+  background-color: #f7f7f7;
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.shortcut-icon {
+  font-size: 18px;
+}
+
+.shortcut-label {
+  font-size: 12px;
+}
+
+.mypage-tabs-section {
+  margin-top: 24px;
+}
+
+.mypage-tabs {
+  display: flex;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.tab {
+  flex: 1;
+  padding: 10px 0;
+  border: none;
+  background: none;
+  font-size: 14px;
+  cursor: pointer;
+  color: #888;
+}
+
+.tab.active {
+  color: #ff4b4b;
+  font-weight: 600;
+  border-radius: 0%;
+  border-bottom: 2px solid #ff4b4b;
+}
+
+.mypage-posts {
+  padding-top: 12px;
+  border-bottom: 1px solid #eee;
+
+}
+
+/* 게시물 카드: 프로필사진 | 닉네임 날짜 → 구분선 → 게시글 | 사진 | 좋아요 */
+.post-card {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  gap: 0 12px;
+  align-items: start;
+  padding: 12px 0 20px;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.post-avatar {
+  grid-column: 1;
+  grid-row: 1;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #f5f5f5;
+  flex-shrink: 0;
+}
+
+.post-header-right {
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-width: 0;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+}
+
+.post-author-info {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.post-author-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.post-date {
+  font-size: 12px;
+  color: #999;
+  flex-shrink: 0;
+}
+
+.post-content {
+  text-align: left;
+  grid-column: 2;
+  grid-row: 2;
+  margin: 0 0 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #333;
+}
+
+.post-images {
+  grid-column: 2;
+  grid-row: 3;
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 6px;
+}
+
+.post-image {
+  width: 100%;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.post-image-placeholder {
+  border-radius: 8px;
+  background-color: #f2f2f2;
+  min-height: 80px;
+}
+
+.post-footer {
+  grid-column: 2;
+  grid-row: 4;
+  margin: 0;
+  margin-top: 8px;
+  font-size: 12px;
+  color: #999;
+  text-align: left;
+}
+
+.post-like-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.floating-write-button {
+  position: fixed;
+  right: 16px;
+  bottom: calc(var(--bottom-nav-base-height) + var(--safe-bottom) + 16px);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background-color: #ff4b4b;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  outline: none;
+}
+
+.floating-write-button .material-symbols-outlined {
+  font-size: 24px;
+}
+
+@media screen and (max-width: 428px) {
+  .mypage-content {
+    padding: 16px 14px;
+  }
+}
