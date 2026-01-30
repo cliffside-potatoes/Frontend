@@ -1,8 +1,10 @@
 .search-page-container {
   display: flex;
   flex-direction: column;
-  height: 100vh; /* 전체 뷰포트 높이 사용 */
-  background-color: #f8f8f8;
+  height: 100dvh;
+  /* 모바일 브라우저 툴바를 고려한 동적 높이 */
+  background-color: #ffffff;
+  /* 배경을 흰색으로 변경 */
 }
 
 .search-content {
