@@ -27,6 +27,9 @@
   -webkit-tap-highlight-color: transparent;
   flex: 1;
   max-width: 80px;
+  border: none;
+  background: none;
+  outline: none;
 }
 
 .nav-item:active {
