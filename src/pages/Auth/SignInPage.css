@@ -1,0 +1,110 @@
+.signin-page {
+  min-height: 100vh;
+  background: #e5e5e5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.signin-modal {
+  width: 100%;
+  max-width: 420px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+  padding: 24px;
+  position: relative;
+}
+
+.signin-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  font-size: 18px;
+  color: #666;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.signin-title {
+  margin: 0 0 20px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+  text-align: center;
+}
+
+.signin-heading {
+  margin: 0 0 8px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.signin-subtitle {
+  margin: 0 0 24px;
+  font-size: 14px;
+  color: #666;
+  line-height: 1.5;
+}
+
+.signin-illustration {
+  width: 100%;
+  aspect-ratio: 4/3;
+  background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+  border-radius: 12px;
+  margin-bottom: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.signin-illustration-fridge {
+  width: 120px;
+  height: 160px;
+  background: linear-gradient(180deg, #e0f7fa 0%, #b2ebf2 50%, #80deea 100%);
+  border: 3px solid #4dd0e1;
+  border-radius: 12px;
+  position: relative;
+}
+
+.signin-illustration-fridge::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 30%;
+  background: #4dd0e1;
+  border-radius: 8px 8px 0 0;
+}
+
+.signin-kakao-btn {
+  width: 100%;
+  padding: 14px 20px;
+  background: #fee500;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #191919;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.signin-kakao-icon {
+  width: 20px;
+  height: 20px;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23191919"><path d="M12 3c5.799 0 10.5 3.664 10.5 8.185 0 4.52-4.701 8.184-10.5 8.184a13.5 13.5 0 0 1-1.727-.11l-4.408 2.883c-.501.265-.678.236-.472-.413l.892-3.678c-2.88-1.46-4.785-3.99-4.785-6.866C1.5 6.665 6.201 3 12 3z"/></svg>') no-repeat center;
+  background-size: contain;
+}

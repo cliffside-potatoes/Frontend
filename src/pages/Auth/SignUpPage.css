@@ -1,0 +1,345 @@
+.auth-page {
+  min-height: 100vh;
+  background: #e5e5e5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.auth-modal {
+  width: 100%;
+  max-width: 420px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+  padding: 24px;
+  position: relative;
+}
+
+.auth-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  font-size: 18px;
+  color: #666;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-step {
+  padding-top: 24px;
+}
+
+.auth-title {
+  margin: 0 0 20px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.auth-heading {
+  margin: 0 0 8px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.auth-subtitle {
+  margin: 0 0 24px;
+  font-size: 14px;
+  color: #666;
+  line-height: 1.5;
+}
+
+.auth-illustration {
+  width: 100%;
+  aspect-ratio: 4/3;
+  background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+  border-radius: 12px;
+  margin-bottom: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-illustration-fridge {
+  width: 120px;
+  height: 160px;
+  background: linear-gradient(180deg, #e0f7fa 0%, #b2ebf2 50%, #80deea 100%);
+  border: 3px solid #4dd0e1;
+  border-radius: 12px;
+  position: relative;
+}
+
+.auth-illustration-fridge::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 30%;
+  background: #4dd0e1;
+  border-radius: 8px 8px 0 0;
+}
+
+.auth-kakao-btn {
+  width: 100%;
+  padding: 14px 20px;
+  background: #fee500;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #191919;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.auth-kakao-icon {
+  width: 20px;
+  height: 20px;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23191919"><path d="M12 3c5.799 0 10.5 3.664 10.5 8.185 0 4.52-4.701 8.184-10.5 8.184a13.5 13.5 0 0 1-1.727-.11l-4.408 2.883c-.501.265-.678.236-.472-.413l.892-3.678c-2.88-1.46-4.785-3.99-4.785-6.866C1.5 6.665 6.201 3 12 3z"/></svg>') no-repeat center;
+  background-size: contain;
+}
+
+/* Step 1: 동의 화면 */
+.auth-step-agree .auth-title {
+  text-align: center;
+}
+
+.auth-app-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.auth-app-icon {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.auth-app-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.auth-app-en {
+  display: block;
+  font-size: 12px;
+  color: #888;
+}
+
+.auth-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+
+.auth-checkbox-row input {
+  width: 18px;
+  height: 18px;
+}
+
+.auth-checkbox-all {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.auth-agree-desc {
+  margin: 0 0 16px;
+  font-size: 12px;
+  color: #888;
+  line-height: 1.5;
+}
+
+.auth-consent-section {
+  margin-bottom: 24px;
+}
+
+.auth-consent-title {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.auth-consent-sub {
+  margin-left: 26px;
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: #666;
+}
+
+.auth-link-btn {
+  margin-left: auto;
+  border: none;
+  background: none;
+  font-size: 13px;
+  color: #888;
+  cursor: pointer;
+}
+
+.auth-primary-btn {
+  width: 100%;
+  padding: 14px;
+  background: #333;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+}
+
+.auth-primary-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.auth-cancel-btn {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 8px;
+  border: none;
+  background: none;
+  font-size: 14px;
+  color: #888;
+  cursor: pointer;
+}
+
+/* Step 2: 프로필 설정 */
+.auth-profile-welcome {
+  margin-bottom: 32px;
+}
+
+.auth-welcome-text {
+  margin: 0 0 12px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.auth-profile-go-btn {
+  width: 100%;
+  padding: 14px;
+  background: #ff4b4b;
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+  margin-top: 16px;
+}
+
+.auth-profile-form {
+  border-top: 1px solid #eee;
+  padding-top: 24px;
+}
+
+.auth-form-title {
+  margin: 0 0 20px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.auth-profile-photo {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.auth-profile-photo-placeholder {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #f5f5f5;
+  border: 2px dashed #ddd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  cursor: pointer;
+}
+
+.auth-profile-photo-placeholder .material-symbols-outlined {
+  font-size: 32px;
+}
+
+.auth-form-field {
+  margin-bottom: 20px;
+}
+
+.auth-form-field label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+}
+
+.auth-form-field input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.auth-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.auth-input-row input {
+  flex: 1;
+}
+
+.auth-dup-btn {
+  padding: 12px 16px;
+  background: #dc2626;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.auth-hint {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: #888;
+}
+
+.auth-input-readonly {
+  background: #f5f5f5;
+  color: #888;
+}
+
+.auth-finish-btn {
+  margin-top: 24px;
+  background: #ff4b4b;
+}
