@@ -27,6 +27,8 @@
   -webkit-tap-highlight-color: transparent;
   flex: 1;
   max-width: 80px;
+  text-decoration: none;
+  color: inherit;
 }
 
 .nav-item:active {
