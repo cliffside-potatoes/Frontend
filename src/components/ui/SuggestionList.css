@@ -1,0 +1,48 @@
+.suggestion-list {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.suggestion-list__item {
+  display: block;
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #333;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.2s;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.suggestion-list__item:last-child {
+  border-bottom: none;
+}
+
+.suggestion-list__item:hover,
+.suggestion-list__item:active {
+  background-color: #f5f5f5;
+}
+
+.suggestion-list__item--selected {
+  background-color: #ffebee;
+}
+
+.suggestion-list__empty {
+  margin: 8px 0 0;
+  padding: 12px 16px;
+  font-size: 14px;
+  color: #666;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
