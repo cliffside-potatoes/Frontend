@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import PageHeader from '../../components/common/PageHeader';
 import PrimaryButton from '../../components/common/PrimaryButton';
 import BottomNav from '../../components/common/BottomNav';
@@ -17,7 +18,8 @@ const DROPDOWN_OPTIONS = [
   { value: 'delete', label: '삭제', danger: true },
 ];
 
-const CategorySettingsPage = ({ onBack, onAddCategory }) => {
+const CategorySettingsPage = () => {
+  const navigate = useNavigate();
   const [categories] = useState(MOCK_CATEGORIES);
   const [selectedId, setSelectedId] = useState(null);
   const [dropdownCategoryId, setDropdownCategoryId] = useState(null);
@@ -34,7 +36,7 @@ const CategorySettingsPage = ({ onBack, onAddCategory }) => {
 
   return (
     <div className="category-settings-page">
-      <PageHeader title="카테고리 설정" onBack={onBack} onHome={() => {}} />
+      <PageHeader title="카테고리 설정" onBack={() => navigate(-1)} onHome={() => navigate('/')} />
 
       <main className="category-settings-page__main">
         <section className="category-settings-page__section">
@@ -79,7 +81,7 @@ const CategorySettingsPage = ({ onBack, onAddCategory }) => {
       </main>
 
       <div className="category-settings-page__actions">
-        <PrimaryButton fullWidth onClick={onAddCategory}>
+        <PrimaryButton fullWidth onClick={() => navigate('/refrigerator/category')}>
           카테고리 추가
         </PrimaryButton>
       </div>
