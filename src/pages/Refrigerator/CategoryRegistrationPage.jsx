@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import PageHeader from '../../components/common/PageHeader';
 import ToggleButton from '../../components/common/ToggleButton';
 import TextInput from '../../components/common/TextInput';
@@ -11,7 +12,8 @@ const LOCATION_OPTIONS = [
   { value: 'fridge', label: '냉장고' },
 ];
 
-const CategoryRegistrationPage = ({ onBack }) => {
+const CategoryRegistrationPage = () => {
+  const navigate = useNavigate();
   const [location, setLocation] = useState('freezer');
   const [categoryName, setCategoryName] = useState('');
   const [color, setColor] = useState('#90caf9');
@@ -21,7 +23,7 @@ const CategoryRegistrationPage = ({ onBack }) => {
 
   return (
     <div className="category-registration-page">
-      <PageHeader title="카테고리 등록" onBack={onBack} onHome={() => {}} />
+      <PageHeader title="카테고리 등록" onBack={() => navigate(-1)} onHome={() => navigate('/')} />
 
       <main className="category-registration-page__main">
         <div className="category-registration-page__field">
