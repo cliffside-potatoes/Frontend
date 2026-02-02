@@ -1,0 +1,13 @@
+---
+globs: /HelpFridge
+alwaysApply: false
+---
+
+This project follows branch-based component development.
+
+Rules:
+- Each feature branch owns its own components.
+- Do NOT modify components belonging to other branches.
+- New components must be created within the current branch scope.
+- Assume isolation between branches unless explicitly stated.
+- Follow existing folder structure of the active branch.
