@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import BottomNav from '../../components/common/BottomNav';
 import RecipeCard from '../../components/card/RecipeCard';
 import { RECIPE_CATEGORIES } from '../../constants/categories';
@@ -6,7 +7,8 @@ import naengGuIcon from '../../assets/image/naeng-gu.png';
 import './MainPage.css';
 
 const MainPage = () => {
-  // 더미 데이터 (백엔드 API 연동 전 임시 데이터)
+  const navigate = useNavigate();
+
   const recipes = [
     {
       recipeId: 1,
@@ -62,6 +64,10 @@ const MainPage = () => {
     },
   ];
 
+  const handleSearchClick = () => {
+    navigate('/search');
+  };
+
   return (
     <div className="main-page">
       {/* 상단 헤더 영역 */}
@@ -74,8 +80,13 @@ const MainPage = () => {
               className="tomato-image"
             />
           </div>
-          <div className="search-bar">
-            <input type="text" placeholder="검색" className="search-input" />
+          <div className="search-bar" onClick={handleSearchClick} style={{ cursor: 'pointer' }}>
+            <input 
+              type="text" 
+              placeholder="검색" 
+              className="search-input" 
+              readOnly
+            />
             <span className="search-icon">🔍</span>
           </div>
         </div>

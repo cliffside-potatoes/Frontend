@@ -5,4 +5,4 @@ export const RECIPE_CATEGORIES = [
   { id: 3, label: '원팬', icon: '🍳' },
   { id: 4, label: '안주', icon: '🍺' },
   { id: 5, label: '해장', icon: '🥣' },
- ];
+];

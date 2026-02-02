@@ -1,0 +1,30 @@
+.search-page-container {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  /* 모바일 브라우저 툴바를 고려한 동적 높이 */
+  background-color: #ffffff;
+  /* 배경을 흰색으로 변경 */
+}
+
+.search-content {
+  flex-grow: 1;
+  padding: 15px;
+  overflow-y: auto;
+}
+
+.search-content section {
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.search-content h2 {
+  font-size: 18px;
+  color: #333;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 10px;
+}
