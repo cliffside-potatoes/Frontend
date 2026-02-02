@@ -1,0 +1,26 @@
+.pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  border-radius: 999px;
+  border: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button.pill {
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+button.pill:active {
+  opacity: 0.9;
+}
+
+.pill:not([style*='background']) {
+  background-color: #f0f0f0;
+}
