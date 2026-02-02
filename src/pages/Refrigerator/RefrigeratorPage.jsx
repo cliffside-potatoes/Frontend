@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import PageHeader from '../../components/common/PageHeader';
 import PrimaryButton from '../../components/common/PrimaryButton';
 import TextInput from '../../components/common/TextInput';
@@ -18,6 +19,7 @@ const MOCK_INGREDIENTS = {
 };
 
 const RefrigeratorPage = () => {
+  const navigate = useNavigate();
   const [inputValue, setInputValue] = useState('');
   const [activeCategoryId, setActiveCategoryId] = useState(null);
   const [suggestions, setSuggestions] = useState([]);
@@ -28,10 +30,10 @@ const RefrigeratorPage = () => {
   const fridgeIngredients = MOCK_INGREDIENTS;
   const hasCategories = fridgeCategories?.length > 0;
 
-  const handleBack = () => {};
-  const handleHome = () => {};
-  const handleAddCategory = () => {};
-  const handleCategorySettings = () => {};
+  const handleBack = () => navigate(-1);
+  const handleHome = () => navigate('/');
+  const handleAddCategory = () => navigate('/refrigerator/category');
+  const handleCategorySettings = () => navigate('/refrigerator/category/settings');
   const handleInputChange = (val) => {
     setInputValue(val);
     if (val?.trim()) {
@@ -107,11 +109,9 @@ const RefrigeratorPage = () => {
         <PrimaryButton fullWidth onClick={handleAddCategory}>
           카테고리 추가
         </PrimaryButton>
-        {!hasCategories && (
-          <PrimaryButton fullWidth onClick={handleCategorySettings}>
-            카테고리 설정
-          </PrimaryButton>
-        )}
+        <PrimaryButton fullWidth onClick={handleCategorySettings}>
+          카테고리 설정
+        </PrimaryButton>
       </div>
 
       <BottomNav />
