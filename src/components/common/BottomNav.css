@@ -30,6 +30,8 @@
   border: none;
   background: none;
   outline: none;
+  text-decoration: none;
+  color: inherit;
 }
 
 .nav-item:active {

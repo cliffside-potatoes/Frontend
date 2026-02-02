@@ -4,17 +4,18 @@ import MainPage from './pages/Main/MainPage';
 import MyPage from './pages/Profile/MyPage';
 import SignUpPage from './pages/Auth/SignUpPage';
 import SignInPage from './pages/Auth/SignInPage';
+import RefrigeratorPage from './pages/Refrigerator/RefrigeratorPage';
+import CategoryRegistrationPage from './pages/Refrigerator/CategoryRegistrationPage';
+import CategorySettingsPage from './pages/Refrigerator/CategorySettingsPage';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import './App.css';
 
-// SearchPage lazy 로드 (import 에러 시 흰 화면 대신 fallback 표시)
 const SearchPage = lazy(() =>
   import('./pages/Search/SearchPage').catch((err) => {
     console.error('SearchPage 로드 실패:', err);
     return { default: () => <div style={{ padding: 24 }}>검색 페이지를 불러올 수 없습니다. 콘솔을 확인하세요.</div> };
   })
 );
-
 
 function App() {
   return (
@@ -28,6 +29,9 @@ function App() {
             <Route path="/signup" element={<SignUpPage />} />
             <Route path="/signin" element={<SignInPage />} />
             <Route path="/search" element={<SearchPage />} />
+            <Route path="/refrigerator" element={<RefrigeratorPage />} />
+            <Route path="/refrigerator/category" element={<CategoryRegistrationPage />} />
+            <Route path="/refrigerator/category/settings" element={<CategorySettingsPage />} />
           </Routes>
         </Suspense>
       </ErrorBoundary>

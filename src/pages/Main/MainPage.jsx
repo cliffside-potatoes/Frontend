@@ -97,7 +97,7 @@ const MainPage = () => {
         <p className="header-description">
           재료를 이용해서 만들 수 있는 레시피들을 추천해 줍니다
         </p>
-        <button className="fill-refrigerator-btn">
+        <button type="button" className="fill-refrigerator-btn" onClick={() => navigate('/refrigerator')}>
           <span>🍲</span>
           냉장고 채우러 가기
           <span>&gt;</span>
