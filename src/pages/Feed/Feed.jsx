@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMyPosts } from '../../context/MyPostsContext';
 import BottomNav from '../../components/common/BottomNav';
@@ -61,6 +61,16 @@ const Feed = () => {
   };
 
   const closePostMenu = () => setPostMenuPostId(null);
+
+  useEffect(() => {
+    if (postMenuPostId) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = prev;
+      };
+    }
+  }, [postMenuPostId]);
 
   const openDeleteConfirm = (postId) => {
     setPostMenuPostId(null);
@@ -243,12 +253,17 @@ const Feed = () => {
                       <button type="button" className="post-menu-item" onClick={() => openWriteModal(post)}>
                         게시글 수정
                       </button>
+                      <hr className="post-menu-item-hr"/>
+
                       <button type="button" className="post-menu-item" onClick={() => handleTogglePin(post.id)}>
                         {post.pinned ? '프로필 고정 해제' : '프로필에 고정'}
                       </button>
+                      <hr className="post-menu-item-hr"/>
                       <button type="button" className="post-menu-item" onClick={() => handleToggleHideLikeCount(post.id)}>
                         {post.hideLikeCount ? '좋아요 수 보이기' : '좋아요 수 숨기기'}
-                      </button>
+                      </button>                                          <hr className="post-menu-item-hr"/>
+
+
                       <button
                         type="button"
                         className="post-menu-item post-menu-item-delete"
