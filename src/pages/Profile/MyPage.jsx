@@ -1,20 +1,61 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import BottomNav from '../../components/common/BottomNav';
-import { useMyPosts } from '../../context/MyPostsContext';
 import FeedCard from '../../components/card/FeedCard';
+import { getMyFeed } from '../../api/meFeedApi';
 import profileImg from '../../assets/image/profile.png';
 import './MyPage.css';
 
 const MAX_POST_IMAGES = 5;
+const FEED_PAGE_SIZE = 20;
+
+/** API item을 FeedCard용 post 형태로 변환 (createdAt은 정렬/커서용) */
+const mapFeedItemToPost = (item, authorName) => {
+  const createdAt = item.createdAt || '';
+  const dateStr =
+    createdAt &&
+    (() => {
+      try {
+        return new Date(createdAt).toLocaleDateString('ko-KR', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        });
+      } catch {
+        return createdAt;
+      }
+    })();
+  return {
+    id: item.id,
+    type: item.type,
+    author: authorName,
+    date: dateStr,
+    content: item.content ?? '',
+    images: item.images ?? [],
+    image: (item.images && item.images[0]) ?? '',
+    likeCount: item.likeCount ?? 0,
+    liked: false,
+    hideLikeCount: Boolean(item.hideLikeCount),
+    pinned: Boolean(item.pinned),
+    createdAt,
+    updatedAt: item.updatedAt ?? createdAt,
+    cookCount: item.cookCount ?? 0,
+  };
+};
 
 const MyPage = () => {
-  const { posts, setPosts } = useMyPosts();
   const user = {
     nickname: '사용자 닉네임',
     id: '@사용자아이디',
     triedCount: 7,
     bio: '아직 자기소개가 없어요😊',
   };
+
+  const [postItems, setPostItems] = useState([]);
+  const [hasNext, setHasNext] = useState(false);
+  const [nextCursor, setNextCursor] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [feedError, setFeedError] = useState(null);
 
   const [postMenuPostId, setPostMenuPostId] = useState(null);
   const [deleteConfirmPostId, setDeleteConfirmPostId] = useState(null);
@@ -23,6 +64,28 @@ const MyPage = () => {
   const [draftContent, setDraftContent] = useState('');
   const [draftImages, setDraftImages] = useState([]);
   const fileInputRef = useRef(null);
+  const loadMoreRef = useRef(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setFeedError(null);
+    getMyFeed({ type: 'POST', size: FEED_PAGE_SIZE, sort: 'LATEST' })
+      .then(({ items, hasNext: next, nextCursor: cursor }) => {
+        if (!cancelled) {
+          setPostItems(items.map((item) => mapFeedItemToPost(item, user.nickname)));
+          setHasNext(next);
+          setNextCursor(cursor);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setFeedError('게시글을 불러올 수 없습니다.');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   const openPostMenu = (e, postId) => {
     e.stopPropagation();
@@ -40,27 +103,27 @@ const MyPage = () => {
 
   const handleDeletePost = () => {
     if (deleteConfirmPostId) {
-      setPosts((prev) => prev.filter((p) => p.id !== deleteConfirmPostId));
+      setPostItems((prev) => prev.filter((p) => p.id !== deleteConfirmPostId));
       setDeleteConfirmPostId(null);
     }
   };
 
   const handleToggleHideLikeCount = (postId) => {
-    setPosts((prev) =>
+    setPostItems((prev) =>
       prev.map((p) => (p.id === postId ? { ...p, hideLikeCount: !p.hideLikeCount } : p))
     );
     setPostMenuPostId(null);
   };
 
   const handleTogglePin = (postId) => {
-    setPosts((prev) =>
+    setPostItems((prev) =>
       prev.map((p) => (p.id === postId ? { ...p, pinned: !p.pinned } : p))
     );
     setPostMenuPostId(null);
   };
 
   const handleToggleLike = (postId) => {
-    setPosts((prev) =>
+    setPostItems((prev) =>
       prev.map((p) => {
         if (p.id !== postId) return p;
         const nextLiked = !p.liked;
@@ -73,10 +136,12 @@ const MyPage = () => {
     );
   };
 
-  const sortedPosts = [...posts].sort((a, b) => {
+  const sortedPosts = [...postItems].sort((a, b) => {
     if (a.pinned && !b.pinned) return -1;
     if (!a.pinned && b.pinned) return 1;
-    return (b.createdAt || 0) - (a.createdAt || 0);
+    const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return bTime - aTime;
   });
 
   const openWriteModal = (post = null) => {
@@ -133,36 +198,44 @@ const MyPage = () => {
   const handleSavePost = () => {
     const images = draftImages.length > 0 ? draftImages : [];
     const image = images[0] || '';
+    const nowIso = new Date().toISOString();
+    const dateStr = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
     if (editingPostId) {
-      setPosts((prev) =>
+      setPostItems((prev) =>
         prev.map((p) =>
           p.id === editingPostId
-            ? { ...p, content: draftContent, image, images }
+            ? { ...p, content: draftContent, image, images, updatedAt: nowIso }
             : p
         )
       );
     } else {
-      setPosts((prev) => [
-        ...prev,
-        {
-          id: Math.max(0, ...prev.map((p) => p.id)) + 1,
-          author: user.nickname,
-          date: new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' }),
-          createdAt: Date.now(),
-          content: draftContent,
-          image,
-          images,
-          likeCount: 0,
-          liked: false,
-          hideLikeCount: false,
-          pinned: false,
-        },
-      ]);
+      setPostItems((prev) => {
+        const nextId = Math.max(0, ...prev.map((p) => p.id)) + 1;
+        return [
+          {
+            id: nextId,
+            type: 'POST',
+            author: user.nickname,
+            date: dateStr,
+            content: draftContent,
+            image,
+            images,
+            likeCount: 0,
+            liked: false,
+            hideLikeCount: false,
+            pinned: false,
+            createdAt: nowIso,
+            updatedAt: nowIso,
+            cookCount: 0,
+          },
+          ...prev,
+        ];
+      });
     }
     closeWriteModal();
   };
 
-  const editingPost = editingPostId ? posts.find((p) => p.id === editingPostId) : null;
+  const editingPost = editingPostId ? postItems.find((p) => p.id === editingPostId) : null;
 
   return (
     <div className="mypage">
@@ -224,6 +297,12 @@ const MyPage = () => {
           </div>
 
           <div className="mypage-posts">
+            {loading && sortedPosts.length === 0 && (
+              <p className="mypage-posts-loading">게시글을 불러오는 중...</p>
+            )}
+            {feedError && sortedPosts.length === 0 && (
+              <p className="mypage-posts-error">{feedError}</p>
+            )}
             {sortedPosts.map((post) => (
               <div key={post.id} className="mypage-post-item">
                 <FeedCard
