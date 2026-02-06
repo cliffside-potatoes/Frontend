@@ -1,9 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import BottomNav from '../../components/common/BottomNav';
+import { useMyPosts } from '../../context/MyPostsContext';
+import FeedCard from '../../components/card/FeedCard';
 import profileImg from '../../assets/image/profile.png';
 import './MyPage.css';
 
+const MAX_POST_IMAGES = 5;
+
 const MyPage = () => {
+  const { posts, setPosts } = useMyPosts();
   const user = {
     nickname: '사용자 닉네임',
     id: '@사용자아이디',
@@ -11,52 +16,13 @@ const MyPage = () => {
     bio: '아직 자기소개가 없어요😊',
   };
 
-  const [posts, setPosts] = useState([
-    {
-      id: 1,
-      author: user.nickname,
-      date: '2025년 12월 23일',
-      createdAt: new Date('2025-12-23').getTime(),
-      content: '오늘은 이걸 먹었다~ 너무 맛있었다!',
-      image:
-        'https://images.unsplash.com/photo-1544025162-d76694265947?w=600&h=600&fit=crop',
-      likeCount: 5,
-      liked: false,
-      hideLikeCount: false,
-      pinned: false,
-    },
-    {
-      id: 2,
-      author: user.nickname,
-      date: '2025년 12월 20일',
-      createdAt: new Date('2025-12-20').getTime(),
-      content: '주말에 파스타 만들어봤어요 🍝',
-      image: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=600&h=600&fit=crop',
-      likeCount: 3,
-      liked: true,
-      hideLikeCount: false,
-      pinned: false,
-    },
-    {
-      id: 3,
-      author: user.nickname,
-      date: '2025년 12월 15일',
-      createdAt: new Date('2025-12-15').getTime(),
-      content: '간단한 볶음밥 레시피~',
-      image: 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=600&h=600&fit=crop',
-      likeCount: 8,
-      liked: false,
-      hideLikeCount: false,
-      pinned: false,
-    },
-  ]);
-
   const [postMenuPostId, setPostMenuPostId] = useState(null);
   const [deleteConfirmPostId, setDeleteConfirmPostId] = useState(null);
   const [writeModalOpen, setWriteModalOpen] = useState(false);
   const [editingPostId, setEditingPostId] = useState(null);
   const [draftContent, setDraftContent] = useState('');
-  const [draftImage, setDraftImage] = useState('');
+  const [draftImages, setDraftImages] = useState([]);
+  const fileInputRef = useRef(null);
 
   const openPostMenu = (e, postId) => {
     e.stopPropagation();
@@ -117,11 +83,17 @@ const MyPage = () => {
     if (post) {
       setEditingPostId(post.id);
       setDraftContent(post.content);
-      setDraftImage(post.image || '');
+      setDraftImages(
+        post.images && post.images.length > 0
+          ? [...post.images]
+          : post.image
+            ? [post.image]
+            : []
+      );
     } else {
       setEditingPostId(null);
       setDraftContent('');
-      setDraftImage('');
+      setDraftImages([]);
     }
     setPostMenuPostId(null);
     setWriteModalOpen(true);
@@ -131,15 +103,41 @@ const MyPage = () => {
     setWriteModalOpen(false);
     setEditingPostId(null);
     setDraftContent('');
-    setDraftImage('');
+    setDraftImages([]);
+  };
+
+  const readFileAsDataUrl = (file) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+  const handleImageSelect = (e) => {
+    const files = [...(e.target.files || [])].filter((f) => f.type.startsWith('image/'));
+    if (files.length === 0) {
+      e.target.value = '';
+      return;
+    }
+    Promise.all(files.map(readFileAsDataUrl)).then((urls) => {
+      setDraftImages((prev) => [...prev, ...urls].slice(0, MAX_POST_IMAGES));
+    });
+    e.target.value = '';
+  };
+
+  const removeDraftImage = (index) => {
+    setDraftImages((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSavePost = () => {
+    const images = draftImages.length > 0 ? draftImages : [];
+    const image = images[0] || '';
     if (editingPostId) {
       setPosts((prev) =>
         prev.map((p) =>
           p.id === editingPostId
-            ? { ...p, content: draftContent, image: draftImage || p.image }
+            ? { ...p, content: draftContent, image, images }
             : p
         )
       );
@@ -152,7 +150,8 @@ const MyPage = () => {
           date: new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' }),
           createdAt: Date.now(),
           content: draftContent,
-          image: draftImage || '',
+          image,
+          images,
           likeCount: 0,
           liked: false,
           hideLikeCount: false,
@@ -226,52 +225,14 @@ const MyPage = () => {
 
           <div className="mypage-posts">
             {sortedPosts.map((post) => (
-              <article key={post.id} className="post-card">
-                <div className="post-avatar">
-                  <img src={profileImg} alt="" className="post-avatar-img" />
-                </div>
-                <div className="post-header-right">
-                  <div className="post-author-info">
-                    <span className="post-author-name">{post.author}</span>
-                    <span className="post-date">
-                      {post.date}
-                      {post.pinned && <span className="post-pinned" title="프로필에 고정">📌</span>}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    className="icon-button small"
-                    aria-label="메뉴 열기"
-                    onClick={(e) => openPostMenu(e, post.id)}
-                  >
-                    <span className="material-symbols-outlined">more_vert</span>
-                  </button>
-                </div>
-                <p className="post-content">{post.content}</p>
-                <div className="post-images">
-                  {post.image ? (
-                    <img src={post.image} alt={post.content} className="post-image" />
-                  ) : (
-                    <div className="post-image-placeholder" />
-                  )}
-                  <div className="post-image-placeholder" />
-                </div>
-                <div className="post-footer">
-                  <button
-                    type="button"
-                    className={`post-like-button ${post.liked ? 'liked' : ''}`}
-                    onClick={() => handleToggleLike(post.id)}
-                    aria-label={post.liked ? '좋아요 취소' : '좋아요'}
-                  >
-                    <span className="material-symbols-outlined">
-                      {post.liked ? 'favorite' : 'favorite_border'}
-                    </span>
-                  </button>
-                  {!post.hideLikeCount && (
-                    <span className="post-like-count">{post.likeCount}</span>
-                  )}
-                </div>
-
+              <div key={post.id} className="mypage-post-item">
+                <FeedCard
+                  post={post}
+                  isMine
+                  avatarUrl={profileImg}
+                  onToggleLike={handleToggleLike}
+                  onOpenMenu={openPostMenu}
+                />
                 {postMenuPostId === post.id && (
                   <>
                     <div className="modal-backdrop" onClick={closePostMenu} aria-hidden="true" />
@@ -295,7 +256,7 @@ const MyPage = () => {
                     </div>
                   </>
                 )}
-              </article>
+              </div>
             ))}
           </div>
         </section>
@@ -352,14 +313,30 @@ const MyPage = () => {
               </div>
             </div>
             <div className="write-modal-body">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="write-modal-file-input"
+                aria-hidden="true"
+                onChange={handleImageSelect}
+              />
               <div className="write-modal-image-row">
-                <div className="write-modal-image-placeholder">
-                  {draftImage ? (
-                    <img src={draftImage} alt="" className="write-modal-preview" />
-                  ) : (
-                    <span className="material-symbols-outlined">image</span>
-                  )}
-                </div>
+                {draftImages.map((src, i) => (
+                  <div key={i} className="write-modal-image-placeholder">
+                    <img src={src} alt="" className="write-modal-preview" />
+                    <button type="button" className="write-modal-image-remove" onClick={() => removeDraftImage(i)} aria-label="사진 제거">
+                      <span className="material-symbols-outlined">close</span>
+                    </button>
+                  </div>
+                ))}
+                {draftImages.length < MAX_POST_IMAGES && (
+                  <button type="button" className="write-modal-add-image-btn" onClick={() => fileInputRef.current?.click()}>
+                    <span className="material-symbols-outlined">add_photo_alternate</span>
+                    사진 추가 ({draftImages.length}/{MAX_POST_IMAGES})
+                  </button>
+                )}
                 <button type="button" className="write-modal-save-btn" onClick={handleSavePost}>
                   저장
                 </button>

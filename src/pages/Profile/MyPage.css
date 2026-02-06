@@ -374,7 +374,7 @@
 }
 
 /* 1) 게시물 메뉴 모달 (more_vert) */
-.post-card {
+.mypage-post-item {
   position: relative;
 }
 
@@ -537,14 +537,25 @@
   overflow-y: auto;
 }
 
+.write-modal-file-input {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
 .write-modal-image-row {
   display: flex;
   align-items: flex-start;
   gap: 12px;
   margin-bottom: 12px;
+  flex-wrap: wrap;
 }
 
 .write-modal-image-placeholder {
+  position: relative;
   width: 72px;
   height: 72px;
   border-radius: 8px;
@@ -556,6 +567,27 @@
   overflow: hidden;
 }
 
+.write-modal-image-remove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.write-modal-image-remove .material-symbols-outlined {
+  font-size: 16px;
+}
+
 .write-modal-image-placeholder .material-symbols-outlined {
   font-size: 28px;
 }
@@ -564,6 +596,23 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.write-modal-add-image-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border: 1px dashed #ccc;
+  border-radius: 8px;
+  background: #fafafa;
+  font-size: 14px;
+  color: #666;
+  cursor: pointer;
+}
+
+.write-modal-add-image-btn .material-symbols-outlined {
+  font-size: 20px;
 }
 
 .write-modal-save-btn {
