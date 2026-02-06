@@ -1,7 +1,9 @@
 import React, { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { MyPostsProvider } from './context/MyPostsContext';
 import MainPage from './pages/Main/MainPage';
 import MyPage from './pages/Profile/MyPage';
+import Feed from './pages/Feed/Feed';
 import SignUpPage from './pages/Auth/SignUpPage';
 import SignInPage from './pages/Auth/SignInPage';
 import RefrigeratorPage from './pages/Refrigerator/RefrigeratorPage';
@@ -19,23 +21,26 @@ const SearchPage = lazy(() =>
 
 function App() {
   return (
-    <Router>
-      <ErrorBoundary>
-        <Suspense fallback={<div style={{ padding: 24, textAlign: 'center' }}>검색 페이지 로딩 중...</div>}>
-          <Routes>
-            <Route path="/" element={<Navigate to="/main" replace />} />
-            <Route path="/main" element={<MainPage />} />
-            <Route path="/profile" element={<MyPage />} />
+    <MyPostsProvider>
+      <Router>
+        <ErrorBoundary>
+          <Suspense fallback={<div style={{ padding: 24, textAlign: 'center' }}>검색 페이지 로딩 중...</div>}>
+            <Routes>
+              <Route path="/" element={<Navigate to="/main" replace />} />
+              <Route path="/main" element={<MainPage />} />
+              <Route path="/feed" element={<Feed />} />
+              <Route path="/profile" element={<MyPage />} />
             <Route path="/signup" element={<SignUpPage />} />
             <Route path="/signin" element={<SignInPage />} />
             <Route path="/search" element={<SearchPage />} />
             <Route path="/refrigerator" element={<RefrigeratorPage />} />
             <Route path="/refrigerator/category" element={<CategoryRegistrationPage />} />
             <Route path="/refrigerator/category/settings" element={<CategorySettingsPage />} />
-          </Routes>
-        </Suspense>
-      </ErrorBoundary>
-    </Router>
+            </Routes>
+          </Suspense>
+        </ErrorBoundary>
+      </Router>
+    </MyPostsProvider>
   );
 }
 
