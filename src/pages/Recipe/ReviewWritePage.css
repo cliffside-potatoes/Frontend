@@ -144,3 +144,9 @@
 .submit-button:active {
   background-color: #e64545;
 }
+
+.submit-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+}

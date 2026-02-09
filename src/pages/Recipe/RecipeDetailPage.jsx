@@ -1,32 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { getRecipeDetail } from '../../api/recipeApi';
 import './RecipeDetailPage.css';
 
 const RecipeDetailPage = () => {
   const navigate = useNavigate();
   const { recipeId } = useParams();
 
-  // 임시 데이터 (나중에 API에서 가져올 수 있음)
-  const recipe = {
-    recipeId: 1,
-    title: '김치찌개',
-    thumbnailImage: 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=800&h=600&fit=crop',
-    source: '유튜브 - 릴리쿡 "김치찌개를 만들어보자~~"',
-    likeCount: 8,
-    reviewCount: 8,
-    cookingTime: 30,
-    difficulty: '초보',
-    spicyLevel: 3,
-    description: '잘 익은 김치로 보다니~ 너무 맛있을 것 같은 일품김치찌개를 알려드립니다~! 우리 같이 하는 방법입니다.',
-    ingredients: [
-      { name: '감자', checked: true },
-      { name: '김치', checked: false }
-    ]
-  };
-
+  const [recipe, setRecipe] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [isLiked, setIsLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(recipe.likeCount);
-  const [ingredients, setIngredients] = useState(recipe.ingredients);
+  const [likeCount, setLikeCount] = useState(0);
+  const [ingredients, setIngredients] = useState([]);
+
+  // 레시피 데이터 로드
+  useEffect(() => {
+    const fetchRecipe = async () => {
+      setLoading(true);
+      try {
+        const data = await getRecipeDetail(recipeId);
+        setRecipe(data);
+        setIsLiked(data.liked || false);
+        setLikeCount(data.likeCount || 0);
+        setIngredients(data.ingredients || []);
+      } catch (error) {
+        console.error('레시피 데이터 로드 실패:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (recipeId) {
+      fetchRecipe();
+    }
+  }, [recipeId]);
 
   const handleLikeToggle = () => {
     setIsLiked(!isLiked);
@@ -48,9 +55,28 @@ const RecipeDetailPage = () => {
   };
 
   const handleLinkClick = () => {
-    // 레시피 링크 처리
-    alert('레시피 링크로 이동합니다.');
+    if (recipe?.recipewithLink?.url) {
+      window.open(recipe.recipewithLink.url, '_blank');
+    } else {
+      alert('레시피 링크가 없습니다.');
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="recipe-detail-page">
+        <div style={{ padding: '20px', textAlign: 'center' }}>로딩 중...</div>
+      </div>
+    );
+  }
+
+  if (!recipe) {
+    return (
+      <div className="recipe-detail-page">
+        <div style={{ padding: '20px', textAlign: 'center' }}>레시피를 찾을 수 없습니다.</div>
+      </div>
+    );
+  }
 
   return (
     <div className="recipe-detail-page">
@@ -88,22 +114,22 @@ const RecipeDetailPage = () => {
 
         {/* 내 냉장고 재료상황 */}
         <div className="refrigerator-status">
-          <p className="status-title">내 냉장고 재료상황 ( 4 / 7 )</p>
-          <p className="status-description">
-            잘 익은 김치로 보다니~ 너무 맛있을 것 같은 일품김치찌개를 알려드립니다~! 우리 같이 하는 방법입니다.
+          <p className="status-title">
+            내 냉장고 재료상황 ({recipe.matchedIngredientCount || 0} / {recipe.totalIngredientCount || 0})
           </p>
+          <p className="status-description">{recipe.description}</p>
           <div className="difficulty-icons">
             <div className="difficulty-item">
               <span className="icon">👨</span>
-              <span className="label">1인분</span>
+              <span className="label">{recipe.servings || 1}인분</span>
             </div>
             <div className="difficulty-item">
               <span className="icon">⏱️</span>
-              <span className="label">30분</span>
+              <span className="label">{recipe.cookingTime || 30}분</span>
             </div>
             <div className="difficulty-item">
               <span className="icon">🔥</span>
-              <span className="label">난이도 {recipe.spicyLevel}</span>
+              <span className="label">난이도 {recipe.difficulty}</span>
             </div>
           </div>
         </div>
