@@ -9,6 +9,9 @@ import SignInPage from './pages/Auth/SignInPage';
 import RefrigeratorPage from './pages/Refrigerator/RefrigeratorPage';
 import CategoryRegistrationPage from './pages/Refrigerator/CategoryRegistrationPage';
 import CategorySettingsPage from './pages/Refrigerator/CategorySettingsPage';
+import RecipeDetailPage from './pages/Recipe/RecipeDetailPage';
+import ReviewListPage from './pages/Recipe/ReviewListPage';
+import ReviewWritePage from './pages/Recipe/ReviewWritePage';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import './App.css';
 
@@ -36,6 +39,9 @@ function App() {
             <Route path="/refrigerator" element={<RefrigeratorPage />} />
             <Route path="/refrigerator/category" element={<CategoryRegistrationPage />} />
             <Route path="/refrigerator/category/settings" element={<CategorySettingsPage />} />
+            <Route path="/recipe/:recipeId" element={<RecipeDetailPage />} />
+            <Route path="/recipe/:recipeId/reviews" element={<ReviewListPage />} />
+            <Route path="/recipe/:recipeId/reviews/write" element={<ReviewWritePage />} />
             </Routes>
           </Suspense>
         </ErrorBoundary>
