@@ -65,7 +65,7 @@ const MOCK_REVIEWS = [
     images: ['https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=100&h=100&fit=crop'],
     updatedAt: '2025년 12월 23일',
     hideLikeCount: false,
-    likeCount: 5,
+    likeCount: 8,
     liked: false
   },
   {
@@ -77,17 +77,22 @@ const MOCK_REVIEWS = [
     images: ['https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=100&h=100&fit=crop'],
     updatedAt: '2025년 12월 23일',
     hideLikeCount: false,
-    likeCount: 5,
+    likeCount: 3,
     liked: false
   }
 ];
 
 const getMockReviews = (params) => {
-  const { size = 20 } = params;
-  const items = MOCK_REVIEWS.slice(0, size);
+  const { size = 20, sort = 'LATEST' } = params;
+  const items = [...MOCK_REVIEWS];
+  if (sort === 'POPULAR') {
+    items.sort((a, b) => (b.likeCount ?? 0) - (a.likeCount ?? 0));
+  } else {
+    // LATEST - 작성일 기준 (Mock에서는 순서 유지)
+  }
   return {
     totalCount: MOCK_REVIEWS.length,
-    items,
+    items: items.slice(0, size),
     hasNext: false,
     nextCursor: null
   };
@@ -145,7 +150,7 @@ export const getRecipeDetail = async (recipeId) => {
  * @param {number} [params.cursorLikeCount] - 마지막으로 조회한 feed의 좋아요 수
  * @param {number} [params.cursorReviewCount] - 마지막으로 조회한 feed의 리뷰 수
  * @param {number} [params.cursorId] - 마지막으로 조회한 feed의 ID
- * @param {string} [params.sort=LATEST] - 정렬 방식 (최신순)
+ * @param {string} [params.sort=LATEST] - 정렬 방식 (LATEST: 최신순, POPULAR: 인기순)
  */
 export const getRecipeReviews = async (recipeId, params = {}) => {
   const {
@@ -267,8 +272,42 @@ export const createRecipeReview = async (recipeId, data) => {
   }
 };
 
+/**
+ * 레시피 후기 삭제
+ * DELETE /reviewRecipes/{recipeId}/{reviewId}
+ */
+export const deleteRecipeReview = async (recipeId, reviewId) => {
+  try {
+    const base = (typeof API_BASE_URL === 'string' && API_BASE_URL.trim()) || '';
+    const isSameOrigin =
+      typeof window !== 'undefined' &&
+      base &&
+      (base.startsWith(window.location.origin) || base === window.location.origin);
+
+    if (!base || isSameOrigin) {
+      return { success: true };
+    }
+
+    const url = `${base}/reviewRecipes/${recipeId}/${reviewId}`;
+    const res = await fetch(url, {
+      method: 'DELETE',
+      headers: getAuthHeader(),
+    });
+
+    if (!res.ok) {
+      throw new Error('후기 삭제 실패');
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('후기 삭제 실패:', error);
+    return { success: false, error: error.message };
+  }
+};
+
 export default {
   getRecipeDetail,
   getRecipeReviews,
-  createRecipeReview
+  createRecipeReview,
+  deleteRecipeReview
 };
