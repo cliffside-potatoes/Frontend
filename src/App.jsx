@@ -3,6 +3,11 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { MyPostsProvider } from './context/MyPostsContext';
 import MainPage from './pages/Main/MainPage';
 import MyPage from './pages/Profile/MyPage';
+import SettingsPage from './pages/Profile/SettingsPage';
+import NotificationSettingsPage from './pages/Profile/NotificationSettingsPage';
+import MyRecipesPage from './pages/Profile/MyRecipesPage';
+import MyReviewsPage from './pages/Profile/MyReviewsPage';
+import RecipeSavedPage from './pages/Profile/RecipeSavedPage';
 import Feed from './pages/Feed/Feed';
 import SignUpPage from './pages/Auth/SignUpPage';
 import SignInPage from './pages/Auth/SignInPage';
@@ -33,6 +38,11 @@ function App() {
               <Route path="/main" element={<MainPage />} />
               <Route path="/feed" element={<Feed />} />
               <Route path="/profile" element={<MyPage />} />
+            <Route path="/profile/settings" element={<SettingsPage />} />
+            <Route path="/profile/settings/notifications" element={<NotificationSettingsPage />} />
+            <Route path="/profile/my-recipes" element={<MyRecipesPage />} />
+            <Route path="/profile/my-reviews" element={<MyReviewsPage />} />
+            <Route path="/recipe-saved" element={<RecipeSavedPage />} />
             <Route path="/signup" element={<SignUpPage />} />
             <Route path="/signin" element={<SignInPage />} />
             <Route path="/search" element={<SearchPage />} />

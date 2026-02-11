@@ -1,0 +1,121 @@
+.my-reviews-page {
+  width: 100%;
+  max-width: var(--app-max-width);
+  margin: 0 auto;
+  min-height: 100vh;
+  background-color: #ffffff;
+  padding-bottom: calc(var(--bottom-nav-base-height) + var(--safe-bottom));
+}
+
+.my-reviews-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #f3f3f3;
+}
+
+.mrv-header__back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: #333;
+}
+
+.mrv-header__back .material-symbols-outlined {
+  font-size: 24px;
+}
+
+.mrv-header__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.mrv-header__spacer {
+  width: 40px;
+}
+
+.my-reviews-main {
+  padding: 16px;
+}
+
+.my-reviews-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.my-reviews-item {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.my-reviews-item-button {
+  display: block;
+  width: 100%;
+  padding: 16px 0;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.my-reviews-item-button:active {
+  background-color: #f8f8f8;
+}
+
+.mrv-item-recipe {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 4px;
+}
+
+.mrv-item-content {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: #555;
+  line-height: 1.5;
+}
+
+.mrv-item-date {
+  font-size: 12px;
+  color: #999;
+}
+
+.my-reviews-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.mrv-empty-icon {
+  font-size: 48px;
+  color: #ccc;
+  margin-bottom: 16px;
+}
+
+.mrv-empty-text {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+}
+
+.mrv-empty-sub {
+  margin: 0;
+  font-size: 14px;
+  color: #888;
+}

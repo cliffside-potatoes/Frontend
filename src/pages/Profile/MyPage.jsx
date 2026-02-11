@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import BottomNav from '../../components/common/BottomNav';
 import FeedCard from '../../components/card/FeedCard';
 import { getMyFeed } from '../../api/meFeedApi';
@@ -43,6 +44,7 @@ const mapFeedItemToPost = (item, authorName) => {
 };
 
 const MyPage = () => {
+  const navigate = useNavigate();
   const user = {
     nickname: '사용자 닉네임',
     id: '@사용자아이디',
@@ -244,7 +246,7 @@ const MyPage = () => {
           <span className="material-symbols-outlined">arrow_back_ios</span>
         </button>
         <h1 className="mypage-title">마이페이지</h1>
-        <button type="button" className="icon-button" aria-label="설정">
+        <button type="button" className="icon-button" aria-label="설정" onClick={() => navigate('/profile/settings')}>
           <span className="material-symbols-outlined">settings</span>
         </button>
       </header>

@@ -1,0 +1,83 @@
+.recipe-saved-page {
+  width: 100%;
+  max-width: var(--app-max-width);
+  margin: 0 auto;
+  min-height: 100vh;
+  background-color: #ffffff;
+  padding-bottom: calc(var(--bottom-nav-base-height) + var(--safe-bottom));
+}
+
+.recipe-saved-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #f3f3f3;
+}
+
+.rsp-header__back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: #333;
+}
+
+.rsp-header__back .material-symbols-outlined {
+  font-size: 24px;
+}
+
+.rsp-header__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.rsp-header__spacer {
+  width: 40px;
+}
+
+.recipe-saved-main {
+  padding: 16px;
+}
+
+.recipe-saved-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.recipe-saved-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.rsp-empty-icon {
+  font-size: 48px;
+  color: #ccc;
+  margin-bottom: 16px;
+}
+
+.rsp-empty-text {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+}
+
+.rsp-empty-sub {
+  margin: 0;
+  font-size: 14px;
+  color: #888;
+}
