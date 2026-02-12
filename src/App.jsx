@@ -11,6 +11,7 @@ import RecipeSavedPage from './pages/Profile/RecipeSavedPage';
 import Feed from './pages/Feed/Feed';
 import SignUpPage from './pages/Auth/SignUpPage';
 import SignInPage from './pages/Auth/SignInPage';
+import KakaoCallback from './pages/Auth/KakaoCallback';
 import RefrigeratorPage from './pages/Refrigerator/RefrigeratorPage';
 import CategoryRegistrationPage from './pages/Refrigerator/CategoryRegistrationPage';
 import CategorySettingsPage from './pages/Refrigerator/CategorySettingsPage';
@@ -49,9 +50,11 @@ function App() {
             <Route path="/refrigerator" element={<RefrigeratorPage />} />
             <Route path="/refrigerator/category" element={<CategoryRegistrationPage />} />
             <Route path="/refrigerator/category/settings" element={<CategorySettingsPage />} />
+            <Route path="/oauth/callback/kakao" element={<KakaoCallback />} />
             <Route path="/recipe/:recipeId" element={<RecipeDetailPage />} />
             <Route path="/recipe/:recipeId/reviews" element={<ReviewListPage />} />
             <Route path="/recipe/:recipeId/reviews/write" element={<ReviewWritePage />} />
+
             </Routes>
           </Suspense>
         </ErrorBoundary>
