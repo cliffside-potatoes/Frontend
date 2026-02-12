@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './RecipeCard.css';
 
 const RecipeCard = ({ recipe, onToggleLike }) => {
+  const navigate = useNavigate();
   const {
     recipeId,
     title,
@@ -24,8 +26,16 @@ const RecipeCard = ({ recipe, onToggleLike }) => {
     (isLiked && !liked ? 1 : 0) -
     (!isLiked && liked ? 1 : 0);
 
+  const handleCardClick = (e) => {
+    // 좋아요 버튼 클릭 시에는 카드 클릭 이벤트가 발생하지 않도록
+    if (e.target.closest('.like-button')) {
+      return;
+    }
+    navigate(`/recipe/${recipeId}`);
+  };
+
   return (
-    <div className="recipe-card">
+    <div className="recipe-card" onClick={handleCardClick}>
       <div className="recipe-image-container">
         {thumbnailImage ? (
           <img src={thumbnailImage} alt={title} className="recipe-image" />

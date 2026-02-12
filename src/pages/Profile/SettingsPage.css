@@ -1,0 +1,146 @@
+.settings-page {
+  width: 100%;
+  max-width: var(--app-max-width);
+  margin: 0 auto;
+  min-height: 100vh;
+  background-color: #ffffff;
+  padding-bottom: calc(var(--bottom-nav-base-height) + var(--safe-bottom));
+  position: relative;
+}
+
+.settings-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #f3f3f3;
+}
+
+.settings-header__back,
+.settings-header__gear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  color: #333;
+}
+
+.settings-header__gear {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.settings-header__gear:disabled {
+  pointer-events: none;
+}
+
+.settings-header__back .material-symbols-outlined,
+.settings-header__gear .material-symbols-outlined {
+  font-size: 24px;
+}
+
+.settings-header__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.settings-main {
+  padding: 16px 0;
+}
+
+.settings-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.settings-list-item {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.settings-list-item:last-child {
+  border-bottom: none;
+  margin-top: 8px;
+}
+
+.settings-item-button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 16px 20px;
+  border: none;
+  background: none;
+  font-size: 16px;
+  color: #1a1a1a;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.settings-item-button:active {
+  background-color: #f8f8f8;
+}
+
+.settings-item-icon {
+  font-size: 22px;
+  color: #555;
+}
+
+.settings-item-label {
+  flex: 1;
+  font-weight: 500;
+}
+
+.settings-item-chevron {
+  font-size: 20px;
+  color: #bbb;
+}
+
+.settings-item-logout {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.settings-item-logout .settings-item-label {
+  flex: 1;
+}
+
+.settings-fab {
+  position: fixed;
+  right: 16px;
+  bottom: calc(var(--bottom-nav-base-height) + var(--safe-bottom) + 16px);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background-color: #ffffff;
+  color: #333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.settings-fab .material-symbols-outlined {
+  font-size: 24px;
+}
+
+.settings-fab:active {
+  opacity: 0.9;
+}
