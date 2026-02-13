@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../../components/common/BottomNav';
+import { useUser } from '../../context/UserContext';
 import './SettingsPage.css';
 
 const SETTINGS_ITEMS = [
@@ -13,14 +14,9 @@ const SETTINGS_ITEMS = [
 
 const SettingsPage = () => {
   const navigate = useNavigate();
+  const { logout } = useUser();
 
   const handleBack = () => navigate(-1);
-
-  const handleLogout = () => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('token');
-    navigate('/signin', { replace: true });
-  };
 
   const handleItemClick = (item) => {
     if (item.id === 'mypage') {
@@ -62,7 +58,7 @@ const SettingsPage = () => {
             </li>
           ))}
           <li className="settings-list-item">
-            <button type="button" className="settings-item-button settings-item-logout" onClick={handleLogout}>
+            <button type="button" className="settings-item-button settings-item-logout" onClick={logout}>
               <span className="settings-item-label">로그아웃</span>
             </button>
           </li>

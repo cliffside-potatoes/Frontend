@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import BottomNav from '../../components/common/BottomNav';
 import FeedCard from '../../components/card/FeedCard';
 import { getMyFeed } from '../../api/meFeedApi';
+import { useUser } from '../../context/UserContext';
 import profileImg from '../../assets/image/profile.png';
 import './MyPage.css';
 
@@ -45,11 +46,20 @@ const mapFeedItemToPost = (item, authorName) => {
 
 const MyPage = () => {
   const navigate = useNavigate();
-  const user = {
+  const { user, isLoggedIn } = useUser();
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      navigate('/signin', { replace: true });
+    }
+  }, [isLoggedIn, navigate]);
+
+  const displayUser = user ?? {
     nickname: '사용자 닉네임',
-    id: '@사용자아이디',
-    triedCount: 7,
+    id: '',
+    triedCount: 0,
     bio: '아직 자기소개가 없어요😊',
+    profileImage: '',
   };
 
   const [postItems, setPostItems] = useState([]);
@@ -69,13 +79,14 @@ const MyPage = () => {
   const loadMoreRef = useRef(null);
 
   useEffect(() => {
+    if (!isLoggedIn) return;
     let cancelled = false;
     setLoading(true);
     setFeedError(null);
     getMyFeed({ type: 'POST', size: FEED_PAGE_SIZE, sort: 'LATEST' })
       .then(({ items, hasNext: next, nextCursor: cursor }) => {
         if (!cancelled) {
-          setPostItems(items.map((item) => mapFeedItemToPost(item, user.nickname)));
+          setPostItems(items.map((item) => mapFeedItemToPost(item, displayUser.nickname)));
           setHasNext(next);
           setNextCursor(cursor);
         }
@@ -87,7 +98,7 @@ const MyPage = () => {
         if (!cancelled) setLoading(false);
       });
     return () => { cancelled = true; };
-  }, []);
+  }, [isLoggedIn, displayUser.nickname]);
 
   const openPostMenu = (e, postId) => {
     e.stopPropagation();
@@ -217,7 +228,7 @@ const MyPage = () => {
           {
             id: nextId,
             type: 'POST',
-            author: user.nickname,
+            author: displayUser.nickname,
             date: dateStr,
             content: draftContent,
             image,
@@ -255,22 +266,22 @@ const MyPage = () => {
         <section className="profile-section">
           <div className="profile-main">
             <div className="profile-avatar">
-              <img src={profileImg} alt="프로필" className="profile-avatar-image" />
+              <img src={displayUser.profileImage || profileImg} alt="프로필" className="profile-avatar-image" />
             </div>
             <div className="profile-info-line">
               <div>
-                <span className="profile-nickname">{user.nickname}&nbsp;&nbsp;</span>
-                <span className="profile-id">{user.id}</span>
+                <span className="profile-nickname">{displayUser.nickname}&nbsp;&nbsp;</span>
+                <span className="profile-id">{displayUser.id ? `@${displayUser.id}` : ''}</span>
               </div>
               <div className="profile-count-div">
                 <span className="profile-count">
-                  🍽 도전한 음식 수 : <span className="highlight">{user.triedCount}</span>
+                  🍽 도전한 음식 수 : <span className="highlight">{displayUser.triedCount}</span>
                 </span>
               </div>
             </div>
           </div>
           <div className="profile-bio-div">
-            <p className="profile-bio">{user.bio}</p>
+            <p className="profile-bio">{displayUser.bio}</p>
           </div>
           <button type="button" className="profile-edit-button">
             프로필 편집
@@ -310,7 +321,7 @@ const MyPage = () => {
                 <FeedCard
                   post={post}
                   isMine
-                  avatarUrl={profileImg}
+                  avatarUrl={displayUser.profileImage || profileImg}
                   onToggleLike={handleToggleLike}
                   onOpenMenu={openPostMenu}
                 />
@@ -385,9 +396,9 @@ const MyPage = () => {
               </h2>
             </header>
             <div className="write-modal-user">
-              <img src={profileImg} alt="" className="write-modal-avatar" />
+              <img src={displayUser.profileImage || profileImg} alt="" className="write-modal-avatar" />
               <div>
-                <p className="write-modal-nickname">{user.nickname}</p>
+                <p className="write-modal-nickname">{displayUser.nickname}</p>
                 <p className="write-modal-prompt">
                   {editingPostId ? '수정할 내용을 입력해주세요' : '새로운 글을 작성해주세요'}
                 </p>
