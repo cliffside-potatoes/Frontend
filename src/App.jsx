@@ -1,6 +1,7 @@
 import React, { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { MyPostsProvider } from './context/MyPostsContext';
+import { UserProvider } from './context/UserContext';
 import MainPage from './pages/Main/MainPage';
 import MyPage from './pages/Profile/MyPage';
 import SettingsPage from './pages/Profile/SettingsPage';
@@ -32,7 +33,8 @@ function App() {
   return (
     <MyPostsProvider>
       <Router>
-        <ErrorBoundary>
+        <UserProvider>
+          <ErrorBoundary>
           <Suspense fallback={<div style={{ padding: 24, textAlign: 'center' }}>검색 페이지 로딩 중...</div>}>
             <Routes>
               <Route path="/" element={<Navigate to="/main" replace />} />
@@ -57,7 +59,8 @@ function App() {
 
             </Routes>
           </Suspense>
-        </ErrorBoundary>
+          </ErrorBoundary>
+        </UserProvider>
       </Router>
     </MyPostsProvider>
   );
