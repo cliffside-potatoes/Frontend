@@ -35,7 +35,7 @@ export function UserProvider({ children }) {
     localStorage.removeItem('token');
     localStorage.removeItem(STORAGE_KEY);
     setUserState(null);
-    navigate('/signin', { replace: true });
+    navigate('/main', { replace: true });
   };
 
   const value = {
