@@ -1,13 +1,25 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../../components/common/BottomNav';
 import RecipeCard from '../../components/card/RecipeCard';
+import Modal from '../../components/ui/Modal';
+import { useUser } from '../../context/UserContext';
 import { RECIPE_CATEGORIES } from '../../constants/categories';
 import naengGuIcon from '../../assets/image/naeng-gu.png';
 import './MainPage.css';
 
 const MainPage = () => {
   const navigate = useNavigate();
+  const { isLoggedIn } = useUser();
+  const [showLoginModal, setShowLoginModal] = useState(false);
+
+  const handleFillRefrigeratorClick = () => {
+    if (isLoggedIn) {
+      navigate('/refrigerator');
+    } else {
+      setShowLoginModal(true);
+    }
+  };
 
   const recipes = [
     {
@@ -97,7 +109,7 @@ const MainPage = () => {
         <p className="header-description">
           재료를 이용해서 만들 수 있는 레시피들을 추천해 줍니다
         </p>
-        <button type="button" className="fill-refrigerator-btn" onClick={() => navigate('/refrigerator')}>
+        <button type="button" className="fill-refrigerator-btn" onClick={handleFillRefrigeratorClick}>
           <span>🍲</span>
           냉장고 채우러 가기
           <span>&gt;</span>
@@ -132,6 +144,21 @@ const MainPage = () => {
 
       {/* 하단 네비게이션 바 */}
       <BottomNav />
+
+      <Modal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        title="로그인 이후 이용해주세요"
+        description="더 많은 기능을 이용할 수 있어요!"
+        cancelLabel="취소"
+        confirmLabel="로그인"
+        onCancel={() => setShowLoginModal(false)}
+        onConfirm={() => {
+          setShowLoginModal(false);
+          navigate('/signin');
+        }}
+        variant="login"
+      />
     </div>
   );
 };

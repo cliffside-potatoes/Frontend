@@ -73,3 +73,55 @@
 .modal__btn--primary {
   background-color: #e53935;
 }
+.modal.modal--login{
+  margin: 20px;
+padding: 20px;
+border-radius: 10px;
+}
+/* Login variant */
+.modal--login .modal__title {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.modal--login .modal__description {
+  font-size: 12px;
+  font-weight: 400;
+  margin-bottom: 0;
+  padding-bottom: 12px;
+  border: none;
+}
+
+.modal--login .modal__actions {
+  gap: 0;
+  align-items: stretch;
+  margin-top: 0;
+  border-top: 1px solid #D8D8D8;
+}
+
+.modal--login .modal__actions .modal__btn {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+}
+
+.modal--login .modal__actions .modal__btn--cancel {
+  color: #333;
+}
+
+.modal--login .modal__actions .modal__btn--confirm {
+  color: #1a73e8;
+
+}
+
+.modal--login .modal__actions .modal__btn:hover {
+  background-color: #f0f0f0;
+}
+
+.modal--login .modal__divider {
+  width: 1px;
+  background-color: #D8D8D8;
+  flex-shrink: 0;
+  align-self: stretch;
+}
