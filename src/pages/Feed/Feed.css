@@ -110,6 +110,8 @@
 
 .write-modal-backdrop {
   z-index: 200;
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
 .post-menu-modal {
@@ -217,15 +219,16 @@
 
 .write-modal {
   position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  left: 50%;
+  bottom: 0; 
   z-index: 201;
-  max-height: 90vh;
+  width: 100%;
+  max-width: var(--app-max-width); /* 앱 최대 너비에 맞춤 */
+  height: 92vh;
   background: #fff;
-  border-radius: 20px 20px 0 0;
-  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
-  transform: translateY(100%);
+  border-radius: 20px 20px 0 0; /* 위쪽만 둥글게 */
+  box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.15);
+  transform: translate(-50%, 100%); /* 처음엔 아래에 숨어있음 */
   transition: transform 0.3s ease-out;
   overflow: hidden;
   display: flex;
@@ -233,29 +236,50 @@
 }
 
 .write-modal-open {
-  transform: translateY(0);
+  transform: translate(-50%, 0);
 }
 
 .write-modal-header {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 12px;
   padding: 14px 16px;
-  border-bottom: 1px solid #f0f0f0;
+  min-height: 56px; 
 }
 
 .write-modal-title {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
   margin: 0;
   font-size: 18px;
   font-weight: 600;
   color: #1a1a1a;
+  white-space: nowrap;
+  pointer-events: none; /* 글자가 버튼 클릭을 방해하지 않도록 */
 }
 
-.write-modal-user {
+.write-modal-header .icon-button {
+  position: relative;
+  z-index: 1;
+}
+
+.write-modal-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 16px 20px 20px;
+  overflow-y: auto;
+}
+
+/* 유저 정보 행: 아래 간격을 조금 줄여서 텍스트와 붙게 만듦 */
+.write-modal-user-row {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 16px;
+  margin-bottom: 4px; /* 기존 12px에서 줄임 */
 }
 
 .write-modal-avatar {
@@ -263,24 +287,29 @@
   height: 44px;
   border-radius: 50%;
   object-fit: cover;
+  flex-shrink: 0;
 }
 
 .write-modal-nickname {
-  margin: 0 0 2px;
   font-size: 15px;
   font-weight: 600;
   color: #1a1a1a;
+
 }
 
-.write-modal-prompt {
-  margin: 0;
-  font-size: 13px;
-  color: #888;
+.write-modal-spacer {
+  flex: 1;
+  min-width: 0;
 }
 
-.write-modal-body {
-  padding: 0 16px 24px;
-  overflow-y: auto;
+.write-modal-content-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  margin-left: 56px; 
+  margin-top: 0;     
+  margin-right: 10px;
 }
 
 .write-modal-file-input {
@@ -295,9 +324,18 @@
 .write-modal-image-row {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: 10px;
   margin-bottom: 12px;
   flex-wrap: wrap;
+}
+
+.write-modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  flex-shrink: 0;
 }
 
 .write-modal-image-placeholder {
@@ -362,31 +400,37 @@
 }
 
 .write-modal-save-btn {
-  padding: 10px 20px;
+  padding: 10px 24px;
   border: none;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
   color: #fff;
-  background: #ff4b4b;
+  background: #ff6b6b;
   cursor: pointer;
 }
 
+/* 텍스트 영역 내부 패딩 제거로 정렬 극대화 */
 .write-modal-textarea {
-  width: 100%;
+  margin-bottom: 20px;
+  padding: 0;        /* 왼쪽 패딩을 없애야 닉네임과 수직이 맞음 */
   min-height: 120px;
-  padding: 12px;
-  border: 1px solid #e5e5e5;
-  border-radius: 8px;
-  font-size: 14px;
-  line-height: 1.5;
-  resize: vertical;
+  width: 100%;
+  border: none;
+  border-radius: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  resize: none;
   box-sizing: border-box;
+  background: transparent;
 }
 
 .write-modal-textarea:focus {
   outline: none;
-  border-color: #ff4b4b;
+}
+
+.write-modal-textarea::placeholder {
+  color: #999;
 }
 
 .floating-write-button {

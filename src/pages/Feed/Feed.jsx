@@ -1,13 +1,24 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMyPosts } from '../../context/MyPostsContext';
+import { useUser } from '../../context/UserContext';
 import BottomNav from '../../components/common/BottomNav';
 import FeedCard from '../../components/card/FeedCard';
 import profileImg from '../../assets/image/profile.png';
 import './Feed.css';
 
-const CURRENT_USER_NICKNAME = '사용자 닉네임';
 const MAX_POST_IMAGES = 5;
+
+// ✅ createdAt이 number든 ISO string이든 안전하게 timestamp로 바꿔서 정렬용으로 사용
+const toTime = (value) => {
+  if (value == null) return 0;
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') {
+    const t = new Date(value).getTime();
+    return Number.isFinite(t) ? t : 0;
+  }
+  return 0;
+};
 
 const otherUsersPosts = [
   {
@@ -38,8 +49,13 @@ const otherUsersPosts = [
 
 const Feed = () => {
   const navigate = useNavigate();
+  const { user } = useUser();
   const { posts: myPosts, setPosts } = useMyPosts();
-  const myPostIds = useMemo(() => new Set(myPosts.map((p) => p.id)), [myPosts]);
+
+  const currentNickname = user?.nickname ?? '사용자 닉네임';
+  const currentProfileImg = user?.profileImage || profileImg;
+
+  const myPostIds = useMemo(() => new Set((myPosts || []).map((p) => p.id)), [myPosts]);
 
   const [postMenuPostId, setPostMenuPostId] = useState(null);
   const [deleteConfirmPostId, setDeleteConfirmPostId] = useState(null);
@@ -49,10 +65,16 @@ const Feed = () => {
   const [draftImages, setDraftImages] = useState([]);
   const [otherPostsLike, setOtherPostsLike] = useState({});
   const fileInputRef = useRef(null);
+  const textareaRef = useRef(null);
 
+  // ✅ 새 글이 항상 위로 오도록 정렬을 timestamp 기준으로 안전하게
   const feedList = useMemo(() => {
-    const combined = [...otherUsersPosts.map((p) => ({ ...p, isOther: true })), ...myPosts.map((p) => ({ ...p, isOther: false }))];
-    return combined.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    const combined = [
+      ...otherUsersPosts.map((p) => ({ ...p, isOther: true })),
+      ...(myPosts || []).map((p) => ({ ...p, isOther: false })),
+    ];
+
+    return combined.sort((a, b) => toTime(b.createdAt) - toTime(a.createdAt));
   }, [myPosts]);
 
   const openPostMenu = (e, postId) => {
@@ -72,6 +94,16 @@ const Feed = () => {
     }
   }, [postMenuPostId]);
 
+  useEffect(() => {
+    if (writeModalOpen) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = prev;
+      };
+    }
+  }, [writeModalOpen]);
+
   const openDeleteConfirm = (postId) => {
     setPostMenuPostId(null);
     setDeleteConfirmPostId(postId);
@@ -81,21 +113,21 @@ const Feed = () => {
 
   const handleDeletePost = () => {
     if (deleteConfirmPostId) {
-      setPosts((prev) => prev.filter((p) => p.id !== deleteConfirmPostId));
+      setPosts((prev) => (prev || []).filter((p) => p.id !== deleteConfirmPostId));
       setDeleteConfirmPostId(null);
     }
   };
 
   const handleToggleHideLikeCount = (postId) => {
     setPosts((prev) =>
-      prev.map((p) => (p.id === postId ? { ...p, hideLikeCount: !p.hideLikeCount } : p))
+      (prev || []).map((p) => (p.id === postId ? { ...p, hideLikeCount: !p.hideLikeCount } : p))
     );
     setPostMenuPostId(null);
   };
 
   const handleTogglePin = (postId) => {
     setPosts((prev) =>
-      prev.map((p) => (p.id === postId ? { ...p, pinned: !p.pinned } : p))
+      (prev || []).map((p) => (p.id === postId ? { ...p, pinned: !p.pinned } : p))
     );
     setPostMenuPostId(null);
   };
@@ -103,13 +135,13 @@ const Feed = () => {
   const handleToggleLike = (postId) => {
     if (myPostIds.has(postId)) {
       setPosts((prev) =>
-        prev.map((p) => {
+        (prev || []).map((p) => {
           if (p.id !== postId) return p;
           const nextLiked = !p.liked;
           return {
             ...p,
             liked: nextLiked,
-            likeCount: Math.max(0, p.likeCount + (nextLiked ? 1 : -1)),
+            likeCount: Math.max(0, (p.likeCount ?? 0) + (nextLiked ? 1 : -1)),
           };
         })
       );
@@ -173,41 +205,64 @@ const Feed = () => {
   };
 
   const handleSavePost = () => {
-    const images = draftImages.length > 0 ? draftImages : [];
+    const trimmed = draftContent.trim();
+    if (trimmed.length < 1) return;
+    if (trimmed.length > 500) return;
+
+    const images = draftImages.length > 0 ? draftImages.slice(0, MAX_POST_IMAGES) : [];
     const image = images[0] || '';
+
+    // ✅ createdAt/updatedAt을 ISO 문자열로 통일 (MyPage와 동일)
+    const nowIso = new Date().toISOString();
+    const dateStr = new Date().toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+
     if (editingPostId) {
       setPosts((prev) =>
-        prev.map((p) =>
+        (prev || []).map((p) =>
           p.id === editingPostId
-            ? { ...p, content: draftContent, image, images: images }
+            ? { ...p, content: trimmed, image, images, updatedAt: nowIso }
             : p
         )
       );
     } else {
-      setPosts((prev) => [
-        ...prev,
-        {
-          id: Math.max(0, ...prev.map((p) => p.id)) + 1,
-          author: CURRENT_USER_NICKNAME,
-          date: new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' }),
-          createdAt: Date.now(),
-          content: draftContent,
-          image,
-          images,
-          likeCount: 0,
-          liked: false,
-          hideLikeCount: false,
-          pinned: false,
-        },
-      ]);
+      setPosts((prev) => {
+        const safePrev = prev || [];
+        const nextId =
+          Math.max(0, ...safePrev.map((p) => (typeof p.id === 'number' ? p.id : 0))) + 1;
+
+        // ✅ 새 글이 위로: 배열 앞에 추가 + createdAt은 nowIso
+        return [
+          {
+            id: nextId,
+            type: 'POST',
+            author: currentNickname,
+            date: dateStr,
+            createdAt: nowIso,
+            updatedAt: nowIso,
+            content: trimmed,
+            image,
+            images,
+            likeCount: 0,
+            liked: false,
+            hideLikeCount: false,
+            pinned: false,
+          },
+          ...safePrev,
+        ];
+      });
     }
+
     closeWriteModal();
   };
 
   const getPostForCard = (item) => {
     if (item.isOther) {
       const liked = otherPostsLike[item.id] ?? item.liked;
-      const likeCount = item.likeCount + (liked ? 1 : 0) - (item.liked ? 1 : 0);
+      const likeCount = (item.likeCount ?? 0) + (liked ? 1 : 0) - (item.liked ? 1 : 0);
       return { ...item, liked, likeCount: Math.max(0, likeCount) };
     }
     return item;
@@ -253,16 +308,17 @@ const Feed = () => {
                       <button type="button" className="post-menu-item" onClick={() => openWriteModal(post)}>
                         게시글 수정
                       </button>
-                      <hr className="post-menu-item-hr"/>
+                      <hr className="post-menu-item-hr" />
 
                       <button type="button" className="post-menu-item" onClick={() => handleTogglePin(post.id)}>
                         {post.pinned ? '프로필 고정 해제' : '프로필에 고정'}
                       </button>
-                      <hr className="post-menu-item-hr"/>
+                      <hr className="post-menu-item-hr" />
+
                       <button type="button" className="post-menu-item" onClick={() => handleToggleHideLikeCount(post.id)}>
                         {post.hideLikeCount ? '좋아요 수 보이기' : '좋아요 수 숨기기'}
-                      </button>                                          <hr className="post-menu-item-hr"/>
-
+                      </button>
+                      <hr className="post-menu-item-hr" />
 
                       <button
                         type="button"
@@ -319,15 +375,6 @@ const Feed = () => {
                 {editingPostId ? '게시글 수정' : '새로운 게시글'}
               </h2>
             </header>
-            <div className="write-modal-user">
-              <img src={profileImg} alt="" className="write-modal-avatar" />
-              <div>
-                <p className="write-modal-nickname">{CURRENT_USER_NICKNAME}</p>
-                <p className="write-modal-prompt">
-                  {editingPostId ? '수정할 내용을 입력해주세요' : '새로운 글을 작성해주세요'}
-                </p>
-              </div>
-            </div>
             <div className="write-modal-body">
               <input
                 ref={fileInputRef}
@@ -338,38 +385,49 @@ const Feed = () => {
                 aria-hidden="true"
                 onChange={handleImageSelect}
               />
-              <div className="write-modal-image-row">
-                {draftImages.map((src, i) => (
-                  <div key={i} className="write-modal-image-placeholder">
-                    <img src={src} alt="" className="write-modal-preview" />
-                    <button type="button" className="write-modal-image-remove" onClick={() => removeDraftImage(i)} aria-label="사진 제거">
-                      <span className="material-symbols-outlined">close</span>
-                    </button>
+              <div className="write-modal-user-row">
+                <img src={currentProfileImg} alt="" className="write-modal-avatar" />
+                <span className="write-modal-nickname">{currentNickname}</span>
+                <span className="write-modal-spacer" />
+              </div>
+              <div className="write-modal-content-area">
+                <textarea
+                  ref={textareaRef}
+                  className="write-modal-textarea"
+                  placeholder={editingPostId ? '수정할 내용을 입력해주세요' : '새로운 글을 작성해주세요'}
+                  value={draftContent}
+                  onChange={(e) => setDraftContent(e.target.value)}
+                  maxLength={500}
+                  rows={5}
+                />
+                {draftImages.length > 0 && (
+                  <div className="write-modal-image-row">
+                    {draftImages.map((src, i) => (
+                      <div key={i} className="write-modal-image-placeholder">
+                        <img src={src} alt="" className="write-modal-preview" />
+                        <button type="button" className="write-modal-image-remove" onClick={() => removeDraftImage(i)} aria-label="사진 제거">
+                          <span className="material-symbols-outlined">close</span>
+                        </button>
+                      </div>
+                    ))}
                   </div>
-                ))}
-                {draftImages.length < MAX_POST_IMAGES && (
+                )}
+                <div className="write-modal-actions">
                   <button type="button" className="write-modal-add-image-btn" onClick={() => fileInputRef.current?.click()}>
                     <span className="material-symbols-outlined">add_photo_alternate</span>
-                    사진 추가 ({draftImages.length}/{MAX_POST_IMAGES})
+                    {draftImages.length > 0 && `(${draftImages.length}/${MAX_POST_IMAGES})`}
                   </button>
-                )}
-                <button type="button" className="write-modal-save-btn" onClick={handleSavePost}>
-                  저장
-                </button>
+                  <button type="button" className="write-modal-save-btn" onClick={handleSavePost}>
+                    저장
+                  </button>
+                </div>
               </div>
-              <textarea
-                className="write-modal-textarea"
-                placeholder="내용을 입력하세요..."
-                value={draftContent}
-                onChange={(e) => setDraftContent(e.target.value)}
-                rows={5}
-              />
             </div>
           </div>
         </>
       )}
 
-      <BottomNav />
+      {!writeModalOpen && <BottomNav />}
     </div>
   );
 };

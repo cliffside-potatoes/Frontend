@@ -4,6 +4,7 @@ import BottomNav from '../../components/common/BottomNav';
 import FeedCard from '../../components/card/FeedCard';
 import { getMyFeed } from '../../api/meFeedApi';
 import { useUser } from '../../context/UserContext';
+import { useMyPosts } from '../../context/MyPostsContext';
 import profileImg from '../../assets/image/profile.png';
 import './MyPage.css';
 
@@ -44,9 +45,21 @@ const mapFeedItemToPost = (item, authorName) => {
   };
 };
 
+const mergePostsByIdPreferLocal = (localPosts, serverPosts) => {
+  // ✅ localPosts를 우선으로 유지하면서, 서버에만 있는 글은 추가
+  // (추후 백엔드 연동 시에도 로컬에서 만든 글/수정한 글을 덮어버리지 않도록)
+  const map = new Map();
+  (serverPosts || []).forEach((p) => map.set(p.id, p));
+  (localPosts || []).forEach((p) => map.set(p.id, { ...(map.get(p.id) || {}), ...p }));
+  return Array.from(map.values());
+};
+
 const MyPage = () => {
   const navigate = useNavigate();
   const { user, isLoggedIn } = useUser();
+
+  // ✅ MyPage도 Feed와 동일한 게시글 원본 상태를 사용
+  const { posts: myPosts, setPosts } = useMyPosts();
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -62,12 +75,13 @@ const MyPage = () => {
     profileImage: '',
   };
 
-  const [postItems, setPostItems] = useState([]);
+  // --- 아래 상태들은 기존 코드 유지 (추후 무한스크롤/백엔드 연결 대비) ---
   const [hasNext, setHasNext] = useState(false);
   const [nextCursor, setNextCursor] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [feedError, setFeedError] = useState(null);
+  const loadMoreRef = useRef(null);
 
   const [postMenuPostId, setPostMenuPostId] = useState(null);
   const [deleteConfirmPostId, setDeleteConfirmPostId] = useState(null);
@@ -76,20 +90,26 @@ const MyPage = () => {
   const [draftContent, setDraftContent] = useState('');
   const [draftImages, setDraftImages] = useState([]);
   const fileInputRef = useRef(null);
-  const loadMoreRef = useRef(null);
 
+  // ✅ 서버(또는 목데이터)에서 내 피드(POST만) 초기 로딩 → Context에 합치기
   useEffect(() => {
     if (!isLoggedIn) return;
+
     let cancelled = false;
     setLoading(true);
     setFeedError(null);
+
     getMyFeed({ type: 'POST', size: FEED_PAGE_SIZE, sort: 'LATEST' })
       .then(({ items, hasNext: next, nextCursor: cursor }) => {
-        if (!cancelled) {
-          setPostItems(items.map((item) => mapFeedItemToPost(item, displayUser.nickname)));
-          setHasNext(next);
-          setNextCursor(cursor);
-        }
+        if (cancelled) return;
+
+        const serverPosts = (items || []).map((item) => mapFeedItemToPost(item, displayUser.nickname));
+
+        // ✅ 이미 로컬에 작성/수정한 글이 있어도 덮어쓰지 않고 합치기
+        setPosts((prev) => mergePostsByIdPreferLocal(prev, serverPosts));
+
+        setHasNext(Boolean(next));
+        setNextCursor(cursor ?? null);
       })
       .catch(() => {
         if (!cancelled) setFeedError('게시글을 불러올 수 없습니다.');
@@ -97,8 +117,11 @@ const MyPage = () => {
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
-    return () => { cancelled = true; };
-  }, [isLoggedIn, displayUser.nickname]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoggedIn, displayUser.nickname, setPosts]);
 
   const openPostMenu = (e, postId) => {
     e.stopPropagation();
@@ -116,40 +139,44 @@ const MyPage = () => {
 
   const handleDeletePost = () => {
     if (deleteConfirmPostId) {
-      setPostItems((prev) => prev.filter((p) => p.id !== deleteConfirmPostId));
+      // ✅ Context에서 삭제 → Feed에도 반영됨
+      setPosts((prev) => prev.filter((p) => p.id !== deleteConfirmPostId));
       setDeleteConfirmPostId(null);
     }
   };
 
   const handleToggleHideLikeCount = (postId) => {
-    setPostItems((prev) =>
+    // ✅ Context에서 토글 → Feed에도 반영됨
+    setPosts((prev) =>
       prev.map((p) => (p.id === postId ? { ...p, hideLikeCount: !p.hideLikeCount } : p))
     );
     setPostMenuPostId(null);
   };
 
   const handleTogglePin = (postId) => {
-    setPostItems((prev) =>
+    // ✅ Context에서 토글 → Feed에도 반영됨
+    setPosts((prev) =>
       prev.map((p) => (p.id === postId ? { ...p, pinned: !p.pinned } : p))
     );
     setPostMenuPostId(null);
   };
 
   const handleToggleLike = (postId) => {
-    setPostItems((prev) =>
+    // ✅ Context에서 토글 → Feed에도 반영됨
+    setPosts((prev) =>
       prev.map((p) => {
         if (p.id !== postId) return p;
         const nextLiked = !p.liked;
         return {
           ...p,
           liked: nextLiked,
-          likeCount: Math.max(0, p.likeCount + (nextLiked ? 1 : -1)),
+          likeCount: Math.max(0, (p.likeCount ?? 0) + (nextLiked ? 1 : -1)),
         };
       })
     );
   };
 
-  const sortedPosts = [...postItems].sort((a, b) => {
+  const sortedPosts = [...(myPosts || [])].sort((a, b) => {
     if (a.pinned && !b.pinned) return -1;
     if (!a.pinned && b.pinned) return 1;
     const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
@@ -213,8 +240,10 @@ const MyPage = () => {
     const image = images[0] || '';
     const nowIso = new Date().toISOString();
     const dateStr = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+
     if (editingPostId) {
-      setPostItems((prev) =>
+      // ✅ Context에서 수정 → Feed에도 반영됨
+      setPosts((prev) =>
         prev.map((p) =>
           p.id === editingPostId
             ? { ...p, content: draftContent, image, images, updatedAt: nowIso }
@@ -222,8 +251,9 @@ const MyPage = () => {
         )
       );
     } else {
-      setPostItems((prev) => {
-        const nextId = Math.max(0, ...prev.map((p) => p.id)) + 1;
+      // ✅ Context에서 생성 → Feed에도 반영됨 + localStorage에 남음
+      setPosts((prev) => {
+        const nextId = Math.max(0, ...(prev || []).map((p) => (typeof p.id === 'number' ? p.id : 0))) + 1;
         return [
           {
             id: nextId,
@@ -241,14 +271,15 @@ const MyPage = () => {
             updatedAt: nowIso,
             cookCount: 0,
           },
-          ...prev,
+          ...(prev || []),
         ];
       });
     }
+
     closeWriteModal();
   };
 
-  const editingPost = editingPostId ? postItems.find((p) => p.id === editingPostId) : null;
+  const editingPost = editingPostId ? (myPosts || []).find((p) => p.id === editingPostId) : null;
 
   return (
     <div className="mypage">
@@ -316,6 +347,7 @@ const MyPage = () => {
             {feedError && sortedPosts.length === 0 && (
               <p className="mypage-posts-error">{feedError}</p>
             )}
+
             {sortedPosts.map((post) => (
               <div key={post.id} className="mypage-post-item">
                 <FeedCard
@@ -325,6 +357,7 @@ const MyPage = () => {
                   onToggleLike={handleToggleLike}
                   onOpenMenu={openPostMenu}
                 />
+
                 {postMenuPostId === post.id && (
                   <>
                     <div className="modal-backdrop" onClick={closePostMenu} aria-hidden="true" />
@@ -395,51 +428,58 @@ const MyPage = () => {
                 {editingPostId ? '게시글 수정' : '새로운 게시글'}
               </h2>
             </header>
-            <div className="write-modal-user">
-              <img src={displayUser.profileImage || profileImg} alt="" className="write-modal-avatar" />
-              <div>
-                <p className="write-modal-nickname">{displayUser.nickname}</p>
-                <p className="write-modal-prompt">
-                  {editingPostId ? '수정할 내용을 입력해주세요' : '새로운 글을 작성해주세요'}
-                </p>
-              </div>
-            </div>
+
             <div className="write-modal-body">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                multiple
-                className="write-modal-file-input"
-                aria-hidden="true"
-                onChange={handleImageSelect}
-              />
-              <div className="write-modal-image-row">
-                {draftImages.map((src, i) => (
-                  <div key={i} className="write-modal-image-placeholder">
-                    <img src={src} alt="" className="write-modal-preview" />
-                    <button type="button" className="write-modal-image-remove" onClick={() => removeDraftImage(i)} aria-label="사진 제거">
-                      <span className="material-symbols-outlined">close</span>
-                    </button>
+              {/* 유저 정보 행 */}
+              <div className="write-modal-user-row">
+                <img src={displayUser.profileImage || profileImg} alt="" className="write-modal-avatar" />
+                <span className="write-modal-nickname">{displayUser.nickname}</span>
+              </div>
+
+              {/* 본문 및 액션 영역 */}
+              <div className="write-modal-content-area">
+                <textarea
+                  className="write-modal-textarea"
+                  placeholder={editingPostId ? '수정할 내용을 입력해주세요' : '새로운 글을 작성해주세요'}
+                  value={draftContent}
+                  onChange={(e) => setDraftContent(e.target.value)}
+                  rows={5}
+                />
+
+                {/* 이미지 미리보기 */}
+                {draftImages.length > 0 && (
+                  <div className="write-modal-image-row">
+                    {draftImages.map((src, i) => (
+                      <div key={i} className="write-modal-image-placeholder">
+                        <img src={src} alt="" className="write-modal-preview" />
+                        <button type="button" className="write-modal-image-remove" onClick={() => removeDraftImage(i)} aria-label="사진 제거">
+                          <span className="material-symbols-outlined">close</span>
+                        </button>
+                      </div>
+                    ))}
                   </div>
-                ))}
-                {draftImages.length < MAX_POST_IMAGES && (
+                )}
+
+                {/* 하단 액션 버튼들 */}
+                <div className="write-modal-actions">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="write-modal-file-input"
+                    style={{ display: 'none' }}
+                    onChange={handleImageSelect}
+                  />
                   <button type="button" className="write-modal-add-image-btn" onClick={() => fileInputRef.current?.click()}>
                     <span className="material-symbols-outlined">add_photo_alternate</span>
-                    사진 추가 ({draftImages.length}/{MAX_POST_IMAGES})
+                    {draftImages.length > 0 && `(${draftImages.length}/${MAX_POST_IMAGES})`}
                   </button>
-                )}
-                <button type="button" className="write-modal-save-btn" onClick={handleSavePost}>
-                  저장
-                </button>
+                  <button type="button" className="write-modal-save-btn" onClick={handleSavePost}>
+                    저장
+                  </button>
+                </div>
               </div>
-              <textarea
-                className="write-modal-textarea"
-                placeholder="내용을 입력하세요..."
-                value={draftContent}
-                onChange={(e) => setDraftContent(e.target.value)}
-                rows={5}
-              />
             </div>
           </div>
         </>
