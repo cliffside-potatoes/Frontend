@@ -1,18 +1,28 @@
-/* src/App.css */
-
-/* iPhone 14 기준 폭(390px) + Safe Area 대응 */
 :root {
-  --app-max-width: 390px;
+  --app-max-width: 430px;
+
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-right: env(safe-area-inset-right, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left: env(safe-area-inset-left, 0px);
 
-  /* 프로젝트에서 이미 쓰는 값과 맞추기 */
   --bottom-nav-base-height: 60px;
 }
 
-/* 전역 리셋: 기본 margin/padding 때문에 치우쳐 보이는 현상 방지 */
+/* ✅ Tablet 기준 (iPad 세로/가로 대부분 커버) */
+@media (min-width: 431px) and (max-width: 1024px) {
+  :root {
+    --app-max-width: 768px;
+  }
+}
+
+/* ✅ Desktop 기준 */
+@media (min-width: 1025px) {
+  :root {
+    --app-max-width: 980px;
+  }
+}
+
 *,
 *::before,
 *::after {
@@ -26,7 +36,7 @@ body {
   margin: 0;
   padding: 0;
 
-  /* 가로 overflow로 인한 “살짝 오른쪽으로 밀림” 방지 */
+  /* ✅ 가로 스크롤로 인한 “살짝 밀림” 방지 */
   overflow-x: hidden;
 
   -webkit-overflow-scrolling: touch;
@@ -36,30 +46,26 @@ body {
   background: #ffffff;
 }
 
-/* ✅ 앱 전체를 정확히 가운데 고정 + 모바일 폭 기준 */
+/* ✅ 앱 전체 shell: 가운데 정렬 + 최대 폭 */
 #root {
   width: 100%;
   min-height: 100vh;
-
-  /* 가운데 정렬 */
   margin: 0 auto;
-
-  /* iPhone 14 기준 폭 고정 */
   max-width: var(--app-max-width);
 
-  /* Safe Area 좌우(노치/라운드)로 가려짐 방지 */
+  /* ✅ iOS safe-area 좌우 반영 (가려짐 방지) */
   padding-left: var(--safe-left);
   padding-right: var(--safe-right);
 
   /* 기존 Vite 기본값 제거 */
-  padding: 0;
+  padding-top: 0;
+  padding-bottom: 0;
   text-align: initial;
 
   position: relative;
   overflow-x: hidden;
 }
 
-/* 미디어 요소가 컨테이너 밖으로 튀어나가서 가로 스크롤 생기는 것 방지 */
 img,
 video,
 canvas,
@@ -69,7 +75,6 @@ svg {
   display: block;
 }
 
-/* 버튼/링크 기본 스타일 안정화 */
 button {
   font: inherit;
 }
