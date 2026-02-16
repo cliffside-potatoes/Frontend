@@ -75,3 +75,4 @@ $RECYCLE.BIN/
 
 # Cursor
 .cursor/
+node_modules/
