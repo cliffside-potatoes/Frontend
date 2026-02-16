@@ -1,19 +1,29 @@
-/* 하단 네비게이션 바 */
 .bottom-navigation {
   position: fixed;
   bottom: 0;
   left: 50%;
   transform: translateX(-50%);
+
   width: 100%;
   max-width: var(--app-max-width);
+
+  /* iOS safe-area 좌우 반영 */
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
+
   background-color: #ffffff;
   display: flex;
   justify-content: space-around;
   align-items: center;
-  padding: 10px 0 calc(12px + var(--safe-bottom)) 0;
+
+  padding-top: 10px;
+  padding-bottom: calc(12px + var(--safe-bottom));
+
   z-index: 1000;
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
   border-top: 1px solid rgba(255, 255, 255, 0.1);
+
+  overflow-x: hidden;
 }
 
 .nav-item {
@@ -26,7 +36,7 @@
   transition: opacity 0.2s;
   -webkit-tap-highlight-color: transparent;
   flex: 1;
-  max-width: 80px;
+  max-width: 100px;
   border: none;
   background: none;
   outline: none;
@@ -51,10 +61,6 @@
   transition: transform 0.2s;
 }
 
-/* .nav-item.active .nav-icon {
-  font-size: 24px;
-} */
-
 .nav-label {
   font-size: 11px;
   color: #000000;
@@ -63,21 +69,20 @@
   word-break: keep-all;
   font-weight: 500;
   margin-top: 2px;
-  font-weight: 500;
-  margin-top: 2px;
   display: flex;
 }
 
-/* iPhone 14 기준 반응형 (390px) */
-@media screen and (max-width: 428px) {
+/* Mobile (iPhone 14 기준 포함) */
+@media screen and (max-width: 430px) {
   .bottom-navigation {
-    padding: 9px 0 calc(11px + var(--safe-bottom)) 0;
+    padding-top: 9px;
+    padding-bottom: calc(11px + var(--safe-bottom));
   }
 
   .nav-item {
     padding: 3px 6px;
     gap: 2px;
-    max-width: 70px;
+    max-width: 80px;
   }
 
   .nav-icon {
@@ -90,6 +95,49 @@
 
   .nav-label {
     font-size: 9px;
-    display: flex;
+  }
+}
+
+/*  Tablet (iPad) */
+@media screen and (min-width: 431px) and (max-width: 1024px) {
+  .bottom-navigation {
+    padding-top: 12px;
+    padding-bottom: calc(14px + var(--safe-bottom));
+  }
+
+  .nav-item {
+    max-width: 120px;
+    padding: 6px 10px;
+    gap: 4px;
+  }
+
+  .nav-icon {
+    font-size: 24px;
+  }
+
+  .nav-label {
+    font-size: 12px;
+  }
+}
+
+/* Desktop */
+@media screen and (min-width: 1025px) {
+  .bottom-navigation {
+    padding-top: 12px;
+    padding-bottom: calc(14px + var(--safe-bottom));
+  }
+
+  .nav-item {
+    max-width: 130px;
+    padding: 6px 12px;
+    gap: 4px;
+  }
+
+  .nav-icon {
+    font-size: 24px;
+  }
+
+  .nav-label {
+    font-size: 12px;
   }
 }
