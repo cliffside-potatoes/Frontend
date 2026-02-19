@@ -7,6 +7,34 @@
   /* 배경을 흰색으로 변경 */
 }
 
+.search-page-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 15px;
+  background-color: #fff;
+  flex-shrink: 0;
+}
+
+.search-back-button {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 4px 8px;
+  color: #333;
+  flex-shrink: 0;
+}
+
+.search-back-button:hover {
+  color: #666;
+}
+
+.search-bar-wrapper {
+  flex: 1;
+  min-width: 0;
+}
+
 .search-content {
   flex-grow: 1;
   padding: 15px;

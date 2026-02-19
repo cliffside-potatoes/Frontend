@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import SearchBar from '../../components/Search/SearchBar';
 import RecentSearches from '../../components/Search/RecentSearches';
 import RecommendedSearches from '../../components/Search/RecommendedSearches';
@@ -13,6 +14,7 @@ import {
 import './SearchPage.css';
 
 const SearchPage = () => {
+  const navigate = useNavigate();
   const [searchText, setSearchText] = useState('');
   const [recentSearches, setRecentSearches] = useState([]);
   const [recommendedSearches, setRecommendedSearches] = useState([]);
@@ -145,7 +147,19 @@ const SearchPage = () => {
 
   return (
     <div className="search-page-container">
-      <SearchBar onSearch={handleSearch} />
+      <header className="search-page-header">
+        <button
+          type="button"
+          className="search-back-button"
+          aria-label="뒤로가기"
+          onClick={() => navigate(-1)}
+        >
+          &lt;
+        </button>
+        <div className="search-bar-wrapper">
+          <SearchBar onSearch={handleSearch} />
+        </div>
+      </header>
       
       <div className="search-content">
         {/* 에러 메시지 */}
