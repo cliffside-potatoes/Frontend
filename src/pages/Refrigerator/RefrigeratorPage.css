@@ -1,6 +1,6 @@
 .refrigerator-page {
   min-height: 100vh;
-  padding-bottom: calc(60px + env(safe-area-inset-bottom));
+  padding-bottom: calc(var(--bottom-nav-base-height) + var(--safe-bottom));
   background-color: #fff;
 }
 
@@ -69,16 +69,27 @@
 
 .refrigerator-page__actions {
   position: fixed;
-  bottom: calc(60px + env(safe-area-inset-bottom));
-  left: 0;
-  right: 0;
+  bottom: calc(var(--bottom-nav-base-height) + var(--safe-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: var(--app-max-width);
   display: flex;
   gap: 12px;
   padding: 12px 16px;
+  padding-left: calc(16px + var(--safe-left));
+  padding-right: calc(16px + var(--safe-right));
   background-color: #fff;
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
-  max-width: 100%;
   box-sizing: border-box;
+  z-index: 999;
+}
+
+/* 웹(태블릿·데스크톱)에서만 버튼을 위로 올림 */
+@media screen and (min-width: 431px) {
+  .refrigerator-page__actions {
+    bottom: calc(var(--bottom-nav-base-height) + 24px + var(--safe-bottom));
+  }
 }
 
 .refrigerator-page__actions > * {
