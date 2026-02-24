@@ -67,21 +67,27 @@ const RefrigeratorPage = () => {
           ) : (
             <div className="refrigerator-page__content">
               {fridgeCategories.map((cat) => (
-                <React.Fragment key={cat.id}>
-                  <Pill color={cat.color} asButton onClick={() => setActiveCategoryId(cat.id)}>
-                    {cat.label} +
-                  </Pill>
-                  {(fridgeIngredients[cat.id] || []).map((ing) => (
-                    <div key={ing.id} className="refrigerator-page__ingredient">
-                      <Pill color={ing.color}>{ing.label}</Pill>
-                      <button type="button" className="refrigerator-page__icon-btn" onClick={handleDeleteIngredient} aria-label="삭제">
-                        <span className="material-symbols-outlined">delete</span>
-                      </button>
-                      <button type="button" className="refrigerator-page__icon-btn" onClick={handleEditIngredient} aria-label="수정">
-                        <span className="material-symbols-outlined">edit</span>
-                      </button>
-                    </div>
-                  ))}
+                <div key={cat.id} className="refrigerator-page__category-block">
+                  <div className="refrigerator-page__category-header">
+                    <span className="refrigerator-page__category-color" style={{ backgroundColor: cat.color }} />
+                    <h3 className="refrigerator-page__category-title">{cat.label}</h3>
+                    <Pill color={cat.color} asButton onClick={() => setActiveCategoryId(cat.id)} className="refrigerator-page__category-add">
+                      +
+                    </Pill>
+                  </div>
+                  <div className="refrigerator-page__ingredients">
+                    {(fridgeIngredients[cat.id] || []).map((ing) => (
+                      <div key={ing.id} className="refrigerator-page__ingredient">
+                        <Pill color={ing.color}>{ing.label}</Pill>
+                        <button type="button" className="refrigerator-page__icon-btn" onClick={handleDeleteIngredient} aria-label="삭제">
+                          <span className="material-symbols-outlined">delete</span>
+                        </button>
+                        <button type="button" className="refrigerator-page__icon-btn" onClick={handleEditIngredient} aria-label="수정">
+                          <span className="material-symbols-outlined">edit</span>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                   {activeCategoryId === cat.id && (
                     <div className="refrigerator-page__input-wrap">
                       <TextInput
@@ -98,7 +104,7 @@ const RefrigeratorPage = () => {
                       />
                     </div>
                   )}
-                </React.Fragment>
+                </div>
               ))}
             </div>
           )}
