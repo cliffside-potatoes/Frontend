@@ -16,15 +16,14 @@ const SignUpPage = () => {
   const [bio, setBio] = useState('');
   const [userId, setUserId] = useState('');
 
-  const REST_API_KEY = "fb385c5f153fb98a5cd07c284b1291ce";
-  const REDIRECT_URI = `${window.location.origin}/oauth/callback/kakao`;
-
-  const KAKAO_AUTH_URL = `https://kauth.kakao.com/oauth/authorize?client_id=${REST_API_KEY}&redirect_uri=${encodeURIComponent(
-    REDIRECT_URI
-  )}&response_type=code`;
+  const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+  const LOGIN_PATH = import.meta.env.VITE_KAKAO_LOGIN_START_PATH || '/login';
 
   const handleKakaoStart = () => {
-    window.location.href = KAKAO_AUTH_URL;
+    const base = API_BASE_URL.replace(/\/$/, '');
+    const path = LOGIN_PATH.startsWith('/') ? LOGIN_PATH : `/${LOGIN_PATH}`;
+    const loginUrl = `${base}${path}`;
+    window.location.assign(loginUrl);
   };
 
   const handleAgreeAndContinue = () => {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../../components/common/BottomNav';
 import RecipeCard from '../../components/card/RecipeCard';
@@ -7,12 +7,30 @@ import { useUser } from '../../context/UserContext';
 import { RECIPE_CATEGORIES } from '../../constants/categories';
 import naengGuIcon from '../../assets/image/naeng-gu.png';
 import './MainPage.css';
+import { refreshAccessToken } from '../../api/tokenApi';
+
 console.log("API URL:", import.meta.env.VITE_API_URL);
 
 const MainPage = () => {
   const navigate = useNavigate();
   const { isLoggedIn } = useUser();
   const [showLoginModal, setShowLoginModal] = useState(false);
+
+  /**
+   * ⭐ 로그인 초기화
+   * accessToken 없으면 refreshToken으로 재발급
+   */
+  useEffect(() => {
+    const initializeLogin = async () => {
+      const token = localStorage.getItem('accessToken');
+
+      if (!token) {
+        await refreshAccessToken();
+      }
+    };
+
+    initializeLogin();
+  }, []);
 
   const handleFillRefrigeratorClick = () => {
     if (isLoggedIn) {
@@ -83,7 +101,7 @@ const MainPage = () => {
 
   return (
     <div className="main-page">
-      
+
       {/* 상단 헤더 영역 */}
       <header className="main-header">
         <div className="header-top">
@@ -95,10 +113,10 @@ const MainPage = () => {
             />
           </div>
           <div className="search-bar" onClick={handleSearchClick} style={{ cursor: 'pointer' }}>
-            <input 
-              type="text" 
-              placeholder="검색" 
-              className="search-input" 
+            <input
+              type="text"
+              placeholder="검색"
+              className="search-input"
               readOnly
             />
             <span className="search-icon">🔍</span>
