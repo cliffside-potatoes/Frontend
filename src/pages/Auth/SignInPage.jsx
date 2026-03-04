@@ -12,10 +12,7 @@ const SignInPage = () => {
   const handleKakaoLogin = () => {
     const base = API_BASE_URL.replace(/\/$/, '');
     const path = LOGIN_PATH.startsWith('/') ? LOGIN_PATH : `/${LOGIN_PATH}`;
-    const loginUrl = `${base}${path}`;
-
-    // ✅ 여기서 fetch 하면 안 됨. 무조건 주소 이동.
-    window.location.assign(loginUrl);
+    window.location.href = `${base}${path}`; // ✅ https://test.naeng-gu.kr/api/login 로 이동
   };
 
   const handleClose = () => {
@@ -32,25 +29,17 @@ const SignInPage = () => {
         <h2 className="signin-heading">냉장고 구하기</h2>
         <p className="signin-subtitle">집에 있는 재료들만으로 맛있는 한끼를!</p>
 
-        <button
-          type="button"
+        <div
           className="signin-kakao-container"
           onClick={handleKakaoLogin}
-          style={{
-            cursor: 'pointer',
-            marginTop: '20px',
-            border: 'none',
-            background: 'transparent',
-            padding: 0,
-            width: '100%',
-          }}
+          style={{ cursor: 'pointer', marginTop: '20px' }}
         >
           <img
             src={kakaoLoginBtn}
             alt="카카오 로그인"
             style={{ width: '100%', maxWidth: '200px', display: 'block', margin: '0 auto' }}
           />
-        </button>
+        </div>
       </div>
     </div>
   );

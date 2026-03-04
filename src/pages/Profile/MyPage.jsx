@@ -56,16 +56,18 @@ const mergePostsByIdPreferLocal = (localPosts, serverPosts) => {
 
 const MyPage = () => {
   const navigate = useNavigate();
-  const { user, isLoggedIn } = useUser();
+  const { user, isLoggedIn, isInitializing } = useUser();
 
   // ✅ MyPage도 Feed와 동일한 게시글 원본 상태를 사용
   const { posts: myPosts, setPosts } = useMyPosts();
 
+  // ✅ 여기 핵심: 초기화(쿠키 토큰 재발급) 끝나기 전엔 튕기지 말기
   useEffect(() => {
+    if (isInitializing) return;
     if (!isLoggedIn) {
       navigate('/signin', { replace: true });
     }
-  }, [isLoggedIn, navigate]);
+  }, [isInitializing, isLoggedIn, navigate]);
 
   const displayUser = user ?? {
     nickname: '사용자 닉네임',
@@ -93,6 +95,8 @@ const MyPage = () => {
 
   // ✅ 서버(또는 목데이터)에서 내 피드(POST만) 초기 로딩 → Context에 합치기
   useEffect(() => {
+    // ✅ 초기화 끝나기 전 / 로그인 아니면 API 호출하지 말기
+    if (isInitializing) return;
     if (!isLoggedIn) return;
 
     let cancelled = false;
@@ -103,7 +107,9 @@ const MyPage = () => {
       .then(({ items, hasNext: next, nextCursor: cursor }) => {
         if (cancelled) return;
 
-        const serverPosts = (items || []).map((item) => mapFeedItemToPost(item, displayUser.nickname));
+        const serverPosts = (items || []).map((item) =>
+          mapFeedItemToPost(item, displayUser.nickname)
+        );
 
         // ✅ 이미 로컬에 작성/수정한 글이 있어도 덮어쓰지 않고 합치기
         setPosts((prev) => mergePostsByIdPreferLocal(prev, serverPosts));
@@ -121,7 +127,7 @@ const MyPage = () => {
     return () => {
       cancelled = true;
     };
-  }, [isLoggedIn, displayUser.nickname, setPosts]);
+  }, [isInitializing, isLoggedIn, displayUser.nickname, setPosts]);
 
   const openPostMenu = (e, postId) => {
     e.stopPropagation();
@@ -155,9 +161,7 @@ const MyPage = () => {
 
   const handleTogglePin = (postId) => {
     // ✅ Context에서 토글 → Feed에도 반영됨
-    setPosts((prev) =>
-      prev.map((p) => (p.id === postId ? { ...p, pinned: !p.pinned } : p))
-    );
+    setPosts((prev) => prev.map((p) => (p.id === postId ? { ...p, pinned: !p.pinned } : p)));
     setPostMenuPostId(null);
   };
 
@@ -245,9 +249,7 @@ const MyPage = () => {
       // ✅ Context에서 수정 → Feed에도 반영됨
       setPosts((prev) =>
         prev.map((p) =>
-          p.id === editingPostId
-            ? { ...p, content: draftContent, image, images, updatedAt: nowIso }
-            : p
+          p.id === editingPostId ? { ...p, content: draftContent, image, images, updatedAt: nowIso } : p
         )
       );
     } else {
@@ -280,6 +282,15 @@ const MyPage = () => {
   };
 
   const editingPost = editingPostId ? (myPosts || []).find((p) => p.id === editingPostId) : null;
+
+  // ✅ 초기화 중이면 “로그인 확인 중…” 화면 하나 띄우는 게 UX 좋음
+  if (isInitializing) {
+    return (
+      <div style={{ padding: '20px', textAlign: 'center' }}>
+        <h2>로그인 확인 중...</h2>
+      </div>
+    );
+  }
 
   return (
     <div className="mypage">
