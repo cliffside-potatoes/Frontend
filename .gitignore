@@ -31,6 +31,9 @@ lerna-debug.log*
 .env.development.local
 .env.test.local
 .env.production.local
+.env.development
+.env.example
+.env.production
 
 # 테일윈드/빌드 도구 관련
 .turbo/
