@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../../components/common/BottomNav';
 import RecipeCard from '../../components/card/RecipeCard';
@@ -7,32 +7,22 @@ import { useUser } from '../../context/UserContext';
 import { RECIPE_CATEGORIES } from '../../constants/categories';
 import naengGuIcon from '../../assets/image/naeng-gu.png';
 import './MainPage.css';
-import { refreshAccessToken } from '../../api/tokenApi';
 
-console.log("API URL:", import.meta.env.VITE_API_URL);
+console.log('API URL:', import.meta.env.VITE_API_URL);
 
 const MainPage = () => {
   const navigate = useNavigate();
-  const { isLoggedIn } = useUser();
+  const { isLoggedIn, isInitializing } = useUser();
+
   const [showLoginModal, setShowLoginModal] = useState(false);
 
-  /**
-   * ⭐ 로그인 초기화
-   * accessToken 없으면 refreshToken으로 재발급
-   */
-  useEffect(() => {
-    const initializeLogin = async () => {
-      const token = localStorage.getItem('accessToken');
-
-      if (!token) {
-        await refreshAccessToken();
-      }
-    };
-
-    initializeLogin();
-  }, []);
-
   const handleFillRefrigeratorClick = () => {
+    // ✅ 초기 로그인 확인 중이면(쿠키로 토큰 재발급 중이면) 안내만 하고 막기
+    if (isInitializing) {
+      alert('로그인 확인 중이야. 잠깐만 다시 눌러줘!');
+      return;
+    }
+
     if (isLoggedIn) {
       navigate('/refrigerator');
     } else {
@@ -101,34 +91,24 @@ const MainPage = () => {
 
   return (
     <div className="main-page">
-
       {/* 상단 헤더 영역 */}
       <header className="main-header">
         <div className="header-top">
           <div className="tomato-icon">
-            <img
-              src={naengGuIcon}
-              alt="냉구"
-              className="tomato-image"
-            />
+            <img src={naengGuIcon} alt="냉구" className="tomato-image" />
           </div>
+
           <div className="search-bar" onClick={handleSearchClick} style={{ cursor: 'pointer' }}>
-            <input
-              type="text"
-              placeholder="검색"
-              className="search-input"
-              readOnly
-            />
+            <input type="text" placeholder="검색" className="search-input" readOnly />
             <span className="search-icon">🔍</span>
           </div>
         </div>
+
         <h1 className="main-title">내 냉장고</h1>
-        <p className="header-description">
-          👀 현재 냉장고에 있는 재료를 채워봐요!
-        </p>
-        <p className="header-description">
-          재료를 이용해서 만들 수 있는 레시피들을 추천해 줍니다
-        </p>
+
+        <p className="header-description">👀 현재 냉장고에 있는 재료를 채워봐요!</p>
+        <p className="header-description">재료를 이용해서 만들 수 있는 레시피들을 추천해 줍니다</p>
+
         <button type="button" className="fill-refrigerator-btn" onClick={handleFillRefrigeratorClick}>
           <span>🍲</span>
           냉장고 채우러 가기

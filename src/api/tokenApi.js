@@ -1,13 +1,11 @@
+// src/api/tokenApi.js
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
-const TOKEN_PATH = import.meta.env.VITE_KAKAO_EXCHANGE_PATH || '/oauth/token';
 
 export const refreshAccessToken = async () => {
   try {
     const base = API_BASE_URL.replace(/\/$/, '');
-    const path = TOKEN_PATH.startsWith('/') ? TOKEN_PATH : `/${TOKEN_PATH}`;
-    const url = `${base}${path}`;
 
-    const res = await fetch(url, {
+    const res = await fetch(`${base}/oauth/token`, {
       method: 'POST',
       credentials: 'include',
       headers: {
@@ -16,22 +14,19 @@ export const refreshAccessToken = async () => {
     });
 
     if (!res.ok) {
-      return null;
+      throw new Error('토큰 재발급 실패');
     }
 
-    const result = await res.json();
-    const payload = result?.data;
+    const data = await res.json();
+    const payload = data?.data;
 
-    if (!payload?.accessToken) {
-      return null;
+    if (payload?.accessToken) {
+      localStorage.setItem('accessToken', payload.accessToken);
     }
-
-    // accessToken 저장
-    localStorage.setItem('accessToken', payload.accessToken);
 
     return payload;
   } catch (error) {
-    console.error('refreshAccessToken error:', error);
+    console.error('refreshAccessToken 실패:', error);
     return null;
   }
 };

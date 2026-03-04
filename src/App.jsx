@@ -13,7 +13,6 @@ import Feed from './pages/Feed/Feed';
 import SignUpPage from './pages/Auth/SignUpPage';
 import SignInPage from './pages/Auth/SignInPage';
 import KakaoCallback from './pages/Auth/KakaoCallback';
-import KakaoLoginStart from './pages/Auth/KakaoLoginStart';
 import RefrigeratorPage from './pages/Refrigerator/RefrigeratorPage';
 import CategoryRegistrationPage from './pages/Refrigerator/CategoryRegistrationPage';
 import CategorySettingsPage from './pages/Refrigerator/CategorySettingsPage';
@@ -42,24 +41,24 @@ function App() {
                 <Route path="/main" element={<MainPage />} />
                 <Route path="/feed" element={<Feed />} />
                 <Route path="/profile" element={<MyPage />} />
+
                 <Route path="/profile/settings" element={<SettingsPage />} />
                 <Route path="/profile/settings/notifications" element={<NotificationSettingsPage />} />
                 <Route path="/profile/my-recipes" element={<MyRecipesPage />} />
                 <Route path="/profile/my-reviews" element={<MyReviewsPage />} />
                 <Route path="/recipe-saved" element={<RecipeSavedPage />} />
+
                 <Route path="/signup" element={<SignUpPage />} />
                 <Route path="/signin" element={<SignInPage />} />
+
+                <Route path="/new-info" element={<SignUpPage />} />
+
+                <Route path="/oauth/callback/kakao" element={<KakaoCallback />} />
+
                 <Route path="/search" element={<SearchPage />} />
                 <Route path="/refrigerator" element={<RefrigeratorPage />} />
                 <Route path="/refrigerator/category" element={<CategoryRegistrationPage />} />
                 <Route path="/refrigerator/category/settings" element={<CategorySettingsPage />} />
-
-                {/* 프론트 콜백 라우트 */}
-                <Route path="/oauth/callback/kakao" element={<KakaoCallback />} />
-
-                {/* “No routes matched /auth/kakao/login” 방지용 라우트 */}
-                <Route path="/auth/kakao/login" element={<KakaoLoginStart />} />
-
                 <Route path="/recipe/:recipeId" element={<RecipeDetailPage />} />
                 <Route path="/recipe/:recipeId/reviews" element={<ReviewListPage />} />
                 <Route path="/recipe/:recipeId/reviews/write" element={<ReviewWritePage />} />
