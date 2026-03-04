@@ -7,6 +7,7 @@ import { useUser } from '../../context/UserContext';
 import { RECIPE_CATEGORIES } from '../../constants/categories';
 import naengGuIcon from '../../assets/image/naeng-gu.png';
 import './MainPage.css';
+console.log("API URL:", import.meta.env.VITE_API_URL);
 
 const MainPage = () => {
   const navigate = useNavigate();
@@ -82,6 +83,7 @@ const MainPage = () => {
 
   return (
     <div className="main-page">
+      
       {/* 상단 헤더 영역 */}
       <header className="main-header">
         <div className="header-top">
