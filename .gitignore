@@ -27,6 +27,7 @@ lerna-debug.log*
 
 # 환경 변수 (보안을 위해 비밀 키 등을 저장하는 파일)
 .env
+.env.*
 .env.local
 .env.development.local
 .env.test.local

@@ -33,7 +33,7 @@ const MainPage = () => {
   const recipes = [
     {
       recipeId: 1,
-      title: '김치찌개',
+      title: '22:03 수정 김치찌개',
       thumbnailImage: 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=400&h=400&fit=crop',
       source: '유튜브 - 릴리쿡',
       cookingTime: 30,
