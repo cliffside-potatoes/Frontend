@@ -3,7 +3,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 export const refreshAccessToken = async () => {
   try {
-    const base = API_BASE_URL.replace(/\/$/, ''); 
+    const base = API_BASE_URL.replace(/\/$/, '');
 
     const res = await fetch(`${base}/oauth/token`, {
       method: 'POST',
