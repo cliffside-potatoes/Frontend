@@ -6,24 +6,20 @@ import './SignInPage.css';
 const SignInPage = () => {
   const navigate = useNavigate();
 
-  // ✅ 카카오 REST API 키 (그대로)
-  const REST_API_KEY = "fb385c5f153fb98a5cd07c284b1291ce";
+  const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+  const LOGIN_PATH = import.meta.env.VITE_KAKAO_LOGIN_START_PATH || '/login';
 
-  // ✅ 중요: 현재 접속 도메인 기준으로 redirect_uri 자동 생성
-  // - localhost에서 실행하면 localhost로
-  // - test.naeng-gu.kr에서 실행하면 test.naeng-gu.kr로
-  const REDIRECT_URI = `${window.location.origin}/oauth/callback/kakao`;
+  const handleKakaoLogin = () => {
+    const base = API_BASE_URL.replace(/\/$/, '');
+    const path = LOGIN_PATH.startsWith('/') ? LOGIN_PATH : `/${LOGIN_PATH}`;
+    const loginUrl = `${base}${path}`;
 
-  const KAKAO_AUTH_URL = `https://kauth.kakao.com/oauth/authorize?client_id=${REST_API_KEY}&redirect_uri=${encodeURIComponent(
-    REDIRECT_URI
-  )}&response_type=code`;
+    // ✅ 여기서 fetch 하면 안 됨. 무조건 주소 이동.
+    window.location.assign(loginUrl);
+  };
 
   const handleClose = () => {
     navigate(-1);
-  };
-
-  const handleKakaoLogin = () => {
-    window.location.href = KAKAO_AUTH_URL;
   };
 
   return (
@@ -36,17 +32,25 @@ const SignInPage = () => {
         <h2 className="signin-heading">냉장고 구하기</h2>
         <p className="signin-subtitle">집에 있는 재료들만으로 맛있는 한끼를!</p>
 
-        <div
+        <button
+          type="button"
           className="signin-kakao-container"
           onClick={handleKakaoLogin}
-          style={{ cursor: 'pointer', marginTop: '20px' }}
+          style={{
+            cursor: 'pointer',
+            marginTop: '20px',
+            border: 'none',
+            background: 'transparent',
+            padding: 0,
+            width: '100%',
+          }}
         >
           <img
             src={kakaoLoginBtn}
             alt="카카오 로그인"
             style={{ width: '100%', maxWidth: '200px', display: 'block', margin: '0 auto' }}
           />
-        </div>
+        </button>
       </div>
     </div>
   );

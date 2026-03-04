@@ -1,79 +1,72 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import { useUser } from '../../context/UserContext';
-
-const REST_API_KEY = "fb385c5f153fb98a5cd07c284b1291ce";
-const REDIRECT_URI = "http://localhost:5173/oauth/callback/kakao";
-
-const mapKakaoToUser = (kakaoData) => {
-  const nickname = kakaoData?.properties?.nickname
-    ?? kakaoData?.kakao_account?.profile?.nickname
-    ?? '사용자';
-  const profileImage = kakaoData?.properties?.profile_image
-    ?? kakaoData?.kakao_account?.profile?.profile_image_url
-    ?? '';
-  return {
-    id: String(kakaoData?.id ?? ''),
-    nickname,
-    profileImage,
-    triedCount: 0,
-    bio: '아직 자기소개가 없어요😊',
-  };
-};
+import { refreshAccessToken } from '../../api/tokenApi';
 
 const KakaoCallback = () => {
   const navigate = useNavigate();
   const { setUser } = useUser();
-  const isRequested = useRef(false);
 
   useEffect(() => {
-    const code = new URL(window.location.href).searchParams.get("code");
 
-    if (code && !isRequested.current) {
-      isRequested.current = true;
+    const url = new URL(window.location.href);
 
-      const getToken = async () => {
-        try {
-          const params = new URLSearchParams();
-          params.append('grant_type', 'authorization_code');
-          params.append('client_id', REST_API_KEY);
-          params.append('redirect_uri', REDIRECT_URI);
-          params.append('code', code);
+    const accessToken = url.searchParams.get('accessToken');
+    const nickname = url.searchParams.get('nickname');
+    const id = url.searchParams.get('id');
+    const newMember = url.searchParams.get('newMember');
 
-          const response = await axios.post(
-            "https://kauth.kakao.com/oauth/token",
-            params,
-            {
-              headers: {
-                "Content-type": "application/x-www-form-urlencoded;charset=utf-8",
-              },
-            }
-          );
+    /**
+     * 1️⃣ accessToken이 URL에 있는 경우
+     * (백엔드가 302 redirect로 보내준 경우)
+     */
+    if (accessToken) {
 
-          const accessToken = response.data.access_token;
-          localStorage.setItem('accessToken', accessToken);
+      localStorage.setItem('accessToken', accessToken);
 
-          const res = await axios.get("https://kapi.kakao.com/v2/user/me", {
-            headers: { Authorization: `Bearer ${accessToken}` },
-          });
+      setUser({
+        id: String(id ?? ''),
+        nickname: nickname ?? '사용자',
+        profileImage: '',
+        triedCount: 0,
+        bio: '아직 자기소개가 없어요😊',
+      });
 
-          const userObj = mapKakaoToUser(res.data);
-          setUser(userObj);
+      navigate('/main', { replace: true });
 
-          navigate('/main', { replace: true });
-        } catch (error) {
-          console.error("에러 상세:", error.response?.data || error.message);
-          navigate('/signin');
-        }
-      };
-
-      getToken();
+      return;
     }
+
+    /**
+     * 2️⃣ accessToken이 없고 refreshToken cookie만 있는 경우
+     * → /oauth/token으로 accessToken 재발급
+     */
+    const getToken = async () => {
+
+      const payload = await refreshAccessToken();
+
+      if (!payload) {
+        navigate('/signin', { replace: true });
+        return;
+      }
+
+      setUser({
+        id: String(payload.id ?? ''),
+        nickname: payload.nickname ?? '사용자',
+        profileImage: '',
+        triedCount: 0,
+        bio: '아직 자기소개가 없어요😊',
+      });
+
+      navigate('/main', { replace: true });
+    };
+
+    getToken();
+
   }, [navigate, setUser]);
 
   return (
-    <div style={{ padding: "20px", textAlign: "center" }}>
+    <div style={{ padding: '20px', textAlign: 'center' }}>
       <h2>로그인 처리 중...</h2>
     </div>
   );
