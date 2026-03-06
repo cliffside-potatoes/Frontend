@@ -1,77 +1,88 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
+const getAccessToken = () => {
+  return localStorage.getItem('accessToken') || localStorage.getItem('token') || '';
+};
+
 const getAuthHeader = () => {
-  const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+  const token = getAccessToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
 /**
- * 닉네임 중복 확인
- * - 백엔드에 엔드포인트 없으면, 일단 항상 true로 통과(개발용)
- * - 나중에 백엔드가 /profiles/nickname/exists?nickname=... 같은거 주면 여기만 바꾸면 됨
+ * 내 프로필 조회
+ * GET /profiles
  */
-export const checkNicknameDuplicate = async (nickname) => {
+export const getMyProfile = async () => {
   try {
-    const base = (typeof API_BASE_URL === 'string' && API_BASE_URL.trim()) || '';
-    if (!base) return true;
+    const base = API_BASE_URL.replace(/\/$/, '');
 
-    // ✅ 임시: 백엔드 엔드포인트 확정되면 교체
-    // const url = `${base}/profiles/nickname/exists?nickname=${encodeURIComponent(nickname)}`;
-    // const res = await fetch(url, { method: 'GET', headers: { ...getAuthHeader() } });
-    // const data = await res.json();
-    // return !data.exists;
+    const res = await fetch(`${base}/profiles`, {
+      method: 'GET',
+      headers: {
+        ...getAuthHeader(),
+      },
+    });
 
-    return true;
-  } catch {
-    return true;
+    if (!res.ok) {
+      throw new Error(`프로필 조회 실패 (${res.status})`);
+    }
+
+    const data = await res.json();
+    return data?.data ?? null;
+  } catch (error) {
+    console.error('getMyProfile 실패:', error);
+    return null;
   }
 };
 
 /**
- * 프로필 생성 + 수정
- * - 명세: "프로필이 없으면 생성(201), 있으면 수정(200)"
- * - 엔드포인트가 확정되면 url만 교체하면 됨
+ * 프로필 생성/수정
+ * PUT /profiles
  */
-export const createOrUpdateProfile = async ({ nickname, bio, profileImageUrl }) => {
-  const base = (typeof API_BASE_URL === 'string' && API_BASE_URL.trim()) || '';
-  if (!base) {
-    return { profileId: 1, userId: '', nickname };
+export const createOrUpdateProfile = async ({ nickname, bio, profileImage = null }) => {
+  try {
+    const base = API_BASE_URL.replace(/\/$/, '');
+
+    const res = await fetch(`${base}/profiles`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify({
+        nickname,
+        bio,
+        profileImage,
+      }),
+    });
+
+    if (!res.ok) {
+      throw new Error(`프로필 저장 실패 (${res.status})`);
+    }
+
+    const data = await res.json();
+    return data?.data ?? null;
+  } catch (error) {
+    console.error('createOrUpdateProfile 실패:', error);
+    throw error;
   }
+};
 
-  const url = `${base.replace(/\/$/, '')}/profiles`; // ✅ 임시 가정
-  const res = await fetch(url, {
-    method: 'POST', // ✅ 백엔드가 PUT/PATCH로 주면 변경
-    headers: {
-      'Content-Type': 'application/json',
-      ...getAuthHeader(),
-    },
-    body: JSON.stringify({
-      nickname,
-      bio,
-      profileImageUrl,
-    }),
-  });
-
-  // 실패하면 mock처럼 처리(개발 막히지 않게)
-  if (!res.ok) {
-    return { profileId: 1, userId: '', nickname };
+/**
+ * 현재 Swagger에 닉네임 중복확인 API 없음
+ */
+export const checkNicknameDuplicate = async () => {
+  try {
+    return true;
+  } catch (error) {
+    console.error('checkNicknameDuplicate 실패:', error);
+    return false;
   }
-
-  const contentType = res.headers.get('content-type') || '';
-  if (!contentType.includes('application/json')) {
-    return { profileId: 1, userId: '', nickname };
-  }
-
-  const data = await res.json();
-  // 백엔드 응답이 { profileId, status } 형태라고 했으니까 맞춰줌
-  return {
-    profileId: data?.profileId ?? data?.data?.profileId ?? 1,
-    userId: data?.data?.id ?? '',
-    nickname,
-  };
 };
 
 export default {
-  checkNicknameDuplicate,
+  getMyProfile,
   createOrUpdateProfile,
+  checkNicknameDuplicate,
 };

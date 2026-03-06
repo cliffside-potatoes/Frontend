@@ -5,6 +5,7 @@ import FeedCard from '../../components/card/FeedCard';
 import { getMyFeed } from '../../api/meFeedApi';
 import { useUser } from '../../context/UserContext';
 import { useMyPosts } from '../../context/MyPostsContext';
+import { toImageUrl } from '../../utils/imageUrl';
 import profileImg from '../../assets/image/profile.png';
 import './MyPage.css';
 
@@ -27,14 +28,15 @@ const mapFeedItemToPost = (item, authorName) => {
         return createdAt;
       }
     })();
+
   return {
     id: item.id,
     type: item.type,
     author: authorName,
     date: dateStr,
     content: item.content ?? '',
-    images: item.images ?? [],
-    image: (item.images && item.images[0]) ?? '',
+    images: (item.images ?? []).map((img) => toImageUrl(img)),
+    image: item.images?.[0] ? toImageUrl(item.images[0]) : '',
     likeCount: item.likeCount ?? 0,
     liked: false,
     hideLikeCount: Boolean(item.hideLikeCount),
@@ -46,8 +48,6 @@ const mapFeedItemToPost = (item, authorName) => {
 };
 
 const mergePostsByIdPreferLocal = (localPosts, serverPosts) => {
-  // ✅ localPosts를 우선으로 유지하면서, 서버에만 있는 글은 추가
-  // (추후 백엔드 연동 시에도 로컬에서 만든 글/수정한 글을 덮어버리지 않도록)
   const map = new Map();
   (serverPosts || []).forEach((p) => map.set(p.id, p));
   (localPosts || []).forEach((p) => map.set(p.id, { ...(map.get(p.id) || {}), ...p }));
@@ -57,11 +57,8 @@ const mergePostsByIdPreferLocal = (localPosts, serverPosts) => {
 const MyPage = () => {
   const navigate = useNavigate();
   const { user, isLoggedIn, isInitializing } = useUser();
-
-  // ✅ MyPage도 Feed와 동일한 게시글 원본 상태를 사용
   const { posts: myPosts, setPosts } = useMyPosts();
 
-  // ✅ 여기 핵심: 초기화(쿠키 토큰 재발급) 끝나기 전엔 튕기지 말기
   useEffect(() => {
     if (isInitializing) return;
     if (!isLoggedIn) {
@@ -77,7 +74,8 @@ const MyPage = () => {
     profileImage: '',
   };
 
-  // --- 아래 상태들은 기존 코드 유지 (추후 무한스크롤/백엔드 연결 대비) ---
+  const profileImageSrc = toImageUrl(displayUser.profileImage) || profileImg;
+
   const [hasNext, setHasNext] = useState(false);
   const [nextCursor, setNextCursor] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -93,9 +91,7 @@ const MyPage = () => {
   const [draftImages, setDraftImages] = useState([]);
   const fileInputRef = useRef(null);
 
-  // ✅ 서버(또는 목데이터)에서 내 피드(POST만) 초기 로딩 → Context에 합치기
   useEffect(() => {
-    // ✅ 초기화 끝나기 전 / 로그인 아니면 API 호출하지 말기
     if (isInitializing) return;
     if (!isLoggedIn) return;
 
@@ -111,7 +107,6 @@ const MyPage = () => {
           mapFeedItemToPost(item, displayUser.nickname)
         );
 
-        // ✅ 이미 로컬에 작성/수정한 글이 있어도 덮어쓰지 않고 합치기
         setPosts((prev) => mergePostsByIdPreferLocal(prev, serverPosts));
 
         setHasNext(Boolean(next));
@@ -145,14 +140,12 @@ const MyPage = () => {
 
   const handleDeletePost = () => {
     if (deleteConfirmPostId) {
-      // ✅ Context에서 삭제 → Feed에도 반영됨
       setPosts((prev) => prev.filter((p) => p.id !== deleteConfirmPostId));
       setDeleteConfirmPostId(null);
     }
   };
 
   const handleToggleHideLikeCount = (postId) => {
-    // ✅ Context에서 토글 → Feed에도 반영됨
     setPosts((prev) =>
       prev.map((p) => (p.id === postId ? { ...p, hideLikeCount: !p.hideLikeCount } : p))
     );
@@ -160,13 +153,11 @@ const MyPage = () => {
   };
 
   const handleTogglePin = (postId) => {
-    // ✅ Context에서 토글 → Feed에도 반영됨
     setPosts((prev) => prev.map((p) => (p.id === postId ? { ...p, pinned: !p.pinned } : p)));
     setPostMenuPostId(null);
   };
 
   const handleToggleLike = (postId) => {
-    // ✅ Context에서 토글 → Feed에도 반영됨
     setPosts((prev) =>
       prev.map((p) => {
         if (p.id !== postId) return p;
@@ -243,17 +234,19 @@ const MyPage = () => {
     const images = draftImages.length > 0 ? draftImages : [];
     const image = images[0] || '';
     const nowIso = new Date().toISOString();
-    const dateStr = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+    const dateStr = new Date().toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
 
     if (editingPostId) {
-      // ✅ Context에서 수정 → Feed에도 반영됨
       setPosts((prev) =>
         prev.map((p) =>
           p.id === editingPostId ? { ...p, content: draftContent, image, images, updatedAt: nowIso } : p
         )
       );
     } else {
-      // ✅ Context에서 생성 → Feed에도 반영됨 + localStorage에 남음
       setPosts((prev) => {
         const nextId = Math.max(0, ...(prev || []).map((p) => (typeof p.id === 'number' ? p.id : 0))) + 1;
         return [
@@ -281,9 +274,6 @@ const MyPage = () => {
     closeWriteModal();
   };
 
-  const editingPost = editingPostId ? (myPosts || []).find((p) => p.id === editingPostId) : null;
-
-  // ✅ 초기화 중이면 “로그인 확인 중…” 화면 하나 띄우는 게 UX 좋음
   if (isInitializing) {
     return (
       <div style={{ padding: '20px', textAlign: 'center' }}>
@@ -308,7 +298,7 @@ const MyPage = () => {
         <section className="profile-section">
           <div className="profile-main">
             <div className="profile-avatar">
-              <img src={displayUser.profileImage || profileImg} alt="프로필" className="profile-avatar-image" />
+              <img src={profileImageSrc} alt="프로필" className="profile-avatar-image" />
             </div>
             <div className="profile-info-line">
               <div>
@@ -322,9 +312,11 @@ const MyPage = () => {
               </div>
             </div>
           </div>
+
           <div className="profile-bio-div">
             <p className="profile-bio">{displayUser.bio}</p>
           </div>
+
           <button type="button" className="profile-edit-button">
             프로필 편집
           </button>
@@ -364,7 +356,7 @@ const MyPage = () => {
                 <FeedCard
                   post={post}
                   isMine
-                  avatarUrl={displayUser.profileImage || profileImg}
+                  avatarUrl={profileImageSrc}
                   onToggleLike={handleToggleLike}
                   onOpenMenu={openPostMenu}
                 />
@@ -441,13 +433,11 @@ const MyPage = () => {
             </header>
 
             <div className="write-modal-body">
-              {/* 유저 정보 행 */}
               <div className="write-modal-user-row">
-                <img src={displayUser.profileImage || profileImg} alt="" className="write-modal-avatar" />
+                <img src={profileImageSrc} alt="" className="write-modal-avatar" />
                 <span className="write-modal-nickname">{displayUser.nickname}</span>
               </div>
 
-              {/* 본문 및 액션 영역 */}
               <div className="write-modal-content-area">
                 <textarea
                   className="write-modal-textarea"
@@ -457,13 +447,17 @@ const MyPage = () => {
                   rows={5}
                 />
 
-                {/* 이미지 미리보기 */}
                 {draftImages.length > 0 && (
                   <div className="write-modal-image-row">
                     {draftImages.map((src, i) => (
                       <div key={i} className="write-modal-image-placeholder">
                         <img src={src} alt="" className="write-modal-preview" />
-                        <button type="button" className="write-modal-image-remove" onClick={() => removeDraftImage(i)} aria-label="사진 제거">
+                        <button
+                          type="button"
+                          className="write-modal-image-remove"
+                          onClick={() => removeDraftImage(i)}
+                          aria-label="사진 제거"
+                        >
                           <span className="material-symbols-outlined">close</span>
                         </button>
                       </div>
@@ -471,7 +465,6 @@ const MyPage = () => {
                   </div>
                 )}
 
-                {/* 하단 액션 버튼들 */}
                 <div className="write-modal-actions">
                   <input
                     ref={fileInputRef}

@@ -1,33 +1,32 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import naengGuIcon from '../../assets/image/naeng-gu.png';
 import './SignUpPage.css';
 import { createOrUpdateProfile, checkNicknameDuplicate } from '../../api/profileApi';
+import { issuePresignedUrl } from '../../api/presignedApi';
+import { uploadFileToS3 } from '../../utils/uploadToS3';
 import { useUser } from '../../context/UserContext';
 
 const SignUpPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { setUser } = useUser();
+  const { user, setUser } = useUser();
 
-  // step: 0(동의) -> 1(반갑습니다) -> 2(프로필 설정)
+  // step: 1(반갑습니다) -> 2(프로필 설정)
   const initialStep = useMemo(() => {
-    // /new-info로 들어오면 동의부터
-    if (location.pathname === '/new-info') return 0;
-    // 다른 곳에서 state로 step 넘긴 경우
+    if (location.pathname === '/new-info') return 1;
     if (typeof location.state?.step === 'number') return location.state.step;
-    return 0;
+    return 1;
   }, [location.pathname, location.state]);
 
   const [step, setStep] = useState(initialStep);
 
-  const [agreeAll, setAgreeAll] = useState(false);
-  const [agreeRequired, setAgreeRequired] = useState(false);
-  const [agreeOptional, setAgreeOptional] = useState(false);
+  const [nickname, setNickname] = useState(user?.nickname ?? '');
+  const [bio, setBio] = useState(user?.bio ?? '아직 자기소개가 없어요😊');
 
-  const [nickname, setNickname] = useState('');
-  const [bio, setBio] = useState('아직 자기소개가 없어요😊');
-  const [profileImageUrl, setProfileImageUrl] = useState('');
+  const [profileImageFile, setProfileImageFile] = useState(null);
+  const [profileImagePreview, setProfileImagePreview] = useState(user?.profileImage ?? '');
+  const [userEmail, setUserEmail] = useState(user?.email ?? '');
 
   const [dupLoading, setDupLoading] = useState(false);
   const [dupChecked, setDupChecked] = useState(false);
@@ -36,37 +35,13 @@ const SignUpPage = () => {
 
   const [saving, setSaving] = useState(false);
 
+  const fileInputRef = useRef(null);
+
   const handleClose = () => navigate(-1);
-
-  const handleAgreeAllChange = (e) => {
-    const checked = e.target.checked;
-    setAgreeAll(checked);
-    setAgreeRequired(checked);
-    setAgreeOptional(checked);
-  };
-
-  const handleAgreeRequiredChange = (e) => {
-    const checked = e.target.checked;
-    setAgreeRequired(checked);
-    // 전체동의는 부분 체크되면 false로 맞추는게 UX 좋아서
-    setAgreeAll(checked && agreeOptional);
-  };
-
-  const handleAgreeOptionalChange = (e) => {
-    const checked = e.target.checked;
-    setAgreeOptional(checked);
-    setAgreeAll(checked && agreeRequired);
-  };
-
-  const handleAgreeAndContinue = () => {
-    if (!agreeRequired) return;
-    setStep(1);
-  };
 
   const goProfileSetup = () => setStep(2);
 
   const validateNickname = (value) => {
-    // 영문/숫자/_/. 1~20
     const re = /^[a-zA-Z0-9_.]{1,20}$/;
     return re.test(value);
   };
@@ -74,7 +49,6 @@ const SignUpPage = () => {
   const onChangeNickname = (e) => {
     const v = e.target.value;
     setNickname(v);
-    // 닉네임 바꾸면 중복확인 다시 해야함
     setDupChecked(false);
     setDupOk(false);
     setDupMsg('');
@@ -82,10 +56,11 @@ const SignUpPage = () => {
 
   const handleCheckDuplicate = async () => {
     const v = nickname.trim();
+
     if (!validateNickname(v)) {
       setDupChecked(true);
       setDupOk(false);
-      setDupMsg('닉네임은 영문/숫자/_/. 만 가능하고 1~20자야');
+      setDupMsg('닉네임에는 영문, 숫자, 밑줄, 마침표만 사용할 수 있습니다.');
       return;
     }
 
@@ -96,7 +71,6 @@ const SignUpPage = () => {
 
     try {
       const ok = await checkNicknameDuplicate(v);
-      // ok=true면 사용 가능
       setDupChecked(true);
       setDupOk(ok);
       setDupMsg(ok ? '사용 가능한 닉네임이야' : '이미 사용중인 닉네임이야');
@@ -109,14 +83,59 @@ const SignUpPage = () => {
     }
   };
 
+  const handlePickImage = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setProfileImageFile(file);
+
+    if (profileImagePreview && profileImagePreview.startsWith('blob:')) {
+      URL.revokeObjectURL(profileImagePreview);
+    }
+
+    const previewUrl = URL.createObjectURL(file);
+    setProfileImagePreview(previewUrl);
+  };
+
+  const uploadProfileImageIfNeeded = async () => {
+    if (!profileImageFile) return null;
+
+    const presigned = await issuePresignedUrl({
+      type: 'profile',
+      imageName: profileImageFile.name,
+    });
+
+    if (!presigned?.presignedUrl || !presigned?.s3Key) {
+      throw new Error('Presigned URL 응답이 올바르지 않아');
+    }
+
+    await uploadFileToS3({
+      presignedUrl: presigned.presignedUrl,
+      file: profileImageFile,
+    });
+
+    return {
+      s3Key: presigned.s3Key,
+      contentType: profileImageFile.type || 'image/png',
+      size: profileImageFile.size || 0,
+      accessType: 'public',
+    };
+  };
+
   const handleSubmitProfile = async () => {
     const v = nickname.trim();
+
     if (!validateNickname(v)) {
       setDupChecked(true);
       setDupOk(false);
       setDupMsg('닉네임 형식이 맞는지 먼저 확인해줘');
       return;
     }
+
     if (!dupOk) {
       setDupChecked(true);
       setDupOk(false);
@@ -125,35 +144,46 @@ const SignUpPage = () => {
     }
 
     setSaving(true);
+
     try {
-      // ✅ 백엔드 연결 가능한 형태: 프로필 생성/수정 API 호출(지금은 구현/스펙 불명이라 안전하게 mock fallback)
+      const uploadedProfileImage = await uploadProfileImageIfNeeded();
+
       const res = await createOrUpdateProfile({
         nickname: v,
         bio: bio ?? '',
-        profileImageUrl: profileImageUrl ?? '',
+        profileImage: uploadedProfileImage,
       });
 
-      // 유저 컨텍스트도 같이 업데이트 (프론트 화면에서 바로 반영되게)
       setUser({
-        id: String(res?.userId ?? ''),
+        ...(user ?? {}),
+        id: String(user?.id ?? ''),
+        email: userEmail ?? '',
         nickname: v,
-        profileImage: profileImageUrl ?? '',
-        triedCount: 0,
+        profileImage: profileImagePreview ?? '',
+        triedCount: user?.triedCount ?? 0,
         bio: bio ?? '아직 자기소개가 없어요😊',
       });
 
       navigate('/main', { replace: true });
     } catch (e) {
+      console.error(e);
       alert('프로필 저장 실패했어. 잠깐 뒤에 다시 해줘');
     } finally {
       setSaving(false);
     }
   };
 
-  // step 초기화(뒤로왔다 다시 들어오면 상태 꼬이는거 방지)
   useEffect(() => {
     setStep(initialStep);
   }, [initialStep]);
+
+  useEffect(() => {
+    return () => {
+      if (profileImagePreview && profileImagePreview.startsWith('blob:')) {
+        URL.revokeObjectURL(profileImagePreview);
+      }
+    };
+  }, [profileImagePreview]);
 
   return (
     <div className="auth-page">
@@ -162,53 +192,6 @@ const SignUpPage = () => {
           ✕
         </button>
 
-        {/* 0) 전체동의 */}
-        {step === 0 && (
-          <div className="auth-step">
-            <h1 className="auth-title">약관 동의</h1>
-
-            <div className="agree-box">
-              <label className="agree-row">
-                <input type="checkbox" checked={agreeAll} onChange={handleAgreeAllChange} />
-                <span className="agree-text strong">전체 동의하기</span>
-              </label>
-
-              <div className="agree-divider" />
-
-              <label className="agree-row">
-                <input type="checkbox" checked={agreeRequired} onChange={handleAgreeRequiredChange} />
-                <span className="agree-text">
-                  (필수) 서비스 이용약관 동의
-                </span>
-              </label>
-
-              <label className="agree-row">
-                <input type="checkbox" checked={agreeRequired} onChange={handleAgreeRequiredChange} />
-                <span className="agree-text">
-                  (필수) 개인정보 처리방침 동의
-                </span>
-              </label>
-
-              <label className="agree-row">
-                <input type="checkbox" checked={agreeOptional} onChange={handleAgreeOptionalChange} />
-                <span className="agree-text">
-                  (선택) 마케팅 정보 수신 동의
-                </span>
-              </label>
-            </div>
-
-            <button
-              type="button"
-              className={`primary-btn ${agreeRequired ? '' : 'disabled'}`}
-              onClick={handleAgreeAndContinue}
-              disabled={!agreeRequired}
-            >
-              동의하고 계속하기
-            </button>
-          </div>
-        )}
-
-        {/* 1) 반갑습니다(첫번째 이미지) */}
         {step === 1 && (
           <div className="auth-step auth-step-welcome">
             <h1 className="welcome-title">반갑습니다!</h1>
@@ -225,33 +208,40 @@ const SignUpPage = () => {
           </div>
         )}
 
-        {/* 2) 프로필 설정(두번째 이미지) */}
         {step === 2 && (
           <div className="auth-step auth-step-profile">
             <h1 className="auth-title">프로필 설정</h1>
 
             <div className="profile-avatar-wrap">
               <div className="profile-avatar">
-                {profileImageUrl ? (
-                  <img src={profileImageUrl} alt="프로필" className="profile-avatar-img" />
+                {profileImagePreview ? (
+                  <img src={profileImagePreview} alt="프로필" className="profile-avatar-img" />
                 ) : (
                   <div className="profile-avatar-empty" />
                 )}
               </div>
+
               <button
                 type="button"
                 className="avatar-edit-btn"
-                onClick={() => {
-                  const url = prompt('프로필 이미지 URL 넣어줘 (나중에 업로드로 바꾸면 됨)');
-                  if (url != null) setProfileImageUrl(url.trim());
-                }}
+                onClick={handlePickImage}
+                aria-label="프로필 사진 선택"
               >
                 📷
               </button>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={handleImageChange}
+              />
             </div>
 
             <div className="form-group">
               <label className="form-label">닉네임</label>
+
               <div className="row">
                 <input
                   className="input"
@@ -260,6 +250,7 @@ const SignUpPage = () => {
                   placeholder="닉네임"
                   maxLength={20}
                 />
+
                 <button
                   type="button"
                   className="sub-btn"
@@ -269,8 +260,11 @@ const SignUpPage = () => {
                   {dupLoading ? '확인중' : '중복 확인'}
                 </button>
               </div>
-              <p className={`help ${dupChecked ? (dupOk ? 'ok' : 'bad') : ''}`}>
-                {dupChecked ? dupMsg : '닉네임은 영문, 숫자, _, . 만 사용 가능해'}
+
+              <p className={`help ${dupChecked ? (dupOk ? 'ok' : 'bad') : 'bad'}`}>
+                {dupChecked
+                  ? dupMsg
+                  : '닉네임에는 영문, 숫자, 밑줄, 마침표만 사용할 수 있습니다.'}
               </p>
             </div>
 
@@ -286,7 +280,16 @@ const SignUpPage = () => {
 
             <div className="form-group">
               <label className="form-label">사용자 아이디</label>
-              <input className="input disabled" value="" placeholder="@ 사용자 아이디" disabled />
+              <input
+                className="input disabled"
+                value={userEmail}
+                placeholder="@ 카카오 계정 이메일"
+                disabled
+                readOnly
+              />
+              <p className="help">
+                본인만 볼 수 있고 수정할 수 없는 카카오 계정 정보야.
+              </p>
             </div>
 
             <button
@@ -295,7 +298,7 @@ const SignUpPage = () => {
               onClick={handleSubmitProfile}
               disabled={saving}
             >
-              {saving ? '저장중...' : '냉장고 구하러가기'}
+              {saving ? '저장중...' : '저장'}
             </button>
           </div>
         )}

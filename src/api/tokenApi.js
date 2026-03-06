@@ -8,23 +8,20 @@ export const refreshAccessToken = async () => {
     const res = await fetch(`${base}/oauth/token`, {
       method: 'POST',
       credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
     });
 
     if (!res.ok) {
-      throw new Error('토큰 재발급 실패');
+      throw new Error(`토큰 재발급 실패 (${res.status})`);
     }
 
     const data = await res.json();
-    const payload = data?.data;
+    const payload = data?.data ?? data;
 
     if (payload?.accessToken) {
       localStorage.setItem('accessToken', payload.accessToken);
     }
 
-    return payload;
+    return payload ?? null;
   } catch (error) {
     console.error('refreshAccessToken 실패:', error);
     return null;

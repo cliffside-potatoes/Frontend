@@ -1,56 +1,80 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { refreshAccessToken } from '../api/tokenApi';
+import { getMyProfile } from '../api/profileApi';
 
 const STORAGE_KEY = 'user';
 
-const getInitialUser = () => {
+const getStoredUser = () => {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      return JSON.parse(stored);
-    }
+    return stored ? JSON.parse(stored) : null;
   } catch {
-    // ignore
+    return null;
   }
-  return null;
+};
+
+const clearAuthStorage = () => {
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('token');
+  localStorage.removeItem(STORAGE_KEY);
 };
 
 const UserContext = createContext(null);
 
 export function UserProvider({ children }) {
   const navigate = useNavigate();
-  const [user, setUserState] = useState(getInitialUser);
+  const [user, setUserState] = useState(getStoredUser);
   const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
     const initializeUser = async () => {
-      const storedUser = getInitialUser();
+      const storedUser = getStoredUser();
+      const hasAccessToken = Boolean(
+        localStorage.getItem('accessToken') || localStorage.getItem('token')
+      );
 
-      // 이미 user가 있으면 그대로 사용
-      if (storedUser) {
+      if (storedUser && hasAccessToken) {
+        setUserState(storedUser);
         setIsInitializing(false);
         return;
       }
 
-      // refreshToken으로 accessToken 재발급 시도
       try {
         const payload = await refreshAccessToken();
 
-        if (payload) {
-          const newUser = {
-            id: String(payload.id ?? ''),
-            nickname: payload.nickname ?? '사용자',
-            profileImage: '',
-            triedCount: 0,
-            bio: '아직 자기소개가 없어요😊',
-          };
-
-          setUserState(newUser);
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(newUser));
+        if (!payload?.accessToken) {
+          clearAuthStorage();
+          setUserState(null);
+          setIsInitializing(false);
+          return;
         }
+
+        let nextUser = {
+          id: String(payload?.id ?? ''),
+          nickname: payload?.nickname ?? '사용자',
+          profileImage: '',
+          triedCount: 0,
+          bio: '아직 자기소개가 없어요😊',
+        };
+
+        const profile = await getMyProfile();
+
+        if (profile) {
+          nextUser = {
+            ...nextUser,
+            nickname: profile?.nickname ?? nextUser.nickname,
+            bio: profile?.bio ?? nextUser.bio,
+            profileImage: profile?.profileImage?.s3Key ?? '',
+          };
+        }
+
+        setUserState(nextUser);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(nextUser));
       } catch (error) {
-        console.error('Silent refresh failed:', error);
+        console.error('initializeUser 실패:', error);
+        clearAuthStorage();
+        setUserState(null);
       } finally {
         setIsInitializing(false);
       }
@@ -70,8 +94,7 @@ export function UserProvider({ children }) {
   };
 
   const logout = () => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem(STORAGE_KEY);
+    clearAuthStorage();
     setUserState(null);
     navigate('/main', { replace: true });
   };
