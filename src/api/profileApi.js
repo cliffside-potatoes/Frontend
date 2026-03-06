@@ -20,7 +20,6 @@ export const getMyProfile = async () => {
       },
     });
 
-    // ✅ 프로필 없으면 null 반환
     if (res.status === 404) {
       return null;
     }
