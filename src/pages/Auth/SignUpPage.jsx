@@ -3,8 +3,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import naengGuIcon from '../../assets/image/naeng-gu.png';
 import './SignUpPage.css';
 import { createOrUpdateProfile, checkNicknameDuplicate } from '../../api/profileApi';
-import { issuePresignedUrl } from '../../api/presignedApi';
-import { uploadFileToS3 } from '../../utils/uploadToS3';
 import { useUser } from '../../context/UserContext';
 
 const SignUpPage = () => {
@@ -101,31 +99,6 @@ const SignUpPage = () => {
     setProfileImagePreview(previewUrl);
   };
 
-  const uploadProfileImageIfNeeded = async () => {
-    if (!profileImageFile) return null;
-
-    const presigned = await issuePresignedUrl({
-      type: 'profile',
-      imageName: profileImageFile.name,
-    });
-
-    if (!presigned?.presignedUrl || !presigned?.s3Key) {
-      throw new Error('Presigned URL 응답이 올바르지 않아');
-    }
-
-    await uploadFileToS3({
-      presignedUrl: presigned.presignedUrl,
-      file: profileImageFile,
-    });
-
-    return {
-      s3Key: presigned.s3Key,
-      contentType: profileImageFile.type || 'image/png',
-      size: profileImageFile.size || 0,
-      accessType: 'public',
-    };
-  };
-
   const handleSubmitProfile = async () => {
     const v = nickname.trim();
 
@@ -146,12 +119,12 @@ const SignUpPage = () => {
     setSaving(true);
 
     try {
-      const uploadedProfileImage = await uploadProfileImageIfNeeded();
-
-      const res = await createOrUpdateProfile({
+      // ✅ S3 CORS 해결 전까지는 이미지 메타를 보내지 않고
+      // 닉네임/자기소개만 먼저 저장
+      await createOrUpdateProfile({
         nickname: v,
         bio: bio ?? '',
-        profileImage: uploadedProfileImage,
+        profileImage: null,
       });
 
       setUser({
@@ -159,10 +132,16 @@ const SignUpPage = () => {
         id: String(user?.id ?? ''),
         email: userEmail ?? '',
         nickname: v,
+        // ✅ 미리보기는 유지하되 실제 서버 저장은 아직 안 됨
         profileImage: profileImagePreview ?? '',
         triedCount: user?.triedCount ?? 0,
         bio: bio ?? '아직 자기소개가 없어요😊',
       });
+
+      // 이미지 골랐으면 안내만 한 번 띄우기
+      if (profileImageFile) {
+        alert('프로필 사진은 지금 미리보기만 적용됐어. 이미지 저장은 S3 설정 후 붙일게!');
+      }
 
       navigate('/main', { replace: true });
     } catch (e) {
