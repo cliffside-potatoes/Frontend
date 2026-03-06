@@ -9,10 +9,6 @@ const getAuthHeader = () => {
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
-/**
- * 내 프로필 조회
- * GET /profiles
- */
 export const getMyProfile = async () => {
   try {
     const base = API_BASE_URL.replace(/\/$/, '');
@@ -23,6 +19,11 @@ export const getMyProfile = async () => {
         ...getAuthHeader(),
       },
     });
+
+    // ✅ 프로필 없으면 null 반환
+    if (res.status === 404) {
+      return null;
+    }
 
     if (!res.ok) {
       throw new Error(`프로필 조회 실패 (${res.status})`);
@@ -36,10 +37,6 @@ export const getMyProfile = async () => {
   }
 };
 
-/**
- * 프로필 생성/수정
- * PUT /profiles
- */
 export const createOrUpdateProfile = async ({ nickname, bio, profileImage = null }) => {
   try {
     const base = API_BASE_URL.replace(/\/$/, '');
@@ -69,9 +66,6 @@ export const createOrUpdateProfile = async ({ nickname, bio, profileImage = null
   }
 };
 
-/**
- * 현재 Swagger에 닉네임 중복확인 API 없음
- */
 export const checkNicknameDuplicate = async () => {
   try {
     return true;
