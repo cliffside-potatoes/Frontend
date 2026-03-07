@@ -305,9 +305,157 @@ export const deleteRecipeReview = async (recipeId, reviewId) => {
   }
 };
 
+/**
+ * 레시피 찜 생성
+ * POST /wishes/{recipeId}
+ */
+export const addWishlist = async (recipeId) => {
+  try {
+    const base = (typeof API_BASE_URL === 'string' && API_BASE_URL.trim()) || '';
+    if (!base) return { success: true };
+
+    const res = await fetch(`${base}/wishes/${recipeId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+    });
+
+    if (!res.ok) throw new Error('찜 추가 실패');
+    return { success: true };
+  } catch (error) {
+    console.error('찜 추가 실패:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * 레시피 찜 해제
+ * DELETE /wishes/{recipeId}
+ */
+export const removeWishlist = async (recipeId) => {
+  try {
+    const base = (typeof API_BASE_URL === 'string' && API_BASE_URL.trim()) || '';
+    if (!base) return { success: true };
+
+    const res = await fetch(`${base}/wishes/${recipeId}`, {
+      method: 'DELETE',
+      headers: getAuthHeader(),
+    });
+
+    if (!res.ok) throw new Error('찜 해제 실패');
+    return { success: true };
+  } catch (error) {
+    console.error('찜 해제 실패:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * 레시피 찜 목록 조회
+ * GET /wishes
+ */
+export const getWishlistRecipes = async (params = {}) => {
+  const { size = 20, cursorId, cursorCreatedAt } = params;
+
+  try {
+    const base = (typeof API_BASE_URL === 'string' && API_BASE_URL.trim()) || '';
+    if (!base) return { items: [], hasNext: false };
+
+    const searchParams = new URLSearchParams({ size: String(size) });
+    if (cursorId && cursorCreatedAt) {
+      searchParams.set('cursorId', String(cursorId));
+      searchParams.set('cursorCreatedAt', cursorCreatedAt);
+    }
+
+    const res = await fetch(`${base}/wishes?${searchParams.toString()}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+    });
+
+    if (!res.ok) return { items: [], hasNext: false };
+
+    const data = await res.json();
+    return {
+      items: Array.isArray(data.items) ? data.items : [],
+      hasNext: Boolean(data.hasNext),
+      nextCursor: data.nextCursor ?? null,
+    };
+  } catch (error) {
+    console.error('찜 목록 조회 실패:', error);
+    return { items: [], hasNext: false };
+  }
+};
+
+/**
+ * 인기 레시피 조회
+ * GET /recipes/popular
+ */
+export const getPopularRecipes = async (params = {}) => {
+  const { size = 10 } = params;
+
+  try {
+    const base = (typeof API_BASE_URL === 'string' && API_BASE_URL.trim()) || '';
+    if (!base) return [];
+
+    const res = await fetch(`${base}/recipes/popular?size=${size}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+    });
+
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data.items) ? data.items : (Array.isArray(data) ? data : []);
+  } catch (error) {
+    console.error('인기 레시피 조회 실패:', error);
+    return [];
+  }
+};
+
+/**
+ * 태그별 레시피 추천 조회
+ * GET /recipes?tag={tag}
+ */
+export const getTaggedRecipes = async (tag, params = {}) => {
+  const { size = 10 } = params;
+
+  try {
+    const base = (typeof API_BASE_URL === 'string' && API_BASE_URL.trim()) || '';
+    if (!base) return [];
+
+    const searchParams = new URLSearchParams({ tag, size: String(size) });
+    const res = await fetch(`${base}/recipes?${searchParams.toString()}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+    });
+
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data.items) ? data.items : (Array.isArray(data) ? data : []);
+  } catch (error) {
+    console.error('태그별 레시피 조회 실패:', error);
+    return [];
+  }
+};
+
 export default {
   getRecipeDetail,
   getRecipeReviews,
   createRecipeReview,
-  deleteRecipeReview
+  deleteRecipeReview,
+  addWishlist,
+  removeWishlist,
+  getWishlistRecipes,
+  getPopularRecipes,
+  getTaggedRecipes,
 };

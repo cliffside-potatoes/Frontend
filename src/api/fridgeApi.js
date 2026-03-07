@@ -1,6 +1,5 @@
 import axios from 'axios';
 
-// API 베이스 URL 설정 (필요시 환경변수 사용)
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 const apiClient = axios.create({
@@ -8,6 +7,14 @@ const apiClient = axios.create({
     headers: {
         'Content-Type': 'application/json',
     },
+});
+
+apiClient.interceptors.request.use((config) => {
+    const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
 });
 
 export const fridgeApi = {
