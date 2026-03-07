@@ -1,23 +1,59 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../../components/common/BottomNav';
 import RecipeCard from '../../components/card/RecipeCard';
 import Modal from '../../components/ui/Modal';
 import { useUser } from '../../context/UserContext';
 import { RECIPE_CATEGORIES } from '../../constants/categories';
+import { fridgeApi } from '../../api/fridgeApi';
+import { getPopularRecipes } from '../../api/recipeApi';
 import naengGuIcon from '../../assets/image/naeng-gu.png';
 import './MainPage.css';
-
-console.log('API URL:', import.meta.env.VITE_API_URL);
 
 const MainPage = () => {
   const navigate = useNavigate();
   const { isLoggedIn, isInitializing } = useUser();
 
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [matchedRecipes, setMatchedRecipes] = useState([]);
+  const [popularRecipes, setPopularRecipes] = useState([]);
+  const [recipesLoading, setRecipesLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchRecipes = async () => {
+      setRecipesLoading(true);
+      try {
+        const [popular] = await Promise.all([
+          getPopularRecipes({ size: 10 }),
+        ]);
+        setPopularRecipes(popular);
+      } catch (error) {
+        console.error('레시피 조회 실패:', error);
+      } finally {
+        setRecipesLoading(false);
+      }
+    };
+
+    fetchRecipes();
+  }, []);
+
+  useEffect(() => {
+    if (!isLoggedIn || isInitializing) return;
+
+    const fetchMatched = async () => {
+      try {
+        const res = await fridgeApi.getRecommendedRecipes();
+        const data = res.data?.data ?? res.data ?? [];
+        setMatchedRecipes(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error('내 냉장고 매칭 레시피 조회 실패:', error);
+      }
+    };
+
+    fetchMatched();
+  }, [isLoggedIn, isInitializing]);
 
   const handleFillRefrigeratorClick = () => {
-    // ✅ 초기 로그인 확인 중이면(쿠키로 토큰 재발급 중이면) 안내만 하고 막기
     if (isInitializing) {
       alert('로그인 확인 중이야. 잠깐만 다시 눌러줘!');
       return;
@@ -30,60 +66,7 @@ const MainPage = () => {
     }
   };
 
-  const recipes = [
-    {
-      recipeId: 1,
-      title: '22:03 수정 김치찌개',
-      thumbnailImage: 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=400&h=400&fit=crop',
-      source: '유튜브 - 릴리쿡',
-      cookingTime: 30,
-      difficulty: '초보',
-      likeCount: 6,
-      reviewCount: 8,
-      totalIngredientCount: 7,
-      matchedIngredientCount: 4,
-      liked: false,
-    },
-    {
-      recipeId: 2,
-      title: '된장찌개',
-      thumbnailImage: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=400&h=400&fit=crop',
-      source: '만개의레시피',
-      cookingTime: 25,
-      difficulty: '초보',
-      likeCount: 12,
-      reviewCount: 15,
-      totalIngredientCount: 6,
-      matchedIngredientCount: 6,
-      liked: true,
-    },
-    {
-      recipeId: 3,
-      title: '제육볶음',
-      thumbnailImage: 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=400&h=400&fit=crop',
-      source: '백종원의 요리비책',
-      cookingTime: 20,
-      difficulty: '중급',
-      likeCount: 24,
-      reviewCount: 18,
-      totalIngredientCount: 8,
-      matchedIngredientCount: 5,
-      liked: false,
-    },
-    {
-      recipeId: 4,
-      title: '계란볶음밥',
-      thumbnailImage: 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=400&h=400&fit=crop',
-      source: '쿡쿡TV',
-      cookingTime: 10,
-      difficulty: '초보',
-      likeCount: 8,
-      reviewCount: 5,
-      totalIngredientCount: 4,
-      matchedIngredientCount: 3,
-      liked: false,
-    },
-  ];
+  const displayedRecipes = isLoggedIn && matchedRecipes.length > 0 ? matchedRecipes : popularRecipes;
 
   const handleSearchClick = () => {
     navigate('/search');
@@ -131,14 +114,23 @@ const MainPage = () => {
           </div>
         </section>
 
-        {/* 내 냉장고 레시피 추천 */}
+        {/* 내 냉장고 레시피 추천 / 인기 레시피 */}
         <section className="recipe-section">
-          <h2 className="section-title">내 냉장고 레시피 추천</h2>
-          <div className="recipe-list">
-            {recipes.map((recipe) => (
-              <RecipeCard key={recipe.recipeId} recipe={recipe} />
-            ))}
-          </div>
+          <h2 className="section-title">
+            {isLoggedIn && matchedRecipes.length > 0 ? '내 냉장고 레시피 추천' : '인기 레시피'}
+          </h2>
+          {recipesLoading ? (
+            <p style={{ padding: '16px', color: '#888' }}>레시피 불러오는 중...</p>
+          ) : (
+            <div className="recipe-list">
+              {displayedRecipes.map((recipe) => (
+                <RecipeCard key={recipe.recipeId} recipe={recipe} />
+              ))}
+              {displayedRecipes.length === 0 && (
+                <p style={{ padding: '16px', color: '#888' }}>추천 레시피가 없어요</p>
+              )}
+            </div>
+          )}
         </section>
       </main>
 

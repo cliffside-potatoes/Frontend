@@ -1,26 +1,50 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../../components/common/BottomNav';
+import { getMyFeed } from '../../api/meFeedApi';
 import './MyReviewsPage.css';
-
-const MOCK_MY_REVIEWS = [
-  {
-    reviewId: 1,
-    recipeTitle: '김치찌개',
-    recipeId: 1,
-    content: '오늘도 이걸 먹었다~~ 너무 맛있었다!',
-    updatedAt: '2025년 12월 23일',
-  },
-];
 
 const MyReviewsPage = () => {
   const navigate = useNavigate();
-  const reviews = MOCK_MY_REVIEWS;
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchReviews = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const result = await getMyFeed({ type: 'RECIPE_REVIEW', size: 50, sort: 'LATEST' });
+        const items = (result.items ?? []).map((item) => ({
+          reviewId: item.id,
+          recipeTitle: item.source ?? '레시피 후기',
+          recipeId: item.recipeId ?? null,
+          content: item.content ?? '',
+          updatedAt: item.updatedAt
+            ? new Date(item.updatedAt).toLocaleDateString('ko-KR', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })
+            : '',
+        }));
+        setReviews(items);
+      } catch (err) {
+        console.error('내 후기 조회 실패:', err);
+        setError('후기 목록을 불러올 수 없습니다.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReviews();
+  }, []);
 
   const handleBack = () => navigate(-1);
 
   const handleReviewClick = (recipeId) => {
-    navigate(`/recipe/${recipeId}`);
+    if (recipeId) navigate(`/recipe/${recipeId}`);
   };
 
   return (
@@ -34,7 +58,15 @@ const MyReviewsPage = () => {
       </header>
 
       <main className="my-reviews-main">
-        {reviews.length > 0 ? (
+        {loading ? (
+          <div className="my-reviews-empty">
+            <p className="mrv-empty-text">불러오는 중...</p>
+          </div>
+        ) : error ? (
+          <div className="my-reviews-empty">
+            <p className="mrv-empty-text">{error}</p>
+          </div>
+        ) : reviews.length > 0 ? (
           <ul className="my-reviews-list">
             {reviews.map((review) => (
               <li key={review.reviewId} className="my-reviews-item">

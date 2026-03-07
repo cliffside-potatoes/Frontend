@@ -1,15 +1,16 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMyPosts } from '../../context/MyPostsContext';
 import { useUser } from '../../context/UserContext';
 import BottomNav from '../../components/common/BottomNav';
 import FeedCard from '../../components/card/FeedCard';
+import { getFeed } from '../../api/feedApi';
+import { createPost, updatePost, deletePost } from '../../api/postApi';
 import profileImg from '../../assets/image/profile.png';
 import './Feed.css';
 
 const MAX_POST_IMAGES = 5;
 
-// ✅ createdAt이 number든 ISO string이든 안전하게 timestamp로 바꿔서 정렬용으로 사용
 const toTime = (value) => {
   if (value == null) return 0;
   if (typeof value === 'number') return value;
@@ -20,32 +21,24 @@ const toTime = (value) => {
   return 0;
 };
 
-const otherUsersPosts = [
-  {
-    id: 'other-1',
-    author: '친구A',
-    date: '2025년 12월 24일',
-    createdAt: new Date('2025-12-24').getTime(),
-    content: '오늘 점심 뭐 먹지? 추천 받아요~',
-    image: 'https://images.unsplash.com/photo-1504674900247-0877df9cc84e?w=600&h=600&fit=crop',
-    likeCount: 12,
-    liked: false,
-    hideLikeCount: false,
-    pinned: false,
-  },
-  {
-    id: 'other-2',
-    author: '요리왕',
-    date: '2025년 12월 22일',
-    createdAt: new Date('2025-12-22').getTime(),
-    content: '홈메이드 피자 도전! 결과는 대만족 🍕',
-    image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600&h=600&fit=crop',
-    likeCount: 24,
-    liked: false,
-    hideLikeCount: false,
-    pinned: false,
-  },
-];
+const mapApiItemToPost = (item) => ({
+  id: item.id,
+  type: item.type,
+  author: item.writer?.nickname ?? item.author ?? '사용자',
+  date: item.createdAt
+    ? new Date(item.createdAt).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })
+    : '',
+  createdAt: item.createdAt ?? '',
+  updatedAt: item.updatedAt ?? item.createdAt ?? '',
+  content: item.content ?? '',
+  images: Array.isArray(item.images) ? item.images : (item.image ? [item.image] : []),
+  image: Array.isArray(item.images) ? (item.images[0] ?? '') : (item.image ?? ''),
+  likeCount: item.likeCount ?? 0,
+  liked: Boolean(item.liked),
+  hideLikeCount: Boolean(item.hidLikeCount ?? item.hideLikeCount),
+  pinned: Boolean(item.pinned),
+  isMine: Boolean(item.isMine),
+});
 
 const Feed = () => {
   const navigate = useNavigate();
@@ -57,6 +50,11 @@ const Feed = () => {
 
   const myPostIds = useMemo(() => new Set((myPosts || []).map((p) => p.id)), [myPosts]);
 
+  const [serverFeed, setServerFeed] = useState([]);
+  const [feedLoading, setFeedLoading] = useState(true);
+  const [hasNext, setHasNext] = useState(false);
+  const [nextCursor, setNextCursor] = useState(null);
+
   const [postMenuPostId, setPostMenuPostId] = useState(null);
   const [deleteConfirmPostId, setDeleteConfirmPostId] = useState(null);
   const [writeModalOpen, setWriteModalOpen] = useState(false);
@@ -67,15 +65,39 @@ const Feed = () => {
   const fileInputRef = useRef(null);
   const textareaRef = useRef(null);
 
-  // ✅ 새 글이 항상 위로 오도록 정렬을 timestamp 기준으로 안전하게
-  const feedList = useMemo(() => {
-    const combined = [
-      ...otherUsersPosts.map((p) => ({ ...p, isOther: true })),
-      ...(myPosts || []).map((p) => ({ ...p, isOther: false })),
-    ];
+  const loadFeed = useCallback(async (cursor = null) => {
+    setFeedLoading(true);
+    try {
+      const params = { size: 20, sort: 'LATEST' };
+      if (cursor) {
+        params.cursorCreatedAt = cursor.cursorCreatedAt;
+        params.cursorId = cursor.cursorId;
+      }
+      const result = await getFeed(params);
+      const mapped = (result.items ?? []).map(mapApiItemToPost);
+      setServerFeed((prev) => cursor ? [...prev, ...mapped] : mapped);
+      setHasNext(Boolean(result.hasNext));
+      setNextCursor(result.nextCursor ?? null);
+    } catch (error) {
+      console.error('피드 조회 실패:', error);
+    } finally {
+      setFeedLoading(false);
+    }
+  }, []);
 
+  useEffect(() => {
+    loadFeed();
+  }, [loadFeed]);
+
+  const feedList = useMemo(() => {
+    const serverIds = new Set(serverFeed.map((p) => p.id));
+    const localOnly = (myPosts || []).filter((p) => !serverIds.has(p.id));
+    const combined = [
+      ...serverFeed,
+      ...localOnly.map((p) => ({ ...p, isOther: false })),
+    ];
     return combined.sort((a, b) => toTime(b.createdAt) - toTime(a.createdAt));
-  }, [myPosts]);
+  }, [serverFeed, myPosts]);
 
   const openPostMenu = (e, postId) => {
     e.stopPropagation();
@@ -111,11 +133,16 @@ const Feed = () => {
 
   const closeDeleteConfirm = () => setDeleteConfirmPostId(null);
 
-  const handleDeletePost = () => {
-    if (deleteConfirmPostId) {
-      setPosts((prev) => (prev || []).filter((p) => p.id !== deleteConfirmPostId));
-      setDeleteConfirmPostId(null);
+  const handleDeletePost = async () => {
+    if (!deleteConfirmPostId) return;
+    try {
+      await deletePost(deleteConfirmPostId);
+    } catch (error) {
+      console.error('게시글 삭제 실패:', error);
     }
+    setPosts((prev) => (prev || []).filter((p) => p.id !== deleteConfirmPostId));
+    setServerFeed((prev) => prev.filter((p) => p.id !== deleteConfirmPostId));
+    setDeleteConfirmPostId(null);
   };
 
   const handleToggleHideLikeCount = (postId) => {
@@ -204,63 +231,67 @@ const Feed = () => {
     setDraftImages((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleSavePost = () => {
+  const handleSavePost = async () => {
     const trimmed = draftContent.trim();
     if (trimmed.length < 1) return;
     if (trimmed.length > 500) return;
 
-    const images = draftImages.length > 0 ? draftImages.slice(0, MAX_POST_IMAGES) : [];
+    const images = draftImages.slice(0, MAX_POST_IMAGES);
     const image = images[0] || '';
-
-    // ✅ createdAt/updatedAt을 ISO 문자열로 통일 (MyPage와 동일)
     const nowIso = new Date().toISOString();
-    const dateStr = new Date().toLocaleDateString('ko-KR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+    const dateStr = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
 
     if (editingPostId) {
+      try {
+        await updatePost(editingPostId, { content: trimmed, images });
+      } catch (error) {
+        console.error('게시글 수정 실패:', error);
+      }
       setPosts((prev) =>
         (prev || []).map((p) =>
-          p.id === editingPostId
-            ? { ...p, content: trimmed, image, images, updatedAt: nowIso }
-            : p
+          p.id === editingPostId ? { ...p, content: trimmed, image, images, updatedAt: nowIso } : p
+        )
+      );
+      setServerFeed((prev) =>
+        prev.map((p) =>
+          p.id === editingPostId ? { ...p, content: trimmed, image, images, updatedAt: nowIso } : p
         )
       );
     } else {
-      setPosts((prev) => {
-        const safePrev = prev || [];
-        const nextId =
-          Math.max(0, ...safePrev.map((p) => (typeof p.id === 'number' ? p.id : 0))) + 1;
+      let newId = Date.now();
+      try {
+        const result = await createPost({ content: trimmed, images });
+        if (result.success && result.data?.id) newId = result.data.id;
+      } catch (error) {
+        console.error('게시글 생성 실패:', error);
+      }
 
-        // ✅ 새 글이 위로: 배열 앞에 추가 + createdAt은 nowIso
-        return [
-          {
-            id: nextId,
-            type: 'POST',
-            author: currentNickname,
-            date: dateStr,
-            createdAt: nowIso,
-            updatedAt: nowIso,
-            content: trimmed,
-            image,
-            images,
-            likeCount: 0,
-            liked: false,
-            hideLikeCount: false,
-            pinned: false,
-          },
-          ...safePrev,
-        ];
-      });
+      const newPost = {
+        id: newId,
+        type: 'POST',
+        author: currentNickname,
+        date: dateStr,
+        createdAt: nowIso,
+        updatedAt: nowIso,
+        content: trimmed,
+        image,
+        images,
+        likeCount: 0,
+        liked: false,
+        hideLikeCount: false,
+        pinned: false,
+        isMine: true,
+      };
+
+      setPosts((prev) => [newPost, ...(prev || [])]);
     }
 
     closeWriteModal();
   };
 
   const getPostForCard = (item) => {
-    if (item.isOther) {
+    const isMine = myPostIds.has(item.id) || Boolean(item.isMine);
+    if (!isMine) {
       const liked = otherPostsLike[item.id] ?? item.liked;
       const likeCount = (item.likeCount ?? 0) + (liked ? 1 : 0) - (item.liked ? 1 : 0);
       return { ...item, liked, likeCount: Math.max(0, likeCount) };
@@ -288,10 +319,14 @@ const Feed = () => {
           <span className="feed-new-story-placeholder">새로운 이야기가 있나요?</span>
         </button>
 
+        {feedLoading && feedList.length === 0 && (
+          <p style={{ padding: '16px', textAlign: 'center', color: '#888' }}>피드 불러오는 중...</p>
+        )}
+
         <div className="feed-list">
           {feedList.map((item) => {
             const post = getPostForCard(item);
-            const isMine = myPostIds.has(post.id);
+            const isMine = myPostIds.has(post.id) || Boolean(post.isMine);
             return (
               <div key={post.id} className="feed-card-wrap">
                 <FeedCard
@@ -333,6 +368,17 @@ const Feed = () => {
               </div>
             );
           })}
+          {hasNext && (
+            <button
+              type="button"
+              className="feed-load-more"
+              onClick={() => loadFeed(nextCursor)}
+              disabled={feedLoading}
+              style={{ display: 'block', width: '100%', padding: '12px', textAlign: 'center', background: 'none', border: '1px solid #e0e0e0', borderRadius: 8, cursor: 'pointer', color: '#666', margin: '8px 0' }}
+            >
+              {feedLoading ? '불러오는 중...' : '더 보기'}
+            </button>
+          )}
         </div>
       </main>
 
