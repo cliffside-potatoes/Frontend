@@ -1,83 +1,148 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageHeader from '../../components/common/PageHeader';
 import PrimaryButton from '../../components/common/PrimaryButton';
 import BottomNav from '../../components/common/BottomNav';
 import Dropdown from '../../components/ui/Dropdown';
 import Modal from '../../components/ui/Modal';
+import TextInput from '../../components/common/TextInput';
+import ColorPicker from '../../components/ui/ColorPicker';
+import { fridgeApi } from '../../api/fridgeApi';
 import './CategorySettingsPage.css';
-
-const MOCK_CATEGORIES = [
-  { id: '1', label: '채소', color: '#c8e6c9' },
-  { id: '2', label: '육류', color: '#ffcdd2' },
-];
 
 const DROPDOWN_OPTIONS = [
   { value: 'edit', label: '수정' },
-  { value: 'order', label: '순서변경' },
   { value: 'delete', label: '삭제', danger: true },
 ];
 
 const CategorySettingsPage = () => {
   const navigate = useNavigate();
-  const [categories] = useState(MOCK_CATEGORIES);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   const [selectedId, setSelectedId] = useState(null);
   const [dropdownCategoryId, setDropdownCategoryId] = useState(null);
   const [deleteModalCategoryId, setDeleteModalCategoryId] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
-  const freezerEmpty = true;
-  const fridgeCategories = categories;
+  const [editModalCategory, setEditModalCategory] = useState(null);
+  const [editName, setEditName] = useState('');
+  const [editColor, setEditColor] = useState('#e0e0e0');
+  const [colorPickerOpen, setColorPickerOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const loadCategories = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fridgeApi.getMyFridge();
+      const data = res.data?.data ?? res.data ?? {};
+      const raw = Array.isArray(data.categories) ? data.categories : [];
+      setCategories(
+        raw.map((cat) => ({
+          id: String(cat.categoryId ?? cat.id),
+          label: cat.name ?? cat.label ?? '',
+          color: cat.color ?? '#e0e0e0',
+          location: cat.location ?? 'FRIDGE',
+        }))
+      );
+    } catch (error) {
+      console.error('카테고리 조회 실패:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadCategories();
+  }, [loadCategories]);
 
   const handleCategoryOptionSelect = (value, categoryId) => {
     setDropdownCategoryId(null);
-    if (value === 'delete') setDeleteModalCategoryId(categoryId);
+    if (value === 'delete') {
+      setDeleteModalCategoryId(categoryId);
+    } else if (value === 'edit') {
+      const cat = categories.find((c) => c.id === categoryId);
+      if (cat) {
+        setEditModalCategory(cat);
+        setEditName(cat.label);
+        setEditColor(cat.color);
+      }
+    }
   };
-  const handleConfirmDelete = () => setDeleteModalCategoryId(null);
+
+  const handleConfirmDelete = async () => {
+    if (!deleteModalCategoryId) return;
+    setDeleting(true);
+    try {
+      await fridgeApi.deleteCategory(deleteModalCategoryId);
+      setDeleteModalCategoryId(null);
+      await loadCategories();
+    } catch (error) {
+      console.error('카테고리 삭제 실패:', error);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editModalCategory) return;
+    setSaving(true);
+    try {
+      await fridgeApi.updateCategory(editModalCategory.id, { name: editName, color: editColor });
+      setEditModalCategory(null);
+      await loadCategories();
+    } catch (error) {
+      console.error('카테고리 수정 실패:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const freezerCats = categories.filter((c) => c.location === 'FREEZER');
+  const fridgeCats = categories.filter((c) => c.location !== 'FREEZER');
 
   return (
     <div className="category-settings-page">
       <PageHeader title="카테고리 설정" onBack={() => navigate(-1)} onHome={() => navigate('/')} />
 
       <main className="category-settings-page__main">
-        <section className="category-settings-page__section">
-          <h2 className="category-settings-page__section-title">냉동실</h2>
-          {freezerEmpty && <p className="category-settings-page__empty">현재 냉장고가 비어있어요!</p>}
-        </section>
+        {loading ? (
+          <p className="category-settings-page__empty">불러오는 중...</p>
+        ) : (
+          <>
+            <section className="category-settings-page__section">
+              <h2 className="category-settings-page__section-title">냉동실</h2>
+              {freezerCats.length === 0 ? (
+                <p className="category-settings-page__empty">현재 냉동실이 비어있어요!</p>
+              ) : (
+                <CategoryList
+                  cats={freezerCats}
+                  selectedId={selectedId}
+                  setSelectedId={setSelectedId}
+                  dropdownCategoryId={dropdownCategoryId}
+                  setDropdownCategoryId={setDropdownCategoryId}
+                  onOptionSelect={handleCategoryOptionSelect}
+                />
+              )}
+            </section>
 
-        <section className="category-settings-page__section">
-          <h2 className="category-settings-page__section-title">냉장고</h2>
-          <ul className="category-settings-page__list">
-            {fridgeCategories.map((cat) => (
-              <li
-                key={cat.id}
-                className={`category-settings-page__item ${selectedId === cat.id ? 'category-settings-page__item--selected' : ''}`}
-                onClick={() => setSelectedId(cat.id)}
-              >
-                <span className="category-settings-page__color" style={{ backgroundColor: cat.color }} />
-                <span className="category-settings-page__label">{cat.label}</span>
-                <button
-                  type="button"
-                  className="category-settings-page__more"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setDropdownCategoryId(dropdownCategoryId === cat.id ? null : cat.id);
-                  }}
-                  aria-label="옵션"
-                >
-                  <span className="material-symbols-outlined">more_vert</span>
-                </button>
-                {dropdownCategoryId === cat.id && (
-                  <Dropdown
-                    isOpen
-                    onClose={() => setDropdownCategoryId(null)}
-                    options={DROPDOWN_OPTIONS}
-                    onSelect={(value) => handleCategoryOptionSelect(value, cat.id)}
-                  />
-                )}
-              </li>
-            ))}
-          </ul>
-        </section>
+            <section className="category-settings-page__section">
+              <h2 className="category-settings-page__section-title">냉장고</h2>
+              {fridgeCats.length === 0 ? (
+                <p className="category-settings-page__empty">현재 냉장고가 비어있어요!</p>
+              ) : (
+                <CategoryList
+                  cats={fridgeCats}
+                  selectedId={selectedId}
+                  setSelectedId={setSelectedId}
+                  dropdownCategoryId={dropdownCategoryId}
+                  setDropdownCategoryId={setDropdownCategoryId}
+                  onOptionSelect={handleCategoryOptionSelect}
+                />
+              )}
+            </section>
+          </>
+        )}
       </main>
 
       <div className="category-settings-page__actions">
@@ -86,21 +151,106 @@ const CategorySettingsPage = () => {
         </PrimaryButton>
       </div>
 
+      {/* 삭제 확인 모달 */}
       <Modal
         isOpen={deleteModalCategoryId != null}
         onClose={() => setDeleteModalCategoryId(null)}
         title="카테고리를 삭제하시겠어요?"
         description="하단에 포함된 재료들도 함께 삭제 됩니다"
-        confirmLabel="삭제"
+        confirmLabel={deleting ? '삭제 중...' : '삭제'}
         cancelLabel="취소"
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeleteModalCategoryId(null)}
         variant="danger"
       />
 
+      {/* 수정 모달 */}
+      {editModalCategory && (
+        <>
+          <div className="modal-backdrop" onClick={() => setEditModalCategory(null)} aria-hidden="true" />
+          <div className="modal category-edit-modal">
+            <h3 className="modal-title">카테고리 수정</h3>
+            <div className="category-edit-modal__field">
+              <TextInput
+                label="카테고리 이름"
+                value={editName}
+                onChange={setEditName}
+                placeholder="카테고리 이름"
+              />
+            </div>
+            <div className="category-edit-modal__field">
+              <label className="category-edit-modal__label">색상</label>
+              <button
+                type="button"
+                className="category-edit-modal__color-trigger"
+                onClick={() => setColorPickerOpen(true)}
+              >
+                <span
+                  className="category-edit-modal__color-preview"
+                  style={{ backgroundColor: editColor, width: 24, height: 24, borderRadius: 4, display: 'inline-block' }}
+                />
+                <span className="material-symbols-outlined">expand_more</span>
+              </button>
+            </div>
+            <div className="modal-actions">
+              <button type="button" className="modal-btn modal-btn--cancel" onClick={() => setEditModalCategory(null)}>
+                취소
+              </button>
+              <button type="button" className="modal-btn modal-btn--confirm" onClick={handleSaveEdit} disabled={saving}>
+                {saving ? '저장 중...' : '저장'}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      <ColorPicker
+        isOpen={colorPickerOpen}
+        onClose={() => setColorPickerOpen(false)}
+        value={editColor}
+        onChange={setEditColor}
+      />
+
       <BottomNav />
     </div>
   );
 };
+
+const CategoryList = ({ cats, selectedId, setSelectedId, dropdownCategoryId, setDropdownCategoryId, onOptionSelect }) => (
+  <ul className="category-settings-page__list">
+    {cats.map((cat) => (
+      <li
+        key={cat.id}
+        className={`category-settings-page__item ${selectedId === cat.id ? 'category-settings-page__item--selected' : ''}`}
+        onClick={() => setSelectedId(cat.id)}
+      >
+        <span className="category-settings-page__color" style={{ backgroundColor: cat.color }} />
+        <span className="category-settings-page__label">{cat.label}</span>
+        <button
+          type="button"
+          className="category-settings-page__more"
+          onClick={(e) => {
+            e.stopPropagation();
+            setDropdownCategoryId(dropdownCategoryId === cat.id ? null : cat.id);
+          }}
+          aria-label="옵션"
+        >
+          <span className="material-symbols-outlined">more_vert</span>
+        </button>
+        {dropdownCategoryId === cat.id && (
+          <Dropdown
+            isOpen
+            onClose={() => setDropdownCategoryId(null)}
+            options={[
+              { value: 'edit', label: '수정' },
+              { value: 'delete', label: '삭제', danger: true },
+            ]}
+            onSelect={(value) => onOptionSelect(value, cat.id)}
+          />
+        )}
+      </li>
+    ))}
+  </ul>
+);
 
 export default CategorySettingsPage;

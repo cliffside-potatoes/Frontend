@@ -5,21 +5,34 @@ import ToggleButton from '../../components/common/ToggleButton';
 import TextInput from '../../components/common/TextInput';
 import PrimaryButton from '../../components/common/PrimaryButton';
 import ColorPicker from '../../components/ui/ColorPicker';
+import { fridgeApi } from '../../api/fridgeApi';
 import './CategoryRegistrationPage.css';
 
 const LOCATION_OPTIONS = [
-  { value: 'freezer', label: '냉동실' },
-  { value: 'fridge', label: '냉장고' },
+  { value: 'FREEZER', label: '냉동실' },
+  { value: 'FRIDGE', label: '냉장고' },
 ];
 
 const CategoryRegistrationPage = () => {
   const navigate = useNavigate();
-  const [location, setLocation] = useState('freezer');
+  const [location, setLocation] = useState('FREEZER');
   const [categoryName, setCategoryName] = useState('');
   const [color, setColor] = useState('#90caf9');
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = () => {};
+  const handleSubmit = async () => {
+    if (!categoryName.trim()) return;
+    setLoading(true);
+    try {
+      await fridgeApi.createCategory({ name: categoryName.trim(), color, location });
+      navigate(-1);
+    } catch (error) {
+      console.error('카테고리 생성 실패:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="category-registration-page">
@@ -52,8 +65,8 @@ const CategoryRegistrationPage = () => {
           </button>
         </div>
 
-        <PrimaryButton fullWidth onClick={handleSubmit}>
-          등록
+        <PrimaryButton fullWidth onClick={handleSubmit} disabled={loading || !categoryName.trim()}>
+          {loading ? '등록 중...' : '등록'}
         </PrimaryButton>
       </main>
 
