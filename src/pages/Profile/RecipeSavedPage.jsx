@@ -1,41 +1,33 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../../components/common/BottomNav';
 import RecipeCard from '../../components/card/RecipeCard';
+import { getWishlistRecipes } from '../../api/recipeApi';
 import './RecipeSavedPage.css';
-
-const MOCK_SAVED_RECIPES = [
-  {
-    recipeId: 1,
-    title: '김치찌개',
-    thumbnailImage: 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=400&h=400&fit=crop',
-    source: '유튜브 - 릴리쿡',
-    cookingTime: 30,
-    difficulty: '초보',
-    likeCount: 6,
-    reviewCount: 8,
-    totalIngredientCount: 7,
-    matchedIngredientCount: 4,
-    liked: true,
-  },
-  {
-    recipeId: 2,
-    title: '된장찌개',
-    thumbnailImage: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=400&h=400&fit=crop',
-    source: '만개의레시피',
-    cookingTime: 25,
-    difficulty: '초보',
-    likeCount: 12,
-    reviewCount: 15,
-    totalIngredientCount: 6,
-    matchedIngredientCount: 6,
-    liked: true,
-  },
-];
 
 const RecipeSavedPage = () => {
   const navigate = useNavigate();
-  const recipes = MOCK_SAVED_RECIPES;
+  const [recipes, setRecipes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchWishlist = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const result = await getWishlistRecipes({ size: 50 });
+        setRecipes(Array.isArray(result.items) ? result.items : []);
+      } catch (err) {
+        console.error('찜 목록 조회 실패:', err);
+        setError('찜 목록을 불러올 수 없습니다.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchWishlist();
+  }, []);
 
   const handleBack = () => navigate(-1);
 
@@ -50,7 +42,15 @@ const RecipeSavedPage = () => {
       </header>
 
       <main className="recipe-saved-main">
-        {recipes.length > 0 ? (
+        {loading ? (
+          <div className="recipe-saved-empty">
+            <p className="rsp-empty-text">불러오는 중...</p>
+          </div>
+        ) : error ? (
+          <div className="recipe-saved-empty">
+            <p className="rsp-empty-text">{error}</p>
+          </div>
+        ) : recipes.length > 0 ? (
           <div className="recipe-saved-list">
             {recipes.map((recipe) => (
               <RecipeCard key={recipe.recipeId} recipe={recipe} />

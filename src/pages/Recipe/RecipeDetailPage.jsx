@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getRecipeDetail } from '../../api/recipeApi';
+import { getRecipeDetail, addWishlist, removeWishlist } from '../../api/recipeApi';
 import './RecipeDetailPage.css';
 
 const RecipeDetailPage = () => {
@@ -35,9 +35,22 @@ const RecipeDetailPage = () => {
     }
   }, [recipeId]);
 
-  const handleLikeToggle = () => {
-    setIsLiked(!isLiked);
-    setLikeCount(isLiked ? likeCount - 1 : likeCount + 1);
+  const handleLikeToggle = async () => {
+    const nextLiked = !isLiked;
+    setIsLiked(nextLiked);
+    setLikeCount(nextLiked ? likeCount + 1 : likeCount - 1);
+
+    try {
+      if (nextLiked) {
+        await addWishlist(recipeId);
+      } else {
+        await removeWishlist(recipeId);
+      }
+    } catch (error) {
+      console.error('찜 토글 실패:', error);
+      setIsLiked(!nextLiked);
+      setLikeCount(nextLiked ? likeCount - 1 : likeCount + 1);
+    }
   };
 
   const handleIngredientToggle = (index) => {
