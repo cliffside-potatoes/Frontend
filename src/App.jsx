@@ -20,6 +20,7 @@ import RecipeDetailPage from './pages/Recipe/RecipeDetailPage';
 import ReviewListPage from './pages/Recipe/ReviewListPage';
 import ReviewWritePage from './pages/Recipe/ReviewWritePage';
 import ErrorBoundary from './components/common/ErrorBoundary';
+import ProfileEdit from './pages/Profile/ProfileEdit';
 import './App.css';
 
 const SearchPage = lazy(() =>
@@ -43,6 +44,8 @@ function App() {
                 <Route path="/profile" element={<MyPage />} />
 
                 <Route path="/profile/settings" element={<SettingsPage />} />
+                <Route path="/profile/edit" element={<SignUpPage />} />
+
                 <Route path="/profile/settings/notifications" element={<NotificationSettingsPage />} />
                 <Route path="/profile/my-recipes" element={<MyRecipesPage />} />
                 <Route path="/profile/my-reviews" element={<MyReviewsPage />} />

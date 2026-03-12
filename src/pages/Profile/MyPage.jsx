@@ -367,7 +367,7 @@ const MyPage = () => {
             <p className="profile-bio">{displayUser.bio}</p>
           </div>
 
-          <button type="button" className="profile-edit-button">
+          <button type="button" className="profile-edit-button" onClick={() => navigate('/profile/edit')}>
             프로필 편집
           </button>
 
