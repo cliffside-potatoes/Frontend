@@ -5,26 +5,31 @@ import './SignUpPage.css';
 import { createOrUpdateProfile, checkNicknameDuplicate } from '../../api/profileApi';
 import { useUser } from '../../context/UserContext';
 
+const DEFAULT_BIO = '아직 자기소개가 없어요😊';
+
 const SignUpPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, setUser } = useUser();
 
-  // step: 1(반갑습니다) -> 2(프로필 설정)
+  const isEditMode = location.pathname === '/profile/edit';
+  const isNewInfoMode = location.pathname === '/new-info';
+
   const initialStep = useMemo(() => {
-    if (location.pathname === '/new-info') return 1;
+    if (isNewInfoMode) return 1;
+    if (isEditMode) return 2;
     if (typeof location.state?.step === 'number') return location.state.step;
     return 1;
-  }, [location.pathname, location.state]);
+  }, [isNewInfoMode, isEditMode, location.state]);
 
   const [step, setStep] = useState(initialStep);
 
-  const [nickname, setNickname] = useState(user?.nickname ?? '');
-  const [bio, setBio] = useState(user?.bio ?? '아직 자기소개가 없어요😊');
+  const [nickname, setNickname] = useState(isEditMode ? user?.nickname ?? '' : '');
+  const [bio, setBio] = useState(isEditMode ? user?.bio ?? DEFAULT_BIO : DEFAULT_BIO);
+  const [userEmail, setUserEmail] = useState(user?.email ?? '');
 
   const [profileImageFile, setProfileImageFile] = useState(null);
   const [profileImagePreview, setProfileImagePreview] = useState(user?.profileImage ?? '');
-  const [userEmail, setUserEmail] = useState(user?.email ?? '');
 
   const [dupLoading, setDupLoading] = useState(false);
   const [dupChecked, setDupChecked] = useState(false);
@@ -32,11 +37,12 @@ const SignUpPage = () => {
   const [dupMsg, setDupMsg] = useState('');
 
   const [saving, setSaving] = useState(false);
+  const [nicknameError, setNicknameError] = useState('');
+  const [bioTouched, setBioTouched] = useState(isEditMode && Boolean(user?.bio));
 
   const fileInputRef = useRef(null);
 
   const handleClose = () => navigate(-1);
-
   const goProfileSetup = () => setStep(2);
 
   const validateNickname = (value) => {
@@ -50,18 +56,40 @@ const SignUpPage = () => {
     setDupChecked(false);
     setDupOk(false);
     setDupMsg('');
+
+    if (!v.trim()) {
+      setNicknameError('닉네임을 입력해줘');
+      return;
+    }
+
+    if (!validateNickname(v.trim())) {
+      setNicknameError('닉네임은 영문, 숫자, 밑줄(_), 마침표(.)만 사용할 수 있어');
+      return;
+    }
+
+    setNicknameError('');
   };
 
   const handleCheckDuplicate = async () => {
     const v = nickname.trim();
 
-    if (!validateNickname(v)) {
+    if (!v) {
+      setNicknameError('닉네임을 입력해줘');
       setDupChecked(true);
       setDupOk(false);
-      setDupMsg('닉네임에는 영문, 숫자, 밑줄, 마침표만 사용할 수 있습니다.');
+      setDupMsg('닉네임을 먼저 입력해줘');
       return;
     }
 
+    if (!validateNickname(v)) {
+      setNicknameError('닉네임은 영문, 숫자, 밑줄(_), 마침표(.)만 사용할 수 있어');
+      setDupChecked(true);
+      setDupOk(false);
+      setDupMsg('닉네임 형식을 다시 확인해줘');
+      return;
+    }
+
+    setNicknameError('');
     setDupLoading(true);
     setDupChecked(false);
     setDupOk(false);
@@ -71,11 +99,11 @@ const SignUpPage = () => {
       const ok = await checkNicknameDuplicate(v);
       setDupChecked(true);
       setDupOk(ok);
-      setDupMsg(ok ? '사용 가능한 닉네임이야' : '이미 사용중인 닉네임이야');
+      setDupMsg(ok ? '사용 가능한 닉네임이야' : '이미 사용 중인 닉네임이야');
     } catch (e) {
       setDupChecked(true);
       setDupOk(false);
-      setDupMsg('중복 확인 실패했어. 잠깐 뒤에 다시 해줘');
+      setDupMsg('중복 확인 API가 아직 연결되지 않았거나 요청에 실패했어');
     } finally {
       setDupLoading(false);
     }
@@ -99,31 +127,45 @@ const SignUpPage = () => {
     setProfileImagePreview(previewUrl);
   };
 
+  const handleBioFocus = () => {
+    if (!bioTouched && bio === DEFAULT_BIO) {
+      setBio('');
+    }
+    setBioTouched(true);
+  };
+
+  const handleBioChange = (e) => {
+    setBioTouched(true);
+    setBio(e.target.value);
+  };
+
   const handleSubmitProfile = async () => {
     const v = nickname.trim();
+    const finalBio = bio.trim() ? bio.trim() : DEFAULT_BIO;
+
+    if (!v) {
+      setNicknameError('닉네임을 입력해줘');
+      return;
+    }
 
     if (!validateNickname(v)) {
-      setDupChecked(true);
-      setDupOk(false);
-      setDupMsg('닉네임 형식이 맞는지 먼저 확인해줘');
+      setNicknameError('닉네임은 영문, 숫자, 밑줄(_), 마침표(.)만 사용할 수 있어');
       return;
     }
 
     if (!dupOk) {
       setDupChecked(true);
       setDupOk(false);
-      setDupMsg('닉네임 중복 확인 먼저 해줘');
+      setDupMsg('닉네임 중복 확인을 먼저 해줘');
       return;
     }
 
     setSaving(true);
 
     try {
-      // ✅ S3 CORS 해결 전까지는 이미지 메타를 보내지 않고
-      // 닉네임/자기소개만 먼저 저장
       await createOrUpdateProfile({
         nickname: v,
-        bio: bio ?? '',
+        bio: finalBio,
         profileImage: null,
       });
 
@@ -132,18 +174,16 @@ const SignUpPage = () => {
         id: String(user?.id ?? ''),
         email: userEmail ?? '',
         nickname: v,
-        // ✅ 미리보기는 유지하되 실제 서버 저장은 아직 안 됨
         profileImage: profileImagePreview ?? '',
         triedCount: user?.triedCount ?? 0,
-        bio: bio ?? '아직 자기소개가 없어요😊',
+        bio: finalBio,
       });
 
-      // 이미지 골랐으면 안내만 한 번 띄우기
       if (profileImageFile) {
         alert('프로필 사진은 지금 미리보기만 적용됐어. 이미지 저장은 S3 설정 후 붙일게!');
       }
 
-      navigate('/main', { replace: true });
+      navigate('/profile', { replace: true });
     } catch (e) {
       console.error(e);
       alert('프로필 저장 실패했어. 잠깐 뒤에 다시 해줘');
@@ -154,7 +194,29 @@ const SignUpPage = () => {
 
   useEffect(() => {
     setStep(initialStep);
-  }, [initialStep]);
+
+    if (isEditMode) {
+      setNickname(user?.nickname ?? '');
+      setBio(user?.bio ?? DEFAULT_BIO);
+      setProfileImagePreview(user?.profileImage ?? '');
+      setUserEmail(user?.email ?? '');
+      setBioTouched(Boolean(user?.bio));
+      setDupChecked(true);
+      setDupOk(true);
+      setDupMsg('');
+      setNicknameError('');
+    } else {
+      setNickname('');
+      setBio(DEFAULT_BIO);
+      setProfileImagePreview(user?.profileImage ?? '');
+      setUserEmail(user?.email ?? '');
+      setBioTouched(false);
+      setDupChecked(false);
+      setDupOk(false);
+      setDupMsg('');
+      setNicknameError('');
+    }
+  }, [initialStep, isEditMode, user]);
 
   useEffect(() => {
     return () => {
@@ -189,7 +251,9 @@ const SignUpPage = () => {
 
         {step === 2 && (
           <div className="auth-step auth-step-profile">
-            <h1 className="auth-title">프로필 설정</h1>
+            <h1 className="auth-title">
+              {isEditMode ? '프로필 편집' : '프로필 설정'}
+            </h1>
 
             <div className="profile-avatar-wrap">
               <div className="profile-avatar">
@@ -240,11 +304,15 @@ const SignUpPage = () => {
                 </button>
               </div>
 
-              <p className={`help ${dupChecked ? (dupOk ? 'ok' : 'bad') : 'bad'}`}>
-                {dupChecked
-                  ? dupMsg
-                  : '닉네임에는 영문, 숫자, 밑줄, 마침표만 사용할 수 있습니다.'}
-              </p>
+              {nicknameError ? (
+                <p className="help bad">{nicknameError}</p>
+              ) : (
+                <p className={`help ${dupChecked ? (dupOk ? 'ok' : 'bad') : ''}`}>
+                  {dupChecked
+                    ? dupMsg
+                    : '닉네임은 영문, 숫자, 밑줄(_), 마침표(.)만 사용할 수 있어'}
+                </p>
+              )}
             </div>
 
             <div className="form-group">
@@ -252,7 +320,8 @@ const SignUpPage = () => {
               <textarea
                 className="textarea"
                 value={bio}
-                onChange={(e) => setBio(e.target.value)}
+                onFocus={handleBioFocus}
+                onChange={handleBioChange}
                 maxLength={150}
               />
             </div>
@@ -262,7 +331,7 @@ const SignUpPage = () => {
               <input
                 className="input disabled"
                 value={userEmail}
-                placeholder="@ 카카오 계정 이메일"
+                placeholder="카카오 로그인 이메일"
                 disabled
                 readOnly
               />
@@ -277,7 +346,7 @@ const SignUpPage = () => {
               onClick={handleSubmitProfile}
               disabled={saving}
             >
-              {saving ? '저장중...' : '저장'}
+              {saving ? '저장중...' : isEditMode ? '수정 완료' : '저장'}
             </button>
           </div>
         )}

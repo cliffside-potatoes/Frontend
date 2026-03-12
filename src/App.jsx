@@ -43,8 +43,11 @@ function App() {
                 <Route path="/feed" element={<Feed />} />
                 <Route path="/profile" element={<MyPage />} />
 
-                <Route path="/profile/settings" element={<SettingsPage />} />
+
+
+                <Route path="/new-info" element={<SignUpPage />} />
                 <Route path="/profile/edit" element={<SignUpPage />} />
+                <Route path="/profile/settings" element={<SettingsPage />} />
 
                 <Route path="/profile/settings/notifications" element={<NotificationSettingsPage />} />
                 <Route path="/profile/my-recipes" element={<MyRecipesPage />} />
