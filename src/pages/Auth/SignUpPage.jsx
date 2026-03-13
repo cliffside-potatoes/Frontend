@@ -161,7 +161,7 @@ const SignUpPage = () => {
   };
 
   const uploadProfileImageIfNeeded = async () => {
-    // ✅ 새 이미지 선택 안 했으면 필드 자체를 안 보냄
+    //  새 이미지 선택 안 했으면 필드 자체를 안 보냄
     if (!profileImageFile) {
       return null;
     }
@@ -228,7 +228,7 @@ const SignUpPage = () => {
         bio: finalBio,
       });
 
-      // ✅ 내가 쓴 기존 게시글 author도 새 닉네임으로 동기화
+      // 내가 쓴 기존 게시글 author도 새 닉네임으로 동기화
       setPosts((prev) =>
         (prev || []).map((post) => ({
           ...post,

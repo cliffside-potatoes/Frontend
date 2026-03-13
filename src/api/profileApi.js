@@ -61,7 +61,7 @@ const requestCreateOrUpdateProfile = async ({ nickname, bio, profileImage }) => 
     bio,
   };
 
-  // ✅ 새 이미지가 있을 때만 보냄
+  //  새 이미지가 있을 때만 보냄
   if (profileImage) {
     body.profileImage = profileImage;
   }

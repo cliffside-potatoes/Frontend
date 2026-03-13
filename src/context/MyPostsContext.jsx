@@ -20,7 +20,7 @@ export const MyPostsProvider = ({ children }) => {
     return Array.isArray(initial) ? initial : [];
   });
 
-  // ✅ 다른 페이지 갔다 와도 안 사라지도록 localStorage에 저장
+  //  다른 페이지 갔다 와도 안 사라지도록 localStorage에 저장
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(posts));

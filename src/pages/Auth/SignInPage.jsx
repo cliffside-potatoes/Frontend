@@ -12,7 +12,7 @@ const SignInPage = () => {
   const handleKakaoLogin = () => {
     const base = API_BASE_URL.replace(/\/$/, '');
     const path = LOGIN_PATH.startsWith('/') ? LOGIN_PATH : `/${LOGIN_PATH}`;
-    window.location.href = `${base}${path}`; // ✅ https://test.naeng-gu.kr/api/login 로 이동
+    window.location.href = `${base}${path}`; //  https://test.naeng-gu.kr/api/login 로 이동
   };
 
   const handleClose = () => {
