@@ -9,14 +9,14 @@
   --bottom-nav-base-height: 60px;
 }
 
-/* ✅ Tablet 기준 (iPad 세로/가로 대부분 커버) */
+/*  Tablet 기준 (iPad 세로/가로 대부분 커버) */
 @media (min-width: 431px) and (max-width: 1024px) {
   :root {
     --app-max-width: 768px;
   }
 }
 
-/* ✅ Desktop 기준 */
+/*  Desktop 기준 */
 @media (min-width: 1025px) {
   :root {
     --app-max-width: 980px;
@@ -36,7 +36,7 @@ body {
   margin: 0;
   padding: 0;
 
-  /* ✅ 가로 스크롤로 인한 “살짝 밀림” 방지 */
+  /*  가로 스크롤로 인한 “살짝 밀림” 방지 */
   overflow-x: hidden;
 
   -webkit-overflow-scrolling: touch;
@@ -46,14 +46,14 @@ body {
   background: #ffffff;
 }
 
-/* ✅ 앱 전체 shell: 가운데 정렬 + 최대 폭 */
+/*  앱 전체 shell: 가운데 정렬 + 최대 폭 */
 #root {
   width: 100%;
   min-height: 100vh;
   margin: 0 auto;
   max-width: var(--app-max-width);
 
-  /* ✅ iOS safe-area 좌우 반영 (가려짐 방지) */
+  /* iOS safe-area 좌우 반영 (가려짐 방지) */
   padding-left: var(--safe-left);
   padding-right: var(--safe-right);
 

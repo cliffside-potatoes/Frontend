@@ -61,7 +61,7 @@ const MyPage = () => {
   const { user, setUser, isLoggedIn, isInitializing } = useUser();
   const { posts: myPosts, setPosts } = useMyPosts();
 
-  // ✅ user가 아직 없더라도 refreshToken 쿠키로 로그인 복구 먼저 시도
+  //  user가 아직 없더라도 refreshToken 쿠키로 로그인 복구 먼저 시도
   useEffect(() => {
     if (isInitializing) return;
     if (isLoggedIn) return;
@@ -141,7 +141,7 @@ const MyPage = () => {
   const [draftImages, setDraftImages] = useState([]);
   const fileInputRef = useRef(null);
 
-  // ✅ 로그인 상태가 확보된 뒤에만 내 피드 로딩
+  //  로그인 상태가 확보된 뒤에만 내 피드 로딩
   useEffect(() => {
     if (isInitializing) return;
     if (!isLoggedIn) return;
