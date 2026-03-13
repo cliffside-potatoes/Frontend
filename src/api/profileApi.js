@@ -37,51 +37,49 @@ export const getMyProfile = async () => {
 };
 
 export const createOrUpdateProfile = async ({ nickname, bio, profileImage = null }) => {
-  try {
-    const base = API_BASE_URL.replace(/\/$/, '');
+  const base = API_BASE_URL.replace(/\/$/, '');
 
-    const res = await fetch(`${base}/profiles`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader(),
-      },
-      body: JSON.stringify({
-        nickname,
-        bio,
-        profileImage,
-      }),
-    });
+  const res = await fetch(`${base}/profiles`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    },
+    body: JSON.stringify({
+      nickname,
+      bio,
+      profileImage,
+    }),
+  });
 
-    if (!res.ok) {
-      throw new Error(`프로필 저장 실패 (${res.status})`);
-    }
+  const contentType = res.headers.get('content-type') || '';
+  let data = null;
 
-    const data = await res.json();
-    return data?.data ?? null;
-  } catch (error) {
-    console.error('createOrUpdateProfile 실패:', error);
+  if (contentType.includes('application/json')) {
+    data = await res.json();
+  }
+
+  if (!res.ok) {
+    const message =
+      data?.resultMessage ||
+      data?.message ||
+      `프로필 저장 실패 (${res.status})`;
+
+    const error = new Error(message);
+    error.status = res.status;
+    error.responseData = data;
     throw error;
   }
+
+  return data?.data ?? null;
 };
 
-/**
- * 닉네임 중복 확인
- * 현재 Swagger에 명시된 API가 없어서 우선 아래 엔드포인트를 가정해서 연결.
- * 백엔드 실제 엔드포인트가 다르면 url 한 줄만 수정하면 됨.
- *
- * 가정:
- * GET /profiles/check-nickname?nickname=xxx
- * 응답 예시:
- * { data: { available: true } }
- * 또는
- * { available: true }
- */
+/*
+닉네임 중복확인 API 생기면 다시 살릴 부분
+
 export const checkNicknameDuplicate = async (nickname) => {
   const base = API_BASE_URL.replace(/\/$/, '');
-  const url = `${base}/profiles/check-nickname?nickname=${encodeURIComponent(nickname)}`;
-
-  const res = await fetch(url, {
+  const res = await fetch(`${base}/profiles/check-nickname?nickname=${encodeURIComponent(nickname)}`, {
     method: 'GET',
     headers: {
       ...getAuthHeader(),
@@ -93,17 +91,11 @@ export const checkNicknameDuplicate = async (nickname) => {
   }
 
   const data = await res.json();
-  const available = data?.data?.available ?? data?.available;
-
-  if (typeof available !== 'boolean') {
-    throw new Error('닉네임 중복 확인 응답 형식이 올바르지 않음');
-  }
-
-  return available;
+  return data?.data?.available ?? data?.available ?? false;
 };
+*/
 
 export default {
   getMyProfile,
   createOrUpdateProfile,
-  checkNicknameDuplicate,
 };
