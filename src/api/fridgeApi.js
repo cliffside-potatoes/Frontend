@@ -3,53 +3,91 @@ import axios from 'axios';
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 const apiClient = axios.create({
-    baseURL: API_BASE_URL,
-    headers: {
-        'Content-Type': 'application/json',
-    },
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
 apiClient.interceptors.request.use((config) => {
-    const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
+  const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+
+  return config;
 });
 
+apiClient.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      try {
+        const refreshRes = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/oauth/token`, {
+          method: 'POST',
+          credentials: 'include',
+        });
+
+        if (!refreshRes.ok) {
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          alert('로그인 정보가 만료되었습니다. 다시 로그인해주세요.');
+          window.location.href = '/signin';
+          return Promise.reject(error);
+        }
+
+        const refreshData = await refreshRes.json();
+        const newAccessToken =
+          refreshData?.data?.accessToken ?? refreshData?.accessToken ?? '';
+
+        if (!newAccessToken) {
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          alert('로그인 정보가 만료되었습니다. 다시 로그인해주세요.');
+          window.location.href = '/signin';
+          return Promise.reject(error);
+        }
+
+        localStorage.setItem('accessToken', newAccessToken);
+        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+
+        return apiClient(originalRequest);
+      } catch (refreshError) {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        alert('로그인 정보가 만료되었습니다. 다시 로그인해주세요.');
+        window.location.href = '/signin';
+        return Promise.reject(refreshError);
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
+
 export const fridgeApi = {
-    // --- 카테고리 관련 ---
-    // 카테고리 생성 (POST)
-    createCategory: (data) => apiClient.post('/ingredients/categories', data),
+  createCategory: (data) => apiClient.post('/ingredients/categories', data),
+  updateCategory: (id, data) => apiClient.patch(`/ingredients/categories/${id}`, data),
+  deleteCategory: (id) => apiClient.delete(`/ingredients/categories/${id}`),
 
-    // 카테고리 수정 (PATCH)
-    updateCategory: (id, data) => apiClient.patch(`/ingredients/categories/${id}`, data),
+  reorderCategories: (data) => apiClient.put('/ingredients/categories/reorder', data),
 
-    // 카테고리 삭제 (DELETE)
-    deleteCategory: (id) => apiClient.delete(`/ingredients/categories/${id}`),
+  getMyFridge: () => apiClient.get('/ingredients/me'),
+  searchIngredients: (keyword) => apiClient.get(`/ingredients/search?name=${keyword}`),
 
-    // 카테고리 순서 수정 (PUT)
-    reorderCategories: (data) => apiClient.put('/ingredients/categories/reorder', data),
+  addIngredient: (data) => apiClient.post('/ingredients', data),
+  updateIngredient: (id, data) => apiClient.patch(`/ingredients/${id}`, data),
+  deleteIngredient: (id) => apiClient.delete(`/ingredients/${id}`),
 
-    // --- 식재료 관련 ---
-    // 내 냉장고 재료 조회 (GET)
-    getMyFridge: () => apiClient.get('/ingredients/me'),
-
-    // 재료 연관 검색 조회 (GET)
-    searchIngredients: (keyword) => apiClient.get(`/ingredients/search?name=${keyword}`),
-
-    // 재료 생성/추가 (POST)
-    addIngredient: (data) => apiClient.post('/ingredients', data),
-
-    // 재료 수정 (PATCH)
-    updateIngredient: (id, data) => apiClient.patch(`/ingredients/${id}`, data),
-
-    // 재료 삭제 (DELETE)
-    deleteIngredient: (id) => apiClient.delete(`/ingredients/${id}`),
-
-    // --- 레시피 관련 ---
-    // 내 냉장고 매칭 레시피 추천 조회 (GET)
-    getRecommendedRecipes: () => apiClient.get('/recipes/recommend'),
+  getRecommendedRecipes: () => apiClient.get('/recipes/recommend'),
 };
 
 export default fridgeApi;

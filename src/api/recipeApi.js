@@ -7,9 +7,80 @@
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
+const getAccessToken = () => {
+  return localStorage.getItem('accessToken') || localStorage.getItem('token') || '';
+};
+
 const getAuthHeader = () => {
-  const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+  const token = getAccessToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
+const handle401 = () => {
+  alert('로그인 정보가 만료되었습니다. 다시 로그인해주세요.');
+
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+
+  window.location.href = '/signin';
+};
+
+const refreshAccessToken = async () => {
+  const base = API_BASE_URL.replace(/\/$/, '');
+
+  const res = await fetch(`${base}/oauth/token`, {
+    method: 'POST',
+    credentials: 'include',
+  });
+
+  if (!res.ok) {
+    throw new Error(`토큰 재발급 실패 (${res.status})`);
+  }
+
+  const data = await res.json();
+  const payload = data?.data ?? data;
+
+  if (payload?.accessToken) {
+    localStorage.setItem('accessToken', payload.accessToken);
+  }
+
+  return payload ?? null;
+};
+
+const fetchWithAuthRetry = async (url, options = {}) => {
+  let res = await fetch(url, {
+    ...options,
+    headers: {
+      ...(options.headers || {}),
+      ...getAuthHeader(),
+    },
+  });
+
+  if (res.status === 401) {
+    try {
+      const refreshPayload = await refreshAccessToken();
+
+      if (!refreshPayload?.accessToken) {
+        handle401();
+        return null;
+      }
+
+      res = await fetch(url, {
+        ...options,
+        headers: {
+          ...(options.headers || {}),
+          ...getAuthHeader(),
+        },
+      });
+    } catch (error) {
+      console.error('토큰 재발급 실패:', error);
+      handle401();
+      return null;
+    }
+  }
+
+  return res;
 };
 
 /** Mock 데이터 - 레시피 상세 */
@@ -87,14 +158,33 @@ const getMockReviews = (params) => {
   const items = [...MOCK_REVIEWS];
   if (sort === 'POPULAR') {
     items.sort((a, b) => (b.likeCount ?? 0) - (a.likeCount ?? 0));
-  } else {
-    // LATEST - 작성일 기준 (Mock에서는 순서 유지)
   }
   return {
     totalCount: MOCK_REVIEWS.length,
     items: items.slice(0, size),
     hasNext: false,
     nextCursor: null
+  };
+};
+
+const normalizeRecipeItem = (item) => {
+  return {
+    recipeId: item?.recipeId ?? item?.id ?? 0,
+    title: item?.title ?? item?.name ?? '레시피',
+    thumbnailImage:
+      item?.thumbnailImage ??
+      item?.thumbnailImageUrl ??
+      item?.imageUrl ??
+      item?.thumbnailUrl ??
+      '',
+    source: item?.source ?? item?.recipeSource ?? '출처 없음',
+    cookingTime: item?.cookingTime ?? item?.cookTime ?? 0,
+    difficulty: item?.difficulty ?? '초보',
+    likeCount: item?.likeCount ?? 0,
+    reviewCount: item?.reviewCount ?? 0,
+    totalIngredientCount: item?.totalIngredientCount ?? 0,
+    matchedIngredientCount: item?.matchedIngredientCount ?? 0,
+    liked: item?.liked ?? false,
   };
 };
 
@@ -109,21 +199,20 @@ export const getRecipeDetail = async (recipeId) => {
       typeof window !== 'undefined' &&
       base &&
       (base.startsWith(window.location.origin) || base === window.location.origin);
-    
+
     if (!base || isSameOrigin) {
       return { ...MOCK_RECIPE_DETAIL, recipeId: Number(recipeId) };
     }
 
     const url = `${base}/recipes/details/${recipeId}`;
-    const res = await fetch(url, {
+    const res = await fetchWithAuthRetry(url, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        ...getAuthHeader(),
       },
     });
 
-    if (!res.ok) {
+    if (!res || !res.ok) {
       return { ...MOCK_RECIPE_DETAIL, recipeId: Number(recipeId) };
     }
 
@@ -143,14 +232,6 @@ export const getRecipeDetail = async (recipeId) => {
 /**
  * 레시피 후기 목록 조회 (무한 스크롤)
  * GET /reviewRecipes/{recipeId}
- * @param {number} recipeId
- * @param {Object} params
- * @param {number} [params.size=20] - 한 번에 조회할 개수
- * @param {string} [params.cursorCreatedAt] - 마지막으로 조회한 feed의 생성 시각
- * @param {number} [params.cursorLikeCount] - 마지막으로 조회한 feed의 좋아요 수
- * @param {number} [params.cursorReviewCount] - 마지막으로 조회한 feed의 리뷰 수
- * @param {number} [params.cursorId] - 마지막으로 조회한 feed의 ID
- * @param {string} [params.sort=LATEST] - 정렬 방식 (LATEST: 최신순, POPULAR: 인기순)
  */
 export const getRecipeReviews = async (recipeId, params = {}) => {
   const {
@@ -168,7 +249,7 @@ export const getRecipeReviews = async (recipeId, params = {}) => {
       typeof window !== 'undefined' &&
       base &&
       (base.startsWith(window.location.origin) || base === window.location.origin);
-    
+
     if (!base || isSameOrigin) {
       return getMockReviews(params);
     }
@@ -188,15 +269,14 @@ export const getRecipeReviews = async (recipeId, params = {}) => {
     }
 
     const url = `${base}/reviewRecipes/${recipeId}?${searchParams.toString()}`;
-    const res = await fetch(url, {
+    const res = await fetchWithAuthRetry(url, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        ...getAuthHeader(),
       },
     });
 
-    if (!res.ok) {
+    if (!res || !res.ok) {
       return getMockReviews(params);
     }
 
@@ -221,10 +301,6 @@ export const getRecipeReviews = async (recipeId, params = {}) => {
 /**
  * 레시피 후기 작성
  * POST /reviewRecipes/{recipeId}
- * @param {number} recipeId
- * @param {Object} data
- * @param {string[]} data.images - 이미지 URL 배열
- * @param {string} data.content - 후기 내용 (1자 이상 500자 이하)
  */
 export const createRecipeReview = async (recipeId, data) => {
   try {
@@ -233,8 +309,7 @@ export const createRecipeReview = async (recipeId, data) => {
       typeof window !== 'undefined' &&
       base &&
       (base.startsWith(window.location.origin) || base === window.location.origin);
-    
-    // Mock 환경에서는 성공으로 간주
+
     if (!base || isSameOrigin) {
       return {
         success: true,
@@ -245,16 +320,15 @@ export const createRecipeReview = async (recipeId, data) => {
     }
 
     const url = `${base}/reviewRecipes/${recipeId}`;
-    const res = await fetch(url, {
+    const res = await fetchWithAuthRetry(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...getAuthHeader(),
       },
       body: JSON.stringify(data),
     });
 
-    if (!res.ok) {
+    if (!res || !res.ok) {
       throw new Error('후기 작성 실패');
     }
 
@@ -289,12 +363,11 @@ export const deleteRecipeReview = async (recipeId, reviewId) => {
     }
 
     const url = `${base}/reviewRecipes/${recipeId}/${reviewId}`;
-    const res = await fetch(url, {
+    const res = await fetchWithAuthRetry(url, {
       method: 'DELETE',
-      headers: getAuthHeader(),
     });
 
-    if (!res.ok) {
+    if (!res || !res.ok) {
       throw new Error('후기 삭제 실패');
     }
 
@@ -314,15 +387,14 @@ export const addWishlist = async (recipeId) => {
     const base = (typeof API_BASE_URL === 'string' && API_BASE_URL.trim()) || '';
     if (!base) return { success: true };
 
-    const res = await fetch(`${base}/wishes/${recipeId}`, {
+    const res = await fetchWithAuthRetry(`${base}/wishes/${recipeId}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...getAuthHeader(),
       },
     });
 
-    if (!res.ok) throw new Error('찜 추가 실패');
+    if (!res || !res.ok) throw new Error('찜 추가 실패');
     return { success: true };
   } catch (error) {
     console.error('찜 추가 실패:', error);
@@ -339,12 +411,11 @@ export const removeWishlist = async (recipeId) => {
     const base = (typeof API_BASE_URL === 'string' && API_BASE_URL.trim()) || '';
     if (!base) return { success: true };
 
-    const res = await fetch(`${base}/wishes/${recipeId}`, {
+    const res = await fetchWithAuthRetry(`${base}/wishes/${recipeId}`, {
       method: 'DELETE',
-      headers: getAuthHeader(),
     });
 
-    if (!res.ok) throw new Error('찜 해제 실패');
+    if (!res || !res.ok) throw new Error('찜 해제 실패');
     return { success: true };
   } catch (error) {
     console.error('찜 해제 실패:', error);
@@ -369,15 +440,14 @@ export const getWishlistRecipes = async (params = {}) => {
       searchParams.set('cursorCreatedAt', cursorCreatedAt);
     }
 
-    const res = await fetch(`${base}/wishes?${searchParams.toString()}`, {
+    const res = await fetchWithAuthRetry(`${base}/wishes?${searchParams.toString()}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        ...getAuthHeader(),
       },
     });
 
-    if (!res.ok) return { items: [], hasNext: false };
+    if (!res || !res.ok) return { items: [], hasNext: false };
 
     const data = await res.json();
     return {
@@ -402,17 +472,28 @@ export const getPopularRecipes = async (params = {}) => {
     const base = (typeof API_BASE_URL === 'string' && API_BASE_URL.trim()) || '';
     if (!base) return [];
 
-    const res = await fetch(`${base}/recipes/popular?size=${size}`, {
+    const res = await fetchWithAuthRetry(`${base}/recipes/popular?size=${size}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        ...getAuthHeader(),
       },
     });
 
-    if (!res.ok) return [];
+    if (!res || !res.ok) return [];
+
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) return [];
+
     const data = await res.json();
-    return Array.isArray(data.items) ? data.items : (Array.isArray(data) ? data : []);
+    const rawItems = Array.isArray(data?.items)
+      ? data.items
+      : Array.isArray(data?.data)
+        ? data.data
+        : Array.isArray(data)
+          ? data
+          : [];
+
+    return rawItems.map(normalizeRecipeItem);
   } catch (error) {
     console.error('인기 레시피 조회 실패:', error);
     return [];
@@ -431,17 +512,28 @@ export const getTaggedRecipes = async (tag, params = {}) => {
     if (!base) return [];
 
     const searchParams = new URLSearchParams({ tag, size: String(size) });
-    const res = await fetch(`${base}/recipes?${searchParams.toString()}`, {
+    const res = await fetchWithAuthRetry(`${base}/recipes?${searchParams.toString()}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        ...getAuthHeader(),
       },
     });
 
-    if (!res.ok) return [];
+    if (!res || !res.ok) return [];
+
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) return [];
+
     const data = await res.json();
-    return Array.isArray(data.items) ? data.items : (Array.isArray(data) ? data : []);
+    const rawItems = Array.isArray(data?.items)
+      ? data.items
+      : Array.isArray(data?.data)
+        ? data.data
+        : Array.isArray(data)
+          ? data
+          : [];
+
+    return rawItems.map(normalizeRecipeItem);
   } catch (error) {
     console.error('태그별 레시피 조회 실패:', error);
     return [];
