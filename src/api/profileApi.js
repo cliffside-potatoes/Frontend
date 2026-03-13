@@ -53,8 +53,18 @@ export const getMyProfile = async () => {
   }
 };
 
-const requestCreateOrUpdateProfile = async ({ nickname, bio, profileImage = null }) => {
+const requestCreateOrUpdateProfile = async ({ nickname, bio, profileImage }) => {
   const base = API_BASE_URL.replace(/\/$/, '');
+
+  const body = {
+    nickname,
+    bio,
+  };
+
+  // ✅ 새 이미지가 있을 때만 보냄
+  if (profileImage) {
+    body.profileImage = profileImage;
+  }
 
   const res = await fetch(`${base}/profiles`, {
     method: 'PUT',
@@ -62,11 +72,7 @@ const requestCreateOrUpdateProfile = async ({ nickname, bio, profileImage = null
       'Content-Type': 'application/json',
       ...getAuthHeader(),
     },
-    body: JSON.stringify({
-      nickname,
-      bio,
-      profileImage,
-    }),
+    body: JSON.stringify(body),
   });
 
   const contentType = res.headers.get('content-type') || '';
@@ -79,14 +85,13 @@ const requestCreateOrUpdateProfile = async ({ nickname, bio, profileImage = null
   return { res, data };
 };
 
-export const createOrUpdateProfile = async ({ nickname, bio, profileImage = null }) => {
+export const createOrUpdateProfile = async ({ nickname, bio, profileImage }) => {
   let { res, data } = await requestCreateOrUpdateProfile({
     nickname,
     bio,
     profileImage,
   });
 
-  // accessToken 만료 → refresh 시도
   if (res.status === 401) {
     try {
       const refreshPayload = await refreshAccessToken();
