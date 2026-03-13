@@ -9,40 +9,52 @@ const getAuthHeader = () => {
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
-/**
- * Presigned URL 발급
- * POST /presigned/{type}
- *
- * type: post | profile | recipe
- * body: { imageName }
- */
-export const issuePresignedUrl = async ({ type, imageName }) => {
-  try {
-    const base = API_BASE_URL.replace(/\/$/, '');
+export const requestProfilePresignedUrl = async (file) => {
+  const base = API_BASE_URL.replace(/\/$/, '');
 
-    const res = await fetch(`${base}/presigned/${type}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader(),
-      },
-      body: JSON.stringify({
-        imageName,
-      }),
-    });
+  const res = await fetch(`${base}/presigned/profile`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    },
+    body: JSON.stringify({
+      imageName: file.name,
+    }),
+  });
 
-    if (!res.ok) {
-      throw new Error(`Presigned URL 발급 실패 (${res.status})`);
-    }
+  const contentType = res.headers.get('content-type') || '';
+  let data = null;
 
-    const data = await res.json();
-    return data?.data ?? null;
-  } catch (error) {
-    console.error('issuePresignedUrl 실패:', error);
+  if (contentType.includes('application/json')) {
+    data = await res.json();
+  }
+
+  if (!res.ok) {
+    const message =
+      data?.resultMessage ||
+      data?.message ||
+      `Presigned URL 발급 실패 (${res.status})`;
+
+    const error = new Error(message);
+    error.status = res.status;
+    error.responseData = data;
     throw error;
   }
+
+  const presignedUrl = data?.data?.presignedUrl;
+  const s3Key = data?.data?.s3Key;
+
+  if (!presignedUrl || !s3Key) {
+    throw new Error('Presigned URL 응답 형식이 올바르지 않아');
+  }
+
+  return {
+    presignedUrl,
+    s3Key,
+  };
 };
 
 export default {
-  issuePresignedUrl,
+  requestProfilePresignedUrl,
 };

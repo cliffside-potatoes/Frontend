@@ -3,7 +3,10 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import naengGuIcon from '../../assets/image/naeng-gu.png';
 import './SignUpPage.css';
 import { createOrUpdateProfile } from '../../api/profileApi';
+import { requestProfilePresignedUrl } from '../../api/presignedApi';
+import { uploadFileToS3 } from '../../api/uploadToS3';
 import { useUser } from '../../context/UserContext';
+import { toImageUrl } from '../../utils/imageUrl';
 
 const DEFAULT_BIO = '아직 자기소개가 없어요😊';
 
@@ -29,7 +32,9 @@ const SignUpPage = () => {
   const [userEmail, setUserEmail] = useState(user?.email ?? '');
 
   const [profileImageFile, setProfileImageFile] = useState(null);
-  const [profileImagePreview, setProfileImagePreview] = useState(user?.profileImage ?? '');
+  const [profileImagePreview, setProfileImagePreview] = useState(
+    user?.profileImage ? toImageUrl(user.profileImage) : ''
+  );
 
   const [nicknameError, setNicknameError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -153,6 +158,30 @@ const SignUpPage = () => {
     setBio(e.target.value);
   };
 
+  const uploadProfileImageIfNeeded = async () => {
+    if (!profileImageFile) {
+      return user?.profileImage
+        ? {
+          s3Key: user.profileImage,
+          contentType: '',
+          size: 0,
+          accessType: 'public',
+        }
+        : null;
+    }
+
+    const { presignedUrl, s3Key } = await requestProfilePresignedUrl(profileImageFile);
+
+    await uploadFileToS3(presignedUrl, profileImageFile);
+
+    return {
+      s3Key,
+      contentType: profileImageFile.type || 'application/octet-stream',
+      size: profileImageFile.size || 0,
+      accessType: 'public',
+    };
+  };
+
   const handleSubmitProfile = async () => {
     const v = nickname.trim();
     const finalBio = bio.trim() ? bio.trim() : DEFAULT_BIO;
@@ -182,10 +211,12 @@ const SignUpPage = () => {
     setNicknameError('');
 
     try {
+      const uploadedProfileImage = await uploadProfileImageIfNeeded();
+
       await createOrUpdateProfile({
         nickname: v,
         bio: finalBio,
-        profileImage: null,
+        profileImage: uploadedProfileImage,
       });
 
       setUser({
@@ -193,14 +224,10 @@ const SignUpPage = () => {
         id: String(user?.id ?? ''),
         email: userEmail ?? '',
         nickname: v,
-        profileImage: profileImagePreview ?? '',
+        profileImage: uploadedProfileImage?.s3Key ?? user?.profileImage ?? '',
         triedCount: user?.triedCount ?? 0,
         bio: finalBio,
       });
-
-      if (profileImageFile) {
-        alert('프로필 사진은 지금 미리보기만 적용됐어. 이미지 저장은 S3 설정 후 붙일게!');
-      }
 
       navigate(isEditMode ? '/profile' : '/main', { replace: true });
     } catch (e) {
@@ -210,6 +237,12 @@ const SignUpPage = () => {
 
       if (e?.status === 400) {
         setNicknameError(serverMessage || '닉네임 형식이 올바르지 않거나 이미 사용 중이야');
+        return;
+      }
+
+      if (e?.status === 401) {
+        alert('로그인 정보가 만료되었습니다. 다시 로그인해주세요.');
+        navigate('/signin', { replace: true });
         return;
       }
 
@@ -226,7 +259,8 @@ const SignUpPage = () => {
       setNickname(user?.nickname ?? '');
       setBio(user?.bio ?? DEFAULT_BIO);
       setUserEmail(user?.email ?? '');
-      setProfileImagePreview(user?.profileImage ?? '');
+      setProfileImagePreview(user?.profileImage ? toImageUrl(user.profileImage) : '');
+      setProfileImageFile(null);
       setBioTouched(Boolean(user?.bio));
       setNicknameError('');
 
@@ -241,7 +275,8 @@ const SignUpPage = () => {
       setNickname('');
       setBio(DEFAULT_BIO);
       setUserEmail(user?.email ?? '');
-      setProfileImagePreview(user?.profileImage ?? '');
+      setProfileImagePreview(user?.profileImage ? toImageUrl(user.profileImage) : '');
+      setProfileImageFile(null);
       setBioTouched(false);
       setNicknameError('');
 
