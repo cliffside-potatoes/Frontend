@@ -6,6 +6,7 @@ import { createOrUpdateProfile } from '../../api/profileApi';
 import { requestProfilePresignedUrl } from '../../api/presignedApi';
 import { uploadFileToS3 } from '../../api/uploadToS3';
 import { useUser } from '../../context/UserContext';
+import { useMyPosts } from '../../context/MyPostsContext';
 import { toImageUrl } from '../../utils/imageUrl';
 
 const DEFAULT_BIO = '아직 자기소개가 없어요😊';
@@ -14,6 +15,7 @@ const SignUpPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, setUser } = useUser();
+  const { setPosts } = useMyPosts();
 
   const isNewInfoMode = location.pathname === '/new-info';
   const isEditMode = location.pathname === '/profile/edit';
@@ -159,15 +161,9 @@ const SignUpPage = () => {
   };
 
   const uploadProfileImageIfNeeded = async () => {
+    // ✅ 새 이미지 선택 안 했으면 필드 자체를 안 보냄
     if (!profileImageFile) {
-      return user?.profileImage
-        ? {
-          s3Key: user.profileImage,
-          contentType: '',
-          size: 0,
-          accessType: 'public',
-        }
-        : null;
+      return null;
     }
 
     const { presignedUrl, s3Key } = await requestProfilePresignedUrl(profileImageFile);
@@ -219,15 +215,26 @@ const SignUpPage = () => {
         profileImage: uploadedProfileImage,
       });
 
+      const nextProfileImageKey =
+        uploadedProfileImage?.s3Key ?? user?.profileImage ?? '';
+
       setUser({
         ...(user ?? {}),
         id: String(user?.id ?? ''),
         email: userEmail ?? '',
         nickname: v,
-        profileImage: uploadedProfileImage?.s3Key ?? user?.profileImage ?? '',
+        profileImage: nextProfileImageKey,
         triedCount: user?.triedCount ?? 0,
         bio: finalBio,
       });
+
+      // ✅ 내가 쓴 기존 게시글 author도 새 닉네임으로 동기화
+      setPosts((prev) =>
+        (prev || []).map((post) => ({
+          ...post,
+          author: v,
+        }))
+      );
 
       navigate(isEditMode ? '/profile' : '/main', { replace: true });
     } catch (e) {
