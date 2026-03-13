@@ -1,3 +1,5 @@
+import { refreshAccessToken } from './tokenApi';
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 const getAccessToken = () => {
@@ -36,7 +38,7 @@ export const getMyProfile = async () => {
   }
 };
 
-export const createOrUpdateProfile = async ({ nickname, bio, profileImage = null }) => {
+const requestCreateOrUpdateProfile = async ({ nickname, bio, profileImage = null }) => {
   const base = API_BASE_URL.replace(/\/$/, '');
 
   const res = await fetch(`${base}/profiles`, {
@@ -57,6 +59,23 @@ export const createOrUpdateProfile = async ({ nickname, bio, profileImage = null
 
   if (contentType.includes('application/json')) {
     data = await res.json();
+  }
+
+  return { res, data };
+};
+
+export const createOrUpdateProfile = async ({ nickname, bio, profileImage = null }) => {
+  let { res, data } = await requestCreateOrUpdateProfile({ nickname, bio, profileImage });
+
+  // ✅ accessToken 만료 시 refresh 후 1회 재시도
+  if (res.status === 401) {
+    const refreshPayload = await refreshAccessToken();
+
+    if (refreshPayload?.accessToken) {
+      const retryResult = await requestCreateOrUpdateProfile({ nickname, bio, profileImage });
+      res = retryResult.res;
+      data = retryResult.data;
+    }
   }
 
   if (!res.ok) {
