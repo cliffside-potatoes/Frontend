@@ -10,6 +10,25 @@ import { getPopularRecipes } from '../../api/recipeApi';
 import naengGuIcon from '../../assets/image/naeng-gu.png';
 import './MainPage.css';
 
+const normalizeRecipe = (item) => ({
+  recipeId: item?.recipeId ?? item?.id ?? 0,
+  title: item?.title ?? item?.name ?? '레시피',
+  thumbnailImage:
+    item?.thumbnailImage ??
+    item?.thumbnailImageUrl ??
+    item?.imageUrl ??
+    item?.thumbnailUrl ??
+    '',
+  source: item?.source ?? item?.recipeSource ?? '출처 없음',
+  cookingTime: item?.cookingTime ?? item?.cookTime ?? 0,
+  difficulty: item?.difficulty ?? '초보',
+  likeCount: item?.likeCount ?? 0,
+  reviewCount: item?.reviewCount ?? 0,
+  totalIngredientCount: item?.totalIngredientCount ?? 0,
+  matchedIngredientCount: item?.matchedIngredientCount ?? 0,
+  liked: item?.liked ?? false,
+});
+
 const MainPage = () => {
   const navigate = useNavigate();
   const { isLoggedIn, isInitializing } = useUser();
@@ -23,12 +42,11 @@ const MainPage = () => {
     const fetchRecipes = async () => {
       setRecipesLoading(true);
       try {
-        const [popular] = await Promise.all([
-          getPopularRecipes({ size: 10 }),
-        ]);
-        setPopularRecipes(popular);
+        const popular = await getPopularRecipes({ size: 10 });
+        setPopularRecipes(Array.isArray(popular) ? popular : []);
       } catch (error) {
         console.error('레시피 조회 실패:', error);
+        setPopularRecipes([]);
       } finally {
         setRecipesLoading(false);
       }
@@ -42,11 +60,17 @@ const MainPage = () => {
 
     const fetchMatched = async () => {
       try {
-        const res = await fridgeApi.getRecommendedRecipes();
-        const data = res.data?.data ?? res.data ?? [];
-        setMatchedRecipes(Array.isArray(data) ? data : []);
+        const res = await fridgeApi.getRecommendedRecipes({
+          sort: 'MATCH_COUNT',
+          size: 3,
+        });
+
+        const data = res.data?.data?.Recipes ?? res.data?.Recipes ?? [];
+        const normalized = Array.isArray(data) ? data.map(normalizeRecipe) : [];
+        setMatchedRecipes(normalized);
       } catch (error) {
         console.error('내 냉장고 매칭 레시피 조회 실패:', error);
+        setMatchedRecipes([]);
       }
     };
 
@@ -66,7 +90,13 @@ const MainPage = () => {
     }
   };
 
-  const displayedRecipes = isLoggedIn && matchedRecipes.length > 0 ? matchedRecipes : popularRecipes;
+  const displayedRecipes =
+    isLoggedIn && matchedRecipes.length > 0 ? matchedRecipes : popularRecipes;
+
+  const sectionTitle =
+    isLoggedIn && matchedRecipes.length > 0
+      ? '내 냉장고 레시피 추천'
+      : '인기 레시피';
 
   const handleSearchClick = () => {
     navigate('/search');
@@ -74,7 +104,6 @@ const MainPage = () => {
 
   return (
     <div className="main-page">
-      {/* 상단 헤더 영역 */}
       <header className="main-header">
         <div className="header-top">
           <div className="tomato-icon">
@@ -99,9 +128,7 @@ const MainPage = () => {
         </button>
       </header>
 
-      {/* 메인 컨텐츠 영역 */}
       <main className="main-content">
-        {/* 상황별 레시피 추천 */}
         <section className="recipe-section">
           <h2 className="section-title">상황별 레시피 추천</h2>
           <div className="category-grid">
@@ -114,11 +141,9 @@ const MainPage = () => {
           </div>
         </section>
 
-        {/* 내 냉장고 레시피 추천 / 인기 레시피 */}
         <section className="recipe-section">
-          <h2 className="section-title">
-            {isLoggedIn && matchedRecipes.length > 0 ? '내 냉장고 레시피 추천' : '인기 레시피'}
-          </h2>
+          <h2 className="section-title">{sectionTitle}</h2>
+
           {recipesLoading ? (
             <p style={{ padding: '16px', color: '#888' }}>레시피 불러오는 중...</p>
           ) : (
@@ -134,7 +159,6 @@ const MainPage = () => {
         </section>
       </main>
 
-      {/* 하단 네비게이션 바 */}
       <BottomNav />
 
       <Modal

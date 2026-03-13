@@ -75,19 +75,27 @@ apiClient.interceptors.response.use(
 
 export const fridgeApi = {
   createCategory: (data) => apiClient.post('/ingredients/categories', data),
+
   updateCategory: (id, data) => apiClient.patch(`/ingredients/categories/${id}`, data),
+
   deleteCategory: (id) => apiClient.delete(`/ingredients/categories/${id}`),
 
   reorderCategories: (data) => apiClient.put('/ingredients/categories/reorder', data),
 
   getMyFridge: () => apiClient.get('/ingredients/me'),
+
   searchIngredients: (keyword) => apiClient.get(`/ingredients/search?name=${keyword}`),
 
   addIngredient: (data) => apiClient.post('/ingredients', data),
+
   updateIngredient: (id, data) => apiClient.patch(`/ingredients/${id}`, data),
+
   deleteIngredient: (id) => apiClient.delete(`/ingredients/${id}`),
 
-  getRecommendedRecipes: () => apiClient.get('/recipes/recommend'),
+  getRecommendedRecipes: (params = {}) => {
+    const { sort = 'MATCH_COUNT', size = 3 } = params;
+    return apiClient.get(`/recipes/recommend?sort=${sort}&size=${size}`);
+  },
 };
 
 export default fridgeApi;
