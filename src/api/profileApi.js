@@ -11,6 +11,16 @@ const getAuthHeader = () => {
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
+const handle401 = () => {
+  alert('로그인 정보가 만료되었습니다. 다시 로그인해주세요.');
+
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+
+  window.location.href = '/signin';
+};
+
 export const getMyProfile = async () => {
   try {
     const base = API_BASE_URL.replace(/\/$/, '');
@@ -23,6 +33,11 @@ export const getMyProfile = async () => {
     });
 
     if (res.status === 404) {
+      return null;
+    }
+
+    if (res.status === 401) {
+      handle401();
       return null;
     }
 
@@ -65,16 +80,33 @@ const requestCreateOrUpdateProfile = async ({ nickname, bio, profileImage = null
 };
 
 export const createOrUpdateProfile = async ({ nickname, bio, profileImage = null }) => {
-  let { res, data } = await requestCreateOrUpdateProfile({ nickname, bio, profileImage });
+  let { res, data } = await requestCreateOrUpdateProfile({
+    nickname,
+    bio,
+    profileImage,
+  });
 
-  // ✅ accessToken 만료 시 refresh 후 1회 재시도
+  // accessToken 만료 → refresh 시도
   if (res.status === 401) {
-    const refreshPayload = await refreshAccessToken();
+    try {
+      const refreshPayload = await refreshAccessToken();
 
-    if (refreshPayload?.accessToken) {
-      const retryResult = await requestCreateOrUpdateProfile({ nickname, bio, profileImage });
-      res = retryResult.res;
-      data = retryResult.data;
+      if (refreshPayload?.accessToken) {
+        const retryResult = await requestCreateOrUpdateProfile({
+          nickname,
+          bio,
+          profileImage,
+        });
+
+        res = retryResult.res;
+        data = retryResult.data;
+      } else {
+        handle401();
+        return;
+      }
+    } catch (e) {
+      handle401();
+      return;
     }
   }
 
@@ -98,12 +130,16 @@ export const createOrUpdateProfile = async ({ nickname, bio, profileImage = null
 
 export const checkNicknameDuplicate = async (nickname) => {
   const base = API_BASE_URL.replace(/\/$/, '');
-  const res = await fetch(`${base}/profiles/check-nickname?nickname=${encodeURIComponent(nickname)}`, {
-    method: 'GET',
-    headers: {
-      ...getAuthHeader(),
-    },
-  });
+
+  const res = await fetch(
+    `${base}/profiles/check-nickname?nickname=${encodeURIComponent(nickname)}`,
+    {
+      method: 'GET',
+      headers: {
+        ...getAuthHeader(),
+      },
+    }
+  );
 
   if (!res.ok) {
     throw new Error(`닉네임 중복 확인 실패 (${res.status})`);
