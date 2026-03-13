@@ -230,7 +230,7 @@ export const getRecipeDetail = async (recipeId) => {
 };
 
 /**
- * 레시피 후기 목록 조회 (무한 스크롤)
+ * 레시피 후기 목록 조회
  * GET /reviewRecipes/{recipeId}
  */
 export const getRecipeReviews = async (recipeId, params = {}) => {
@@ -463,7 +463,7 @@ export const getWishlistRecipes = async (params = {}) => {
 
 /**
  * 인기 레시피 조회
- * GET /recipes/popular
+ * GET /recipes?size=20&sort=LATEST
  */
 export const getPopularRecipes = async (params = {}) => {
   const { size = 10 } = params;
@@ -472,46 +472,10 @@ export const getPopularRecipes = async (params = {}) => {
     const base = (typeof API_BASE_URL === 'string' && API_BASE_URL.trim()) || '';
     if (!base) return [];
 
-    const res = await fetchWithAuthRetry(`${base}/recipes/popular?size=${size}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    const searchParams = new URLSearchParams();
+    searchParams.set('size', String(size));
+    searchParams.set('sort', 'LATEST');
 
-    if (!res || !res.ok) return [];
-
-    const contentType = res.headers.get('content-type') || '';
-    if (!contentType.includes('application/json')) return [];
-
-    const data = await res.json();
-    const rawItems = Array.isArray(data?.items)
-      ? data.items
-      : Array.isArray(data?.data)
-        ? data.data
-        : Array.isArray(data)
-          ? data
-          : [];
-
-    return rawItems.map(normalizeRecipeItem);
-  } catch (error) {
-    console.error('인기 레시피 조회 실패:', error);
-    return [];
-  }
-};
-
-/**
- * 태그별 레시피 추천 조회
- * GET /recipes?tag={tag}
- */
-export const getTaggedRecipes = async (tag, params = {}) => {
-  const { size = 10 } = params;
-
-  try {
-    const base = (typeof API_BASE_URL === 'string' && API_BASE_URL.trim()) || '';
-    if (!base) return [];
-
-    const searchParams = new URLSearchParams({ tag, size: String(size) });
     const res = await fetchWithAuthRetry(`${base}/recipes?${searchParams.toString()}`, {
       method: 'GET',
       headers: {
@@ -525,13 +489,66 @@ export const getTaggedRecipes = async (tag, params = {}) => {
     if (!contentType.includes('application/json')) return [];
 
     const data = await res.json();
-    const rawItems = Array.isArray(data?.items)
-      ? data.items
-      : Array.isArray(data?.data)
-        ? data.data
-        : Array.isArray(data)
-          ? data
-          : [];
+    const rawItems = Array.isArray(data?.data?.Recipes)
+      ? data.data.Recipes
+      : Array.isArray(data?.Recipes)
+        ? data.Recipes
+        : Array.isArray(data?.data)
+          ? data.data
+          : Array.isArray(data)
+            ? data
+            : [];
+
+    return rawItems.map(normalizeRecipeItem);
+  } catch (error) {
+    console.error('인기 레시피 조회 실패:', error);
+    return [];
+  }
+};
+
+/**
+ * 태그별 레시피 추천 조회
+ * GET /recipes?category={category}&size=20&sort=LATEST
+ */
+export const getTaggedRecipes = async (category, params = {}) => {
+  const { size = 10, sort = 'LATEST', cursorCreatedAt, cursorId } = params;
+
+  try {
+    const base = (typeof API_BASE_URL === 'string' && API_BASE_URL.trim()) || '';
+    if (!base) return [];
+
+    const searchParams = new URLSearchParams();
+    searchParams.set('category', category);
+    searchParams.set('size', String(size));
+    searchParams.set('sort', sort);
+
+    if (cursorCreatedAt && cursorId) {
+      searchParams.set('cursorCreatedAt', cursorCreatedAt);
+      searchParams.set('cursorId', String(cursorId));
+    }
+
+    const res = await fetchWithAuthRetry(`${base}/recipes?${searchParams.toString()}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!res || !res.ok) return [];
+
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) return [];
+
+    const data = await res.json();
+    const rawItems = Array.isArray(data?.data?.Recipes)
+      ? data.data.Recipes
+      : Array.isArray(data?.Recipes)
+        ? data.Recipes
+        : Array.isArray(data?.data)
+          ? data.data
+          : Array.isArray(data)
+            ? data
+            : [];
 
     return rawItems.map(normalizeRecipeItem);
   } catch (error) {
