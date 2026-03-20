@@ -25,6 +25,7 @@ const KakaoCallback = () => {
         bio: '아직 자기소개가 없어요😊',
       };
 
+      // 신규 회원이면 바로 프로필 설정 플로우로
       if (payload?.newMember) {
         setUser(baseUser);
         navigate('/new-info', { replace: true });
@@ -33,6 +34,7 @@ const KakaoCallback = () => {
 
       const profile = await getMyProfile();
 
+      // 기존 회원인데 프로필이 없으면 예외적으로 신규 플로우로
       if (!profile) {
         setUser(baseUser);
         navigate('/new-info', { replace: true });
@@ -43,7 +45,7 @@ const KakaoCallback = () => {
         ...baseUser,
         nickname: profile?.nickname ?? baseUser.nickname,
         bio: profile?.bio ?? baseUser.bio,
-        profileImage: profile?.profileImage?.s3Key ?? '',
+        profileImage: profile?.profileImageUrl ?? '',
       };
 
       setUser(nextUser);

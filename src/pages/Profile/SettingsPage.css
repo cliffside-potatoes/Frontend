@@ -126,6 +126,15 @@
   flex: 1;
 }
 
+.settings-item-permanent-withdraw {
+  color: #991b1b;
+  font-weight: 700;
+}
+
+.settings-item-permanent-withdraw .settings-item-label {
+  flex: 1;
+}
+
 .settings-fab {
   position: fixed;
   right: 16px;
