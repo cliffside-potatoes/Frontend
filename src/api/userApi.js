@@ -25,14 +25,23 @@ const handle401 = () => {
 const requestWithdrawMe = async () => {
     const base = API_BASE_URL.replace(/\/$/, '');
 
-    const res = await fetch(`${base}/users/me`, {
+    return fetch(`${base}/users/me`, {
         method: 'DELETE',
         headers: {
             ...getAuthHeader(),
         },
     });
+};
 
-    return res;
+const requestWithdrawMePermanent = async () => {
+    const base = API_BASE_URL.replace(/\/$/, '');
+
+    return fetch(`${base}/users/me/permanent`, {
+        method: 'DELETE',
+        headers: {
+            ...getAuthHeader(),
+        },
+    });
 };
 
 export const withdrawMe = async () => {
@@ -64,6 +73,36 @@ export const withdrawMe = async () => {
     return true;
 };
 
+export const withdrawMePermanent = async () => {
+    let res = await requestWithdrawMePermanent();
+
+    if (res.status === 401) {
+        try {
+            const refreshPayload = await refreshAccessToken();
+
+            if (refreshPayload?.accessToken) {
+                res = await requestWithdrawMePermanent();
+            } else {
+                handle401();
+                return;
+            }
+        } catch (error) {
+            console.error('회원 완전탈퇴 토큰 재발급 실패:', error);
+            handle401();
+            return;
+        }
+    }
+
+    if (!res.ok) {
+        const error = new Error(`회원 완전탈퇴 실패 (${res.status})`);
+        error.status = res.status;
+        throw error;
+    }
+
+    return true;
+};
+
 export default {
     withdrawMe,
+    withdrawMePermanent,
 };

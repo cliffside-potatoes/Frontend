@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import BottomNav from '../../components/common/BottomNav';
 import Modal from '../../components/ui/Modal';
 import { useUser } from '../../context/UserContext';
-import { withdrawMe } from '../../api/userApi';
+import { withdrawMe, withdrawMePermanent } from '../../api/userApi';
 import './SettingsPage.css';
 
 const SETTINGS_ITEMS = [
@@ -14,12 +14,21 @@ const SETTINGS_ITEMS = [
   { id: 'saved', icon: 'bookmark', label: '저장', path: '/recipe-saved' },
 ];
 
+const clearLocalUserData = () => {
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  localStorage.removeItem('myPosts');
+};
+
 const SettingsPage = () => {
   const navigate = useNavigate();
   const { logout } = useUser();
 
   const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
+  const [permanentWithdrawModalOpen, setPermanentWithdrawModalOpen] = useState(false);
   const [withdrawing, setWithdrawing] = useState(false);
+  const [permanentWithdrawing, setPermanentWithdrawing] = useState(false);
 
   const handleBack = () => navigate(-1);
 
@@ -40,14 +49,9 @@ const SettingsPage = () => {
 
     try {
       await withdrawMe();
-
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      localStorage.removeItem('myPosts');
-
+      clearLocalUserData();
       alert('회원탈퇴가 완료되었습니다.');
-      navigate('/signin', { replace: true });
+      navigate('/main', { replace: true });
     } catch (error) {
       console.error('회원탈퇴 실패:', error);
 
@@ -60,6 +64,29 @@ const SettingsPage = () => {
     } finally {
       setWithdrawing(false);
       setWithdrawModalOpen(false);
+    }
+  };
+
+  const handlePermanentWithdraw = async () => {
+    setPermanentWithdrawing(true);
+
+    try {
+      await withdrawMePermanent();
+      clearLocalUserData();
+      alert('회원 완전탈퇴가 완료되었습니다.');
+      navigate('/main', { replace: true });
+    } catch (error) {
+      console.error('회원 완전탈퇴 실패:', error);
+
+      if (error?.status === 404) {
+        alert('사용자 정보를 찾을 수 없습니다.');
+        return;
+      }
+
+      alert('회원 완전탈퇴에 실패했어. 잠시 후 다시 시도해줘.');
+    } finally {
+      setPermanentWithdrawing(false);
+      setPermanentWithdrawModalOpen(false);
     }
   };
 
@@ -106,6 +133,16 @@ const SettingsPage = () => {
               <span className="settings-item-label">회원탈퇴</span>
             </button>
           </li>
+
+          <li className="settings-list-item">
+            <button
+              type="button"
+              className="settings-item-button settings-item-permanent-withdraw"
+              onClick={() => setPermanentWithdrawModalOpen(true)}
+            >
+              <span className="settings-item-label">회원 완전탈퇴 (테스트용)</span>
+            </button>
+          </li>
         </ul>
       </main>
 
@@ -122,11 +159,23 @@ const SettingsPage = () => {
         isOpen={withdrawModalOpen}
         onClose={() => setWithdrawModalOpen(false)}
         title="회원탈퇴 하시겠어요?"
-        description="탈퇴 후 계정 정보는 복구되지 않을 수 있어요."
+        description="탈퇴 후 다시 로그인하면 신규 회원 플로우로 진입할 수 있어요."
         cancelLabel="취소"
         confirmLabel={withdrawing ? '처리 중...' : '회원탈퇴'}
         onCancel={() => setWithdrawModalOpen(false)}
         onConfirm={handleWithdraw}
+        variant="danger"
+      />
+
+      <Modal
+        isOpen={permanentWithdrawModalOpen}
+        onClose={() => setPermanentWithdrawModalOpen(false)}
+        title="회원 완전탈퇴 하시겠어요?"
+        description="계정과 연관 데이터가 삭제됩니다. 테스트용 버튼이지만 실제 삭제 API를 호출합니다."
+        cancelLabel="취소"
+        confirmLabel={permanentWithdrawing ? '처리 중...' : '회원 완전탈퇴'}
+        onCancel={() => setPermanentWithdrawModalOpen(false)}
+        onConfirm={handlePermanentWithdraw}
         variant="danger"
       />
 
