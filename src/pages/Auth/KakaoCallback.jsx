@@ -25,9 +25,14 @@ const KakaoCallback = () => {
         bio: '아직 자기소개가 없어요😊',
       };
 
+      if (payload?.newMember) {
+        setUser(baseUser);
+        navigate('/new-info', { replace: true });
+        return;
+      }
+
       const profile = await getMyProfile();
 
-      // 프로필이 아직 없으면 회원가입(프로필 생성) 화면으로
       if (!profile) {
         setUser(baseUser);
         navigate('/new-info', { replace: true });
