@@ -7,6 +7,7 @@ import { useUser } from '../../context/UserContext';
 import { RECIPE_CATEGORIES } from '../../constants/categories';
 import { fridgeApi } from '../../api/fridgeApi';
 import { getPopularRecipes } from '../../api/recipeApi';
+import { hasStoredAccessToken } from '../../utils/authStorage';
 import naengGuIcon from '../../assets/image/naeng-gu.png';
 import './MainPage.css';
 
@@ -39,6 +40,12 @@ const MainPage = () => {
   const [recipesLoading, setRecipesLoading] = useState(false);
 
   useEffect(() => {
+    if (!hasStoredAccessToken()) {
+      setPopularRecipes([]);
+      setRecipesLoading(false);
+      return;
+    }
+
     const fetchRecipes = async () => {
       setRecipesLoading(true);
       try {
