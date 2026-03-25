@@ -148,19 +148,13 @@ export function UserProvider({ children }) {
     };
   }, [navigate]);
 
-  const logout = async () => {
+  const logout = () => {
     markLoggedOut();
     clearStoredAuth();
     setUserState(null);
 
-    if (typeof window !== 'undefined') {
-      void logoutFromServer({ keepalive: true });
-      window.location.replace(`${window.location.origin}/main`);
-      return;
-    }
-
-    await logoutFromServer();
     navigate('/main', { replace: true });
+    void logoutFromServer();
   };
 
   const value = {
