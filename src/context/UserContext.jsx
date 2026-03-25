@@ -141,6 +141,12 @@ export function UserProvider({ children }) {
     await logoutFromServer();
     clearStoredAuth();
     setUserState(null);
+
+    if (typeof window !== 'undefined') {
+      window.location.replace(`${window.location.origin}/main`);
+      return;
+    }
+
     navigate('/main', { replace: true });
   };
 
