@@ -3,8 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import BottomNav from '../../components/common/BottomNav';
 import FeedCard from '../../components/card/FeedCard';
 import { getMyFeed } from '../../api/meFeedApi';
-import { refreshAccessToken } from '../../api/tokenApi';
-import { getMyProfile } from '../../api/profileApi';
 import { useUser } from '../../context/UserContext';
 import { useMyPosts } from '../../context/MyPostsContext';
 import { toImageUrl } from '../../utils/imageUrl';
@@ -58,63 +56,8 @@ const mergePostsByIdPreferLocal = (localPosts, serverPosts) => {
 
 const MyPage = () => {
   const navigate = useNavigate();
-  const { user, setUser, isLoggedIn, isInitializing } = useUser();
+  const { user, isLoggedIn, isInitializing } = useUser();
   const { posts: myPosts, setPosts } = useMyPosts();
-
-  //  user가 아직 없더라도 refreshToken 쿠키로 로그인 복구 먼저 시도
-  useEffect(() => {
-    if (isInitializing) return;
-    if (isLoggedIn) return;
-
-    let cancelled = false;
-
-    const recoverLogin = async () => {
-      try {
-        const payload = await refreshAccessToken();
-
-        if (!payload?.accessToken) {
-          if (!cancelled) {
-            navigate('/signin', { replace: true });
-          }
-          return;
-        }
-
-        const baseUser = {
-          id: String(payload?.id ?? ''),
-          nickname: payload?.nickname ?? '사용자',
-          profileImage: '',
-          triedCount: 0,
-          bio: '아직 자기소개가 없어요😊',
-        };
-
-        const profile = await getMyProfile();
-
-        if (!cancelled) {
-          setUser(
-            profile
-              ? {
-                ...baseUser,
-                nickname: profile?.nickname ?? baseUser.nickname,
-                bio: profile?.bio ?? baseUser.bio,
-                profileImage: profile?.profileImage?.s3Key ?? '',
-              }
-              : baseUser
-          );
-        }
-      } catch (error) {
-        console.error('마이페이지 로그인 복구 실패:', error);
-        if (!cancelled) {
-          navigate('/signin', { replace: true });
-        }
-      }
-    };
-
-    recoverLogin();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isInitializing, isLoggedIn, navigate, setUser]);
 
   const displayUser = user ?? {
     nickname: '사용자 닉네임',
