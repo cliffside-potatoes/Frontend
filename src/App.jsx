@@ -20,7 +20,7 @@ import RecipeDetailPage from './pages/Recipe/RecipeDetailPage';
 import ReviewListPage from './pages/Recipe/ReviewListPage';
 import ReviewWritePage from './pages/Recipe/ReviewWritePage';
 import ErrorBoundary from './components/common/ErrorBoundary';
-import ProfileEdit from './pages/Profile/ProfileEdit';
+import RequireAuth from './components/common/RequireAuth';
 import './App.css';
 
 const SearchPage = lazy(() =>
@@ -41,33 +41,26 @@ function App() {
                 <Route path="/" element={<Navigate to="/main" replace />} />
                 <Route path="/main" element={<MainPage />} />
                 <Route path="/feed" element={<Feed />} />
-                <Route path="/profile" element={<MyPage />} />
-
-
-
-                <Route path="/new-info" element={<SignUpPage />} />
-                <Route path="/profile/edit" element={<SignUpPage />} />
-                <Route path="/profile/settings" element={<SettingsPage />} />
-
-                <Route path="/profile/settings/notifications" element={<NotificationSettingsPage />} />
-                <Route path="/profile/my-recipes" element={<MyRecipesPage />} />
-                <Route path="/profile/my-reviews" element={<MyReviewsPage />} />
-                <Route path="/recipe-saved" element={<RecipeSavedPage />} />
-
-                <Route path="/signup" element={<SignUpPage />} />
                 <Route path="/signin" element={<SignInPage />} />
-
-                <Route path="/new-info" element={<SignUpPage />} />
-
                 <Route path="/oauth/callback/kakao" element={<KakaoCallback />} />
-
                 <Route path="/search" element={<SearchPage />} />
-                <Route path="/refrigerator" element={<RefrigeratorPage />} />
-                <Route path="/refrigerator/category" element={<CategoryRegistrationPage />} />
-                <Route path="/refrigerator/category/settings" element={<CategorySettingsPage />} />
                 <Route path="/recipe/:recipeId" element={<RecipeDetailPage />} />
                 <Route path="/recipe/:recipeId/reviews" element={<ReviewListPage />} />
-                <Route path="/recipe/:recipeId/reviews/write" element={<ReviewWritePage />} />
+                <Route element={<RequireAuth />}>
+                  <Route path="/signup" element={<SignUpPage />} />
+                  <Route path="/new-info" element={<SignUpPage />} />
+                  <Route path="/profile" element={<MyPage />} />
+                  <Route path="/profile/edit" element={<SignUpPage />} />
+                  <Route path="/profile/settings" element={<SettingsPage />} />
+                  <Route path="/profile/settings/notifications" element={<NotificationSettingsPage />} />
+                  <Route path="/profile/my-recipes" element={<MyRecipesPage />} />
+                  <Route path="/profile/my-reviews" element={<MyReviewsPage />} />
+                  <Route path="/recipe-saved" element={<RecipeSavedPage />} />
+                  <Route path="/refrigerator" element={<RefrigeratorPage />} />
+                  <Route path="/refrigerator/category" element={<CategoryRegistrationPage />} />
+                  <Route path="/refrigerator/category/settings" element={<CategorySettingsPage />} />
+                  <Route path="/recipe/:recipeId/reviews/write" element={<ReviewWritePage />} />
+                </Route>
               </Routes>
             </Suspense>
           </ErrorBoundary>

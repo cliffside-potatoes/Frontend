@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { getRecipeDetail, addWishlist, removeWishlist } from '../../api/recipeApi';
+import { useUser } from '../../context/UserContext';
+import { buildSignInState } from '../../utils/authStorage';
 import './RecipeDetailPage.css';
 
 const RecipeDetailPage = () => {
+  const location = useLocation();
   const navigate = useNavigate();
   const { recipeId } = useParams();
+  const { isLoggedIn } = useUser();
 
   const [recipe, setRecipe] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -36,6 +40,15 @@ const RecipeDetailPage = () => {
   }, [recipeId]);
 
   const handleLikeToggle = async () => {
+    const currentPath = `${location.pathname}${location.search}${location.hash}`;
+
+    if (!isLoggedIn) {
+      navigate('/signin', {
+        state: buildSignInState(currentPath, currentPath),
+      });
+      return;
+    }
+
     const nextLiked = !isLiked;
     setIsLiked(nextLiked);
     setLikeCount(nextLiked ? likeCount + 1 : likeCount - 1);
@@ -64,7 +77,17 @@ const RecipeDetailPage = () => {
   };
 
   const handleWriteReviewClick = () => {
-    navigate(`/recipe/${recipeId}/reviews/write`);
+    const currentPath = `${location.pathname}${location.search}${location.hash}`;
+    const writeReviewPath = `/recipe/${recipeId}/reviews/write`;
+
+    if (!isLoggedIn) {
+      navigate('/signin', {
+        state: buildSignInState(writeReviewPath, currentPath),
+      });
+      return;
+    }
+
+    navigate(writeReviewPath);
   };
 
   const handleLinkClick = () => {
