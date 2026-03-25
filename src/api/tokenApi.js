@@ -1,5 +1,3 @@
-import { clearStoredAuth } from '../utils/authStorage';
-
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 const LOGOUT_PATH = import.meta.env.VITE_LOGOUT_PATH || '/logout';
 
@@ -30,7 +28,7 @@ export const refreshAccessToken = async () => {
   }
 };
 
-export const logoutFromServer = async () => {
+export const logoutFromServer = async (options = {}) => {
   const base = API_BASE_URL.replace(/\/$/, '');
   const path = LOGOUT_PATH.startsWith('/') ? LOGOUT_PATH : `/${LOGOUT_PATH}`;
 
@@ -38,10 +36,9 @@ export const logoutFromServer = async () => {
     await fetch(`${base}${path}`, {
       method: 'POST',
       credentials: 'include',
+      keepalive: Boolean(options.keepalive),
     });
   } catch (error) {
     console.error('logoutFromServer 실패:', error);
-  } finally {
-    clearStoredAuth();
   }
 };

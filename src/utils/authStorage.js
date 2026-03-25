@@ -1,4 +1,5 @@
 const POST_LOGIN_REDIRECT_KEY = 'postLoginRedirect';
+const LOGOUT_MARKER_KEY = 'explicitLogout';
 
 export const getStoredAccessToken = () => {
   if (typeof window === 'undefined') return '';
@@ -84,6 +85,24 @@ export const consumePostLoginRedirect = () => {
   const path = peekPostLoginRedirect();
   window.sessionStorage.removeItem(POST_LOGIN_REDIRECT_KEY);
   return path;
+};
+
+export const markLoggedOut = () => {
+  if (typeof window === 'undefined') return;
+
+  window.sessionStorage.setItem(LOGOUT_MARKER_KEY, '1');
+};
+
+export const hasLoggedOutMarker = () => {
+  if (typeof window === 'undefined') return false;
+
+  return window.sessionStorage.getItem(LOGOUT_MARKER_KEY) === '1';
+};
+
+export const clearLoggedOutMarker = () => {
+  if (typeof window === 'undefined') return;
+
+  window.sessionStorage.removeItem(LOGOUT_MARKER_KEY);
 };
 
 export const clearStoredAuth = () => {

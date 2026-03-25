@@ -3,8 +3,11 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { getMyProfile } from '../api/profileApi';
 import { logoutFromServer, refreshAccessToken } from '../api/tokenApi';
 import {
+  clearLoggedOutMarker,
   clearStoredAuth,
   consumePostLoginRedirect,
+  hasLoggedOutMarker,
+  markLoggedOut,
 } from '../utils/authStorage';
 
 const STORAGE_KEY = 'user';
@@ -36,6 +39,7 @@ export function UserProvider({ children }) {
     setUserState(nextUser);
 
     if (nextUser) {
+      clearLoggedOutMarker();
       localStorage.setItem(STORAGE_KEY, JSON.stringify(nextUser));
     } else {
       localStorage.removeItem(STORAGE_KEY);
@@ -46,6 +50,13 @@ export function UserProvider({ children }) {
     const initialPath = initialPathRef.current;
 
     if (initialPath.startsWith('/oauth/callback/kakao')) {
+      setIsInitializing(false);
+      return;
+    }
+
+    if (hasLoggedOutMarker()) {
+      clearStoredAuth();
+      setUserState(null);
       setIsInitializing(false);
       return;
     }
@@ -138,15 +149,17 @@ export function UserProvider({ children }) {
   }, [navigate]);
 
   const logout = async () => {
-    await logoutFromServer();
+    markLoggedOut();
     clearStoredAuth();
     setUserState(null);
 
     if (typeof window !== 'undefined') {
+      void logoutFromServer({ keepalive: true });
       window.location.replace(`${window.location.origin}/main`);
       return;
     }
 
+    await logoutFromServer();
     navigate('/main', { replace: true });
   };
 
