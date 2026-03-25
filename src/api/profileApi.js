@@ -1,9 +1,15 @@
 import { refreshAccessToken } from './tokenApi';
+import {
+  clearStoredAuth,
+  getCurrentPath,
+  getStoredAccessToken,
+  savePostLoginRedirect,
+} from '../utils/authStorage';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 const getAccessToken = () => {
-  return localStorage.getItem('accessToken') || localStorage.getItem('token') || '';
+  return getStoredAccessToken();
 };
 
 const getAuthHeader = () => {
@@ -13,11 +19,8 @@ const getAuthHeader = () => {
 
 const handle401 = () => {
   alert('로그인 정보가 만료되었습니다. 다시 로그인해주세요.');
-
-  localStorage.removeItem('accessToken');
-  localStorage.removeItem('token');
-  localStorage.removeItem('user');
-
+  savePostLoginRedirect(getCurrentPath());
+  clearStoredAuth();
   window.location.href = '/signin';
 };
 

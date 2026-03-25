@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { logoutFromServer } from '../api/tokenApi';
+import { clearStoredAuth } from '../utils/authStorage';
 
 const STORAGE_KEY = 'user';
 
@@ -29,10 +31,9 @@ export function UserProvider({ children }) {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('token');
-    localStorage.removeItem(STORAGE_KEY);
+  const logout = async () => {
+    await logoutFromServer();
+    clearStoredAuth();
     setUserState(null);
     navigate('/main', { replace: true });
   };
