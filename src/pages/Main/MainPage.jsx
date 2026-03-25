@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import BottomNav from '../../components/common/BottomNav';
 import RecipeCard from '../../components/card/RecipeCard';
 import Modal from '../../components/ui/Modal';
@@ -7,6 +7,7 @@ import { useUser } from '../../context/UserContext';
 import { RECIPE_CATEGORIES } from '../../constants/categories';
 import { fridgeApi } from '../../api/fridgeApi';
 import { getPopularRecipes } from '../../api/recipeApi';
+import { buildSignInState } from '../../utils/authStorage';
 import naengGuIcon from '../../assets/image/naeng-gu.png';
 import './MainPage.css';
 
@@ -30,6 +31,7 @@ const normalizeRecipe = (item) => ({
 });
 
 const MainPage = () => {
+  const location = useLocation();
   const navigate = useNavigate();
   const { isLoggedIn, isInitializing } = useUser();
 
@@ -53,10 +55,15 @@ const MainPage = () => {
     };
 
     fetchRecipes();
-  }, []);
+  }, [isLoggedIn]);
 
   useEffect(() => {
-    if (!isLoggedIn || isInitializing) return;
+    if (!isLoggedIn) {
+      setMatchedRecipes([]);
+      return;
+    }
+
+    if (isInitializing) return;
 
     const fetchMatched = async () => {
       try {
@@ -101,6 +108,8 @@ const MainPage = () => {
   const handleSearchClick = () => {
     navigate('/search');
   };
+
+  const currentPath = `${location.pathname}${location.search}${location.hash}`;
 
   return (
     <div className="main-page">
@@ -171,7 +180,9 @@ const MainPage = () => {
         onCancel={() => setShowLoginModal(false)}
         onConfirm={() => {
           setShowLoginModal(false);
-          navigate('/signin');
+          navigate('/signin', {
+            state: buildSignInState('/refrigerator', currentPath),
+          });
         }}
         variant="login"
       />

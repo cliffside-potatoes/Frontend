@@ -1,6 +1,18 @@
 import axios from 'axios';
+import {
+  clearStoredAuth,
+  getCurrentPath,
+  savePostLoginRedirect,
+} from '../utils/authStorage';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+
+const redirectToSignIn = () => {
+  savePostLoginRedirect(getCurrentPath());
+  clearStoredAuth();
+  alert('로그인 정보가 만료되었습니다. 다시 로그인해주세요.');
+  window.location.href = '/signin';
+};
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -34,11 +46,7 @@ apiClient.interceptors.response.use(
         });
 
         if (!refreshRes.ok) {
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          alert('로그인 정보가 만료되었습니다. 다시 로그인해주세요.');
-          window.location.href = '/signin';
+          redirectToSignIn();
           return Promise.reject(error);
         }
 
@@ -47,11 +55,7 @@ apiClient.interceptors.response.use(
           refreshData?.data?.accessToken ?? refreshData?.accessToken ?? '';
 
         if (!newAccessToken) {
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          alert('로그인 정보가 만료되었습니다. 다시 로그인해주세요.');
-          window.location.href = '/signin';
+          redirectToSignIn();
           return Promise.reject(error);
         }
 
@@ -60,11 +64,7 @@ apiClient.interceptors.response.use(
 
         return apiClient(originalRequest);
       } catch (refreshError) {
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        alert('로그인 정보가 만료되었습니다. 다시 로그인해주세요.');
-        window.location.href = '/signin';
+        redirectToSignIn();
         return Promise.reject(refreshError);
       }
     }

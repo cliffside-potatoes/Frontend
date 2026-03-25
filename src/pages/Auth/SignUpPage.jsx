@@ -6,6 +6,7 @@ import { createOrUpdateProfile } from '../../api/profileApi';
 import { requestProfilePresignedUrl } from '../../api/presignedApi';
 import { uploadFileToS3 } from '../../api/uploadToS3';
 import { useUser } from '../../context/UserContext';
+import { consumePostLoginRedirect } from '../../utils/authStorage';
 import { useMyPosts } from '../../context/MyPostsContext';
 import { toImageUrl } from '../../utils/imageUrl';
 
@@ -236,7 +237,11 @@ const SignUpPage = () => {
         }))
       );
 
-      navigate(isEditMode ? '/profile' : '/main', { replace: true });
+      const nextPath = isEditMode
+        ? '/profile'
+        : consumePostLoginRedirect() ?? '/main';
+
+      navigate(nextPath, { replace: true });
     } catch (e) {
       console.error(e);
 

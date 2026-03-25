@@ -1,3 +1,5 @@
+import { getStoredAccessToken } from '../utils/authStorage';
+
 /**
  * 전체 피드 API (다른 사용자 게시글 + 리뷰, 무한 스크롤)
  * - 최신순: cursorCreatedAt + cursorId
@@ -8,7 +10,7 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 const getAuthHeader = () => {
-  const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+  const token = getStoredAccessToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
@@ -111,7 +113,7 @@ export const getFeed = async (params = {}) => {
       typeof window !== 'undefined' &&
       base &&
       (base.startsWith(window.location.origin) || base === window.location.origin);
-    if (!base || isSameOrigin) return getMockFeed(params);
+    if (!base || isSameOrigin || !getStoredAccessToken()) return getMockFeed(params);
 
     const url = `${base}/feed?${searchParams.toString()}`;
     const res = await fetch(url, {
