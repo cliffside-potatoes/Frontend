@@ -42,10 +42,11 @@ export const requestProfilePresignedUrl = async (file) => {
     throw error;
   }
 
-  const presignedUrl = data?.data?.presignedUrl;
-  const s3Key = data?.data?.s3Key;
+  const presignedUrl = data?.data?.presignedUrl ?? data?.presignedUrl;
+  const s3Key = data?.data?.s3Key ?? data?.s3Key;
 
   if (!presignedUrl || !s3Key) {
+    console.error('Presigned 응답 원본:', data);
     throw new Error('Presigned URL 응답 형식이 올바르지 않아');
   }
 
