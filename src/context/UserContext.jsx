@@ -118,11 +118,11 @@ export function UserProvider({ children }) {
         setUser(nextUser);
 
         const redirectPath = consumePostLoginRedirect();
-        const initialPath = initialPathRef.current;
+        const currentInitialPath = initialPathRef.current;
         const shouldRedirect =
           redirectPath &&
-          redirectPath !== initialPath &&
-          (initialPath === '/main' || initialPath === '/signin');
+          redirectPath !== currentInitialPath &&
+          (currentInitialPath === '/main' || currentInitialPath === '/signin');
 
         if (shouldRedirect) {
           navigate(redirectPath, { replace: true });

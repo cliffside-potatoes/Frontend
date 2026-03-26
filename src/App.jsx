@@ -41,13 +41,17 @@ function App() {
                 <Route path="/" element={<Navigate to="/main" replace />} />
                 <Route path="/main" element={<MainPage />} />
                 <Route path="/feed" element={<Feed />} />
+
+                <Route path="/signup" element={<SignUpPage />} />
                 <Route path="/signin" element={<SignInPage />} />
+
                 <Route path="/oauth/callback/kakao" element={<KakaoCallback />} />
+
                 <Route path="/search" element={<SearchPage />} />
                 <Route path="/recipe/:recipeId" element={<RecipeDetailPage />} />
                 <Route path="/recipe/:recipeId/reviews" element={<ReviewListPage />} />
+
                 <Route element={<RequireAuth />}>
-                  <Route path="/signup" element={<SignUpPage />} />
                   <Route path="/new-info" element={<SignUpPage />} />
                   <Route path="/profile" element={<MyPage />} />
                   <Route path="/profile/edit" element={<SignUpPage />} />

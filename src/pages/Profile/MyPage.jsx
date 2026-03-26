@@ -59,6 +59,14 @@ const MyPage = () => {
   const { user, isLoggedIn, isInitializing } = useUser();
   const { posts: myPosts, setPosts } = useMyPosts();
 
+  // 로그인 안 된 상태에서는 마이페이지 접근만 막음
+  useEffect(() => {
+    if (isInitializing) return;
+    if (!isLoggedIn) {
+      navigate('/signin', { replace: true });
+    }
+  }, [isInitializing, isLoggedIn, navigate]);
+
   const displayUser = user ?? {
     nickname: '사용자 닉네임',
     id: '',
@@ -84,7 +92,7 @@ const MyPage = () => {
   const [draftImages, setDraftImages] = useState([]);
   const fileInputRef = useRef(null);
 
-  //  로그인 상태가 확보된 뒤에만 내 피드 로딩
+  // 로그인 상태가 확보된 뒤에만 내 피드 로딩
   useEffect(() => {
     if (isInitializing) return;
     if (!isLoggedIn) return;
@@ -275,14 +283,28 @@ const MyPage = () => {
     );
   }
 
+  if (!isLoggedIn) {
+    return null;
+  }
+
   return (
     <div className="mypage">
       <header className="mypage-header">
-        <button type="button" className="icon-button" aria-label="뒤로가기">
+        <button
+          type="button"
+          className="icon-button"
+          aria-label="뒤로가기"
+          onClick={() => navigate(-1)}
+        >
           <span className="material-symbols-outlined">arrow_back_ios</span>
         </button>
         <h1 className="mypage-title">마이페이지</h1>
-        <button type="button" className="icon-button" aria-label="설정" onClick={() => navigate('/profile/settings')}>
+        <button
+          type="button"
+          className="icon-button"
+          aria-label="설정"
+          onClick={() => navigate('/profile/settings')}
+        >
           <span className="material-symbols-outlined">settings</span>
         </button>
       </header>
@@ -468,7 +490,11 @@ const MyPage = () => {
                     style={{ display: 'none' }}
                     onChange={handleImageSelect}
                   />
-                  <button type="button" className="write-modal-add-image-btn" onClick={() => fileInputRef.current?.click()}>
+                  <button
+                    type="button"
+                    className="write-modal-add-image-btn"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
                     <span className="material-symbols-outlined">add_photo_alternate</span>
                     {draftImages.length > 0 && `(${draftImages.length}/${MAX_POST_IMAGES})`}
                   </button>

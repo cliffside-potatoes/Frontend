@@ -41,6 +41,14 @@ const MainPage = () => {
   const [recipesLoading, setRecipesLoading] = useState(false);
 
   useEffect(() => {
+    if (!isLoggedIn) {
+      setPopularRecipes([]);
+      setRecipesLoading(false);
+      return;
+    }
+
+    if (isInitializing) return;
+
     const fetchRecipes = async () => {
       setRecipesLoading(true);
       try {
@@ -55,7 +63,7 @@ const MainPage = () => {
     };
 
     fetchRecipes();
-  }, [isLoggedIn]);
+  }, [isLoggedIn, isInitializing]);
 
   useEffect(() => {
     if (!isLoggedIn) {
