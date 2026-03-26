@@ -21,23 +21,58 @@ const handle401 = () => {
   window.location.href = '/signin';
 };
 
+const requestGetMyProfile = async () => {
+  const base = API_BASE_URL.replace(/\/$/, '');
+
+  const res = await fetch(`${base}/profiles`, {
+    method: 'GET',
+    headers: {
+      ...getAuthHeader(),
+    },
+  });
+
+  if (res.status === 404) {
+    return { res, data: null };
+  }
+
+  const contentType = res.headers.get('content-type') || '';
+  let data = null;
+
+  if (contentType.includes('application/json')) {
+    try {
+      data = await res.json();
+    } catch {
+      data = null;
+    }
+  }
+
+  return { res, data };
+};
+
 export const getMyProfile = async () => {
   try {
-    const base = API_BASE_URL.replace(/\/$/, '');
-
-    const res = await fetch(`${base}/profiles`, {
-      method: 'GET',
-      headers: {
-        ...getAuthHeader(),
-      },
-    });
-
-    if (res.status === 404) {
-      return null;
-    }
+    let { res, data } = await requestGetMyProfile();
 
     if (res.status === 401) {
-      handle401();
+      try {
+        const refreshPayload = await refreshAccessToken();
+
+        if (refreshPayload?.accessToken) {
+          const retryResult = await requestGetMyProfile();
+          res = retryResult.res;
+          data = retryResult.data;
+        } else {
+          handle401();
+          return null;
+        }
+      } catch (error) {
+        console.error('getMyProfile 토큰 재발급 실패:', error);
+        handle401();
+        return null;
+      }
+    }
+
+    if (res.status === 404) {
       return null;
     }
 
@@ -45,8 +80,7 @@ export const getMyProfile = async () => {
       throw new Error(`프로필 조회 실패 (${res.status})`);
     }
 
-    const data = await res.json();
-    return data?.data ?? null;
+    return data?.data ?? data ?? null;
   } catch (error) {
     console.error('getMyProfile 실패:', error);
     return null;
@@ -61,7 +95,6 @@ const requestCreateOrUpdateProfile = async ({ nickname, bio, profileImage }) => 
     bio,
   };
 
-  //  새 이미지가 있을 때만 보냄
   if (profileImage) {
     body.profileImage = profileImage;
   }
@@ -129,31 +162,6 @@ export const createOrUpdateProfile = async ({ nickname, bio, profileImage }) => 
 
   return data?.data ?? null;
 };
-
-/*
-닉네임 중복확인 API 생기면 다시 살릴 부분
-
-export const checkNicknameDuplicate = async (nickname) => {
-  const base = API_BASE_URL.replace(/\/$/, '');
-
-  const res = await fetch(
-    `${base}/profiles/check-nickname?nickname=${encodeURIComponent(nickname)}`,
-    {
-      method: 'GET',
-      headers: {
-        ...getAuthHeader(),
-      },
-    }
-  );
-
-  if (!res.ok) {
-    throw new Error(`닉네임 중복 확인 실패 (${res.status})`);
-  }
-
-  const data = await res.json();
-  return data?.data?.available ?? data?.available ?? false;
-};
-*/
 
 export default {
   getMyProfile,

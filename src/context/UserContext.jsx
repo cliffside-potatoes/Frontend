@@ -33,6 +33,7 @@ export function UserProvider({ children }) {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('token');
     localStorage.removeItem(STORAGE_KEY);
+
     setUserState(null);
     navigate('/main', { replace: true });
   };
