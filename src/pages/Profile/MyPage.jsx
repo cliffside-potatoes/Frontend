@@ -299,7 +299,12 @@ const MyPage = () => {
           <span className="material-symbols-outlined">arrow_back_ios</span>
         </button>
         <h1 className="mypage-title">마이페이지</h1>
-        <button type="button" className="icon-button" aria-label="설정" onClick={() => navigate('/profile/settings')}>
+        <button
+          type="button"
+          className="icon-button"
+          aria-label="설정"
+          onClick={() => navigate('/profile/settings')}
+        >
           <span className="material-symbols-outlined">settings</span>
         </button>
       </header>
@@ -485,7 +490,11 @@ const MyPage = () => {
                     style={{ display: 'none' }}
                     onChange={handleImageSelect}
                   />
-                  <button type="button" className="write-modal-add-image-btn" onClick={() => fileInputRef.current?.click()}>
+                  <button
+                    type="button"
+                    className="write-modal-add-image-btn"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
                     <span className="material-symbols-outlined">add_photo_alternate</span>
                     {draftImages.length > 0 && `(${draftImages.length}/${MAX_POST_IMAGES})`}
                   </button>

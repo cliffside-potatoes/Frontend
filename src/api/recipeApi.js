@@ -1,3 +1,10 @@
+import {
+  clearStoredAuth,
+  getCurrentPath,
+  getStoredAccessToken,
+  savePostLoginRedirect,
+} from '../utils/authStorage';
+
 /**
  * 레시피 및 후기 API
  * - 레시피 상세 조회
@@ -8,7 +15,7 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 const getAccessToken = () => {
-  return localStorage.getItem('accessToken') || localStorage.getItem('token') || '';
+  return getStoredAccessToken();
 };
 
 const getAuthHeader = () => {
@@ -16,14 +23,23 @@ const getAuthHeader = () => {
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
+const isSameOriginBase = (base) =>
+  typeof window !== 'undefined' &&
+  base &&
+  (base.startsWith(window.location.origin) || base === window.location.origin);
+
+const shouldUsePublicRecipeMock = (base) =>
+  !base || isSameOriginBase(base) || !getStoredAccessToken();
+
+const redirectToSignIn = () => {
+  savePostLoginRedirect(getCurrentPath());
+  clearStoredAuth();
+  window.location.href = '/signin';
+};
+
 const handle401 = () => {
   alert('로그인 정보가 만료되었습니다. 다시 로그인해주세요.');
-
-  localStorage.removeItem('accessToken');
-  localStorage.removeItem('token');
-  localStorage.removeItem('user');
-
-  window.location.href = '/signin';
+  redirectToSignIn();
 };
 
 const refreshAccessToken = async () => {
@@ -113,6 +129,51 @@ const MOCK_RECIPE_DETAIL = {
   matchedIngredientCount: 4
 };
 
+const MOCK_RECIPE_LIST = [
+  {
+    recipeId: 1,
+    title: '김치찌개',
+    thumbnailImage:
+      'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=800&h=600&fit=crop',
+    source: '유튜브 - 릴리쿡',
+    cookingTime: 30,
+    difficulty: '초보',
+    likeCount: 8,
+    reviewCount: 8,
+    totalIngredientCount: 7,
+    matchedIngredientCount: 4,
+    liked: false,
+  },
+  {
+    recipeId: 2,
+    title: '크림파스타',
+    thumbnailImage:
+      'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=800&h=600&fit=crop',
+    source: '블로그 - 집밥연구소',
+    cookingTime: 20,
+    difficulty: '중급',
+    likeCount: 5,
+    reviewCount: 3,
+    totalIngredientCount: 6,
+    matchedIngredientCount: 2,
+    liked: false,
+  },
+  {
+    recipeId: 3,
+    title: '계란볶음밥',
+    thumbnailImage:
+      'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=800&h=600&fit=crop',
+    source: '유튜브 - 3분요리',
+    cookingTime: 15,
+    difficulty: '초보',
+    likeCount: 11,
+    reviewCount: 6,
+    totalIngredientCount: 5,
+    matchedIngredientCount: 3,
+    liked: false,
+  },
+];
+
 /** Mock 데이터 - 후기 목록 */
 const MOCK_REVIEWS = [
   {
@@ -188,6 +249,25 @@ const normalizeRecipeItem = (item) => {
   };
 };
 
+const getMockRecipeList = (size = 10) =>
+  MOCK_RECIPE_LIST.slice(0, size).map(normalizeRecipeItem);
+
+const getMockRecipeDetail = (recipeId) => {
+  const matchedRecipe = MOCK_RECIPE_LIST.find(
+    (item) => Number(item.recipeId) === Number(recipeId)
+  );
+
+  if (!matchedRecipe) {
+    return { ...MOCK_RECIPE_DETAIL, recipeId: Number(recipeId) };
+  }
+
+  return {
+    ...MOCK_RECIPE_DETAIL,
+    ...matchedRecipe,
+    recipeId: Number(recipeId),
+  };
+};
+
 /**
  * 레시피 상세 조회
  * GET /recipes/details/{recipeId}
@@ -195,13 +275,9 @@ const normalizeRecipeItem = (item) => {
 export const getRecipeDetail = async (recipeId) => {
   try {
     const base = (typeof API_BASE_URL === 'string' && API_BASE_URL.trim()) || '';
-    const isSameOrigin =
-      typeof window !== 'undefined' &&
-      base &&
-      (base.startsWith(window.location.origin) || base === window.location.origin);
 
-    if (!base || isSameOrigin) {
-      return { ...MOCK_RECIPE_DETAIL, recipeId: Number(recipeId) };
+    if (shouldUsePublicRecipeMock(base)) {
+      return getMockRecipeDetail(recipeId);
     }
 
     const url = `${base}/recipes/details/${recipeId}`;
@@ -213,19 +289,19 @@ export const getRecipeDetail = async (recipeId) => {
     });
 
     if (!res || !res.ok) {
-      return { ...MOCK_RECIPE_DETAIL, recipeId: Number(recipeId) };
+      return getMockRecipeDetail(recipeId);
     }
 
     const contentType = res.headers.get('content-type') || '';
     if (!contentType.includes('application/json')) {
-      return { ...MOCK_RECIPE_DETAIL, recipeId: Number(recipeId) };
+      return getMockRecipeDetail(recipeId);
     }
 
     const data = await res.json();
     return data;
   } catch (error) {
     console.error('레시피 상세 조회 실패:', error);
-    return { ...MOCK_RECIPE_DETAIL, recipeId: Number(recipeId) };
+    return getMockRecipeDetail(recipeId);
   }
 };
 
@@ -245,12 +321,8 @@ export const getRecipeReviews = async (recipeId, params = {}) => {
 
   try {
     const base = (typeof API_BASE_URL === 'string' && API_BASE_URL.trim()) || '';
-    const isSameOrigin =
-      typeof window !== 'undefined' &&
-      base &&
-      (base.startsWith(window.location.origin) || base === window.location.origin);
 
-    if (!base || isSameOrigin) {
+    if (shouldUsePublicRecipeMock(base)) {
       return getMockReviews(params);
     }
 
@@ -470,7 +542,7 @@ export const getPopularRecipes = async (params = {}) => {
 
   try {
     const base = (typeof API_BASE_URL === 'string' && API_BASE_URL.trim()) || '';
-    if (!base) return [];
+    if (shouldUsePublicRecipeMock(base)) return getMockRecipeList(size);
 
     const searchParams = new URLSearchParams();
     searchParams.set('size', String(size));
@@ -515,7 +587,7 @@ export const getTaggedRecipes = async (category, params = {}) => {
 
   try {
     const base = (typeof API_BASE_URL === 'string' && API_BASE_URL.trim()) || '';
-    if (!base) return [];
+    if (shouldUsePublicRecipeMock(base)) return getMockRecipeList(size);
 
     const searchParams = new URLSearchParams();
     searchParams.set('category', category);

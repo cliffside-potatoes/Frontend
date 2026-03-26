@@ -1,11 +1,12 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useMyPosts } from '../../context/MyPostsContext';
 import { useUser } from '../../context/UserContext';
 import BottomNav from '../../components/common/BottomNav';
 import FeedCard from '../../components/card/FeedCard';
 import { getFeed } from '../../api/feedApi';
 import { createPost, updatePost, deletePost } from '../../api/postApi';
+import { buildSignInState } from '../../utils/authStorage';
 import profileImg from '../../assets/image/profile.png';
 import './Feed.css';
 
@@ -41,8 +42,9 @@ const mapApiItemToPost = (item) => ({
 });
 
 const Feed = () => {
+  const location = useLocation();
   const navigate = useNavigate();
-  const { user } = useUser();
+  const { user, isLoggedIn } = useUser();
   const { posts: myPosts, setPosts } = useMyPosts();
 
   const currentNickname = user?.nickname ?? '사용자 닉네임';
@@ -88,6 +90,14 @@ const Feed = () => {
   useEffect(() => {
     loadFeed();
   }, [loadFeed]);
+
+  const currentPath = `${location.pathname}${location.search}${location.hash}`;
+
+  const navigateToSignIn = (redirectPath = '/feed') => {
+    navigate('/signin', {
+      state: buildSignInState(redirectPath, currentPath),
+    });
+  };
 
   const feedList = useMemo(() => {
     const serverIds = new Set(serverFeed.map((p) => p.id));
@@ -135,6 +145,11 @@ const Feed = () => {
 
   const handleDeletePost = async () => {
     if (!deleteConfirmPostId) return;
+    if (!isLoggedIn) {
+      navigateToSignIn('/feed');
+      return;
+    }
+
     try {
       await deletePost(deleteConfirmPostId);
     } catch (error) {
@@ -181,6 +196,11 @@ const Feed = () => {
   };
 
   const openWriteModal = (post = null) => {
+    if (!isLoggedIn) {
+      navigateToSignIn('/feed');
+      return;
+    }
+
     if (post) {
       setEditingPostId(post.id);
       setDraftContent(post.content);
@@ -232,6 +252,11 @@ const Feed = () => {
   };
 
   const handleSavePost = async () => {
+    if (!isLoggedIn) {
+      navigateToSignIn('/feed');
+      return;
+    }
+
     const trimmed = draftContent.trim();
     if (trimmed.length < 1) return;
     if (trimmed.length > 500) return;

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { refreshAccessToken } from '../../api/tokenApi';
 import { getMyProfile } from '../../api/profileApi';
 import { useUser } from '../../context/UserContext';
+import { consumePostLoginRedirect } from '../../utils/authStorage';
 
 const KakaoCallback = () => {
   const navigate = useNavigate();
@@ -19,13 +20,13 @@ const KakaoCallback = () => {
 
       const baseUser = {
         id: String(payload?.id ?? ''),
+        email: payload?.email ?? '',
         nickname: payload?.nickname ?? '사용자',
         profileImage: '',
         triedCount: 0,
         bio: '아직 자기소개가 없어요😊',
       };
 
-      // 신규 회원이면 바로 프로필 설정 플로우로
       if (payload?.newMember) {
         setUser(baseUser);
         navigate('/new-info', { replace: true });
@@ -34,22 +35,26 @@ const KakaoCallback = () => {
 
       const profile = await getMyProfile();
 
-      // 기존 회원인데 프로필이 없으면 예외적으로 신규 플로우로
       if (!profile) {
         setUser(baseUser);
         navigate('/new-info', { replace: true });
         return;
       }
 
+      const redirectPath = consumePostLoginRedirect() ?? '/main';
       const nextUser = {
         ...baseUser,
+        email: profile?.email ?? baseUser.email,
         nickname: profile?.nickname ?? baseUser.nickname,
         bio: profile?.bio ?? baseUser.bio,
-        profileImage: profile?.profileImageUrl ?? '',
+        profileImage:
+          profile?.profileImage?.s3Key ??
+          profile?.profileImageUrl ??
+          '',
       };
 
       setUser(nextUser);
-      navigate('/main', { replace: true });
+      navigate(redirectPath, { replace: true });
     };
 
     loginProcess();

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useUser } from '../../context/UserContext';
-import { hasStoredAccessToken } from '../../utils/authStorage';
+import { buildSignInState } from '../../utils/authStorage';
 
 const RequireAuth = () => {
   const location = useLocation();
@@ -15,8 +15,16 @@ const RequireAuth = () => {
     );
   }
 
-  if (!isLoggedIn && !hasStoredAccessToken()) {
-    return <Navigate to="/signin" replace state={{ from: location }} />;
+  if (!isLoggedIn) {
+    const currentPath = `${location.pathname}${location.search}${location.hash}`;
+
+    return (
+      <Navigate
+        to="/signin"
+        replace
+        state={buildSignInState(currentPath, '/main')}
+      />
+    );
   }
 
   return <Outlet />;

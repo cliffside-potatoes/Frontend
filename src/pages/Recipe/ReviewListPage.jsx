@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { getRecipeReviews, getRecipeDetail, deleteRecipeReview } from '../../api/recipeApi';
 import Dropdown from '../../components/ui/Dropdown';
 import Modal from '../../components/ui/Modal';
+import { useUser } from '../../context/UserContext';
+import { buildSignInState } from '../../utils/authStorage';
 import './ReviewListPage.css';
 
 const SORT_OPTIONS = [
@@ -11,8 +13,10 @@ const SORT_OPTIONS = [
 ];
 
 const ReviewListPage = () => {
+  const location = useLocation();
   const navigate = useNavigate();
   const { recipeId } = useParams();
+  const { isLoggedIn } = useUser();
 
   const [recipe, setRecipe] = useState(null);
   const [reviews, setReviews] = useState([]);
@@ -96,7 +100,17 @@ const ReviewListPage = () => {
   };
 
   const handleWriteReview = () => {
-    navigate(`/recipe/${recipeId}/reviews/write`);
+    const currentPath = `${location.pathname}${location.search}${location.hash}`;
+    const writeReviewPath = `/recipe/${recipeId}/reviews/write`;
+
+    if (!isLoggedIn) {
+      navigate('/signin', {
+        state: buildSignInState(writeReviewPath, currentPath),
+      });
+      return;
+    }
+
+    navigate(writeReviewPath);
   };
 
   const getReviewDisplay = (review) => {
