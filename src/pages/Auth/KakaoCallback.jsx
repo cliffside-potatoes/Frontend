@@ -11,9 +11,13 @@ const KakaoCallback = () => {
 
   useEffect(() => {
     const loginProcess = async () => {
+      console.log('[KakaoCallback] 시작');
+
       const payload = await refreshAccessToken();
+      console.log('[KakaoCallback] refreshAccessToken 결과:', payload);
 
       if (!payload?.accessToken) {
+        console.log('[KakaoCallback] accessToken 없음 -> /signin');
         navigate('/signin', { replace: true });
         return;
       }
@@ -28,14 +32,17 @@ const KakaoCallback = () => {
       };
 
       if (payload?.newMember) {
+        console.log('[KakaoCallback] 신규 회원 -> /new-info');
         setUser(baseUser);
         navigate('/new-info', { replace: true });
         return;
       }
 
       const profile = await getMyProfile();
+      console.log('[KakaoCallback] getMyProfile 결과:', profile);
 
       if (!profile) {
+        console.log('[KakaoCallback] profile 없음 -> /new-info');
         setUser(baseUser);
         navigate('/new-info', { replace: true });
         return;
@@ -52,6 +59,8 @@ const KakaoCallback = () => {
           profile?.profileImageUrl ??
           '',
       };
+      console.log('[KakaoCallback] nextUser:', nextUser);
+      console.log('[KakaoCallback] redirectPath:', redirectPath);
 
       setUser(nextUser);
       navigate(redirectPath, { replace: true });

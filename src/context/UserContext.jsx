@@ -36,6 +36,8 @@ export function UserProvider({ children }) {
   );
 
   const setUser = (nextUser) => {
+    console.log('[UserContext] setUser 호출:', nextUser);
+
     setUserState(nextUser);
 
     if (nextUser) {
@@ -55,6 +57,8 @@ export function UserProvider({ children }) {
     }
 
     if (hasLoggedOutMarker()) {
+      console.log('[UserContext] loggedOut marker 감지됨');
+
       clearStoredAuth();
       setUserState(null);
       setIsInitializing(false);
@@ -65,9 +69,11 @@ export function UserProvider({ children }) {
     const hadStoredUser = Boolean(initialStoredUserRef.current);
 
     const bootstrapUser = async () => {
+      console.log('[UserContext] bootstrapUser 시작');
+
       try {
         const payload = await refreshAccessToken();
-
+        console.log('[UserContext] bootstrap refresh 결과:', payload);
         if (!payload?.accessToken) {
           if (!cancelled && !hadStoredUser) {
             clearStoredAuth();
@@ -156,7 +162,11 @@ export function UserProvider({ children }) {
     navigate('/main', { replace: true });
     void logoutFromServer();
   };
-
+  console.log('[UserContext] 현재 상태', {
+    user,
+    isLoggedIn: Boolean(user),
+    isInitializing,
+  });
   const value = {
     user,
     setUser,

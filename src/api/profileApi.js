@@ -33,6 +33,7 @@ const requestGetMyProfile = async () => {
       ...getAuthHeader(),
     },
   });
+  console.log('[profileApi] /profiles status:', res.status);
 
   if (res.status === 404) {
     return { res, data: null };
@@ -44,6 +45,8 @@ const requestGetMyProfile = async () => {
   if (contentType.includes('application/json')) {
     try {
       data = await res.json();
+      console.log('[profileApi] /profiles data:', data);
+
     } catch {
       data = null;
     }
