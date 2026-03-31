@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageHeader from '../../components/common/PageHeader';
 import PrimaryButton from '../../components/common/PrimaryButton';
@@ -9,6 +9,34 @@ import SuggestionList from '../../components/ui/SuggestionList';
 import { fridgeApi } from '../../api/fridgeApi';
 import './RefrigeratorPage.css';
 
+const COLOR_ENUM_MAP = {
+  RED: '#EF4444',
+  BLUE: '#3B82F6',
+  GREEN: '#22C55E',
+};
+
+const DEFAULT_CATEGORY_COLOR = '#90CAF9';
+
+const isHexColor = (value) =>
+  typeof value === 'string' &&
+  /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(value.trim());
+
+const normalizeCategoryColor = (color) => {
+  if (!color) return DEFAULT_CATEGORY_COLOR;
+
+  const trimmed = String(color).trim();
+
+  if (isHexColor(trimmed)) {
+    return trimmed.toUpperCase();
+  }
+
+  if (COLOR_ENUM_MAP[trimmed]) {
+    return COLOR_ENUM_MAP[trimmed];
+  }
+
+  return DEFAULT_CATEGORY_COLOR;
+};
+
 const RefrigeratorPage = () => {
   const navigate = useNavigate();
 
@@ -18,38 +46,56 @@ const RefrigeratorPage = () => {
 
   const [inputValue, setInputValue] = useState('');
   const [activeCategoryId, setActiveCategoryId] = useState(null);
+
   const [suggestions, setSuggestions] = useState([]);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [searchLoading, setSearchLoading] = useState(false);
 
   const loadFridge = useCallback(async () => {
     setLoading(true);
+
     try {
       const res = await fridgeApi.getMyFridge();
       const data = res.data?.data ?? res.data ?? {};
+      const sections = Array.isArray(data.items) ? data.items : [];
 
-      const rawCategories = Array.isArray(data.categories) ? data.categories : [];
-      const cats = rawCategories.map((cat) => ({
-        id: String(cat.categoryId ?? cat.id),
-        label: cat.name ?? cat.label ?? '',
-        color: cat.color ?? '#e0e0e0',
-        location: cat.location ?? 'FRIDGE',
-      }));
+      const nextCategories = [];
+      const nextIngredientsMap = {};
 
-      const ingMap = {};
-      rawCategories.forEach((cat) => {
-        const catId = String(cat.categoryId ?? cat.id);
-        ingMap[catId] = (cat.ingredients ?? []).map((ing) => ({
-          id: String(ing.ingredientId ?? ing.id),
-          label: ing.name ?? ing.label ?? '',
-          color: cats.find((c) => c.id === catId)?.color ?? '#e0e0e0',
-        }));
+      sections.forEach((section) => {
+        const storageType = section?.storageType ?? 'REFRIGERATED';
+        const rawCategories = Array.isArray(section?.categories) ? section.categories : [];
+
+        rawCategories.forEach((cat) => {
+          const categoryId = String(cat?.categoryId ?? '');
+          const normalizedCategory = {
+            id: categoryId,
+            label: cat?.categoryName ?? '',
+            color: cat?.color ?? DEFAULT_CATEGORY_COLOR,
+            location: storageType,
+            order: cat?.categoryOrder ?? 0,
+          };
+
+          nextCategories.push(normalizedCategory);
+
+          nextIngredientsMap[categoryId] = Array.isArray(cat?.ingredients)
+            ? cat.ingredients.map((ing) => ({
+              id: String(ing?.fridgeIngredientId ?? ''),
+              label: ing?.ingredientName ?? '',
+              color: normalizedCategory.color,
+            }))
+            : [];
+        });
       });
 
-      setCategories(cats);
-      setIngredientsByCategory(ingMap);
+      nextCategories.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+      setCategories(nextCategories);
+      setIngredientsByCategory(nextIngredientsMap);
     } catch (error) {
       console.error('냉장고 조회 실패:', error);
+      setCategories([]);
+      setIngredientsByCategory({});
     } finally {
       setLoading(false);
     }
@@ -74,27 +120,48 @@ const RefrigeratorPage = () => {
     }
 
     setSearchLoading(true);
+
     try {
       const res = await fridgeApi.searchIngredients(val.trim());
-      const data = res.data?.data ?? res.data ?? [];
-      const names = Array.isArray(data)
-        ? data.map((item) => (typeof item === 'string' ? item : item.name ?? ''))
-        : [];
-      setSuggestions(names.filter(Boolean));
-    } catch {
+      const data = res.data?.data ?? res.data ?? {};
+      const items = Array.isArray(data?.items) ? data.items : [];
+
+      const normalizedSuggestions = items
+        .map((item) => ({
+          ingredientId: item?.ingredientId,
+          ingredientName: item?.ingredientName ?? '',
+        }))
+        .filter((item) => item.ingredientId != null && item.ingredientName);
+
+      setSuggestions(normalizedSuggestions);
+    } catch (error) {
+      console.error('재료 자동완성 조회 실패:', error);
       setSuggestions([]);
     } finally {
       setSearchLoading(false);
     }
   };
 
-  const handleSelectSuggestion = async (name) => {
+  const handleSelectSuggestion = async (ingredientName) => {
     if (!activeCategoryId) return;
+
+    const selectedSuggestion = suggestions.find(
+      (item) => item.ingredientName === ingredientName
+    );
+
+    if (!selectedSuggestion?.ingredientId) {
+      return;
+    }
+
     setInputValue('');
     setSuggestions([]);
 
     try {
-      await fridgeApi.addIngredient({ name, categoryId: Number(activeCategoryId) });
+      await fridgeApi.addIngredient({
+        categoryId: Number(activeCategoryId),
+        ingredientId: Number(selectedSuggestion.ingredientId),
+      });
+
       await loadFridge();
     } catch (error) {
       console.error('재료 추가 실패:', error);
@@ -112,6 +179,18 @@ const RefrigeratorPage = () => {
 
   const hasCategories = categories.length > 0;
 
+  const freezerCategories = useMemo(
+    () => categories.filter((c) => c.location === 'FROZEN'),
+    [categories]
+  );
+
+  const refrigeratedCategories = useMemo(
+    () => categories.filter((c) => c.location === 'REFRIGERATED'),
+    [categories]
+  );
+
+  const suggestionNames = suggestions.map((item) => item.ingredientName);
+
   return (
     <div className="refrigerator-page">
       <PageHeader title="내 냉장고" onBack={handleBack} onHome={handleHome} />
@@ -123,12 +202,11 @@ const RefrigeratorPage = () => {
           <>
             <section className="refrigerator-page__section">
               <h2 className="refrigerator-page__section-title">냉동실</h2>
-              {categories.filter((c) => c.location === 'FREEZER').length === 0 && (
+
+              {freezerCategories.length === 0 ? (
                 <p className="refrigerator-page__empty">현재 냉동실이 비어있어요!</p>
-              )}
-              {categories
-                .filter((c) => c.location === 'FREEZER')
-                .map((cat) => (
+              ) : (
+                freezerCategories.map((cat) => (
                   <CategoryBlock
                     key={cat.id}
                     cat={cat}
@@ -139,37 +217,37 @@ const RefrigeratorPage = () => {
                     handleInputChange={handleInputChange}
                     handleSelectSuggestion={handleSelectSuggestion}
                     handleDeleteIngredient={handleDeleteIngredient}
-                    suggestions={suggestions}
+                    suggestions={suggestionNames}
                     selectedIndex={selectedIndex}
                     searchLoading={searchLoading}
                   />
-                ))}
+                ))
+              )}
             </section>
 
             <section className="refrigerator-page__section">
               <h2 className="refrigerator-page__section-title">냉장고</h2>
-              {!hasCategories || categories.filter((c) => c.location !== 'FREEZER').length === 0 ? (
+
+              {!hasCategories || refrigeratedCategories.length === 0 ? (
                 <p className="refrigerator-page__empty">현재 냉장고가 비어있어요!</p>
               ) : (
                 <div className="refrigerator-page__content">
-                  {categories
-                    .filter((c) => c.location !== 'FREEZER')
-                    .map((cat) => (
-                      <CategoryBlock
-                        key={cat.id}
-                        cat={cat}
-                        ingredients={ingredientsByCategory[cat.id] || []}
-                        activeCategoryId={activeCategoryId}
-                        setActiveCategoryId={setActiveCategoryId}
-                        inputValue={inputValue}
-                        handleInputChange={handleInputChange}
-                        handleSelectSuggestion={handleSelectSuggestion}
-                        handleDeleteIngredient={handleDeleteIngredient}
-                        suggestions={suggestions}
-                        selectedIndex={selectedIndex}
-                        searchLoading={searchLoading}
-                      />
-                    ))}
+                  {refrigeratedCategories.map((cat) => (
+                    <CategoryBlock
+                      key={cat.id}
+                      cat={cat}
+                      ingredients={ingredientsByCategory[cat.id] || []}
+                      activeCategoryId={activeCategoryId}
+                      setActiveCategoryId={setActiveCategoryId}
+                      inputValue={inputValue}
+                      handleInputChange={handleInputChange}
+                      handleSelectSuggestion={handleSelectSuggestion}
+                      handleDeleteIngredient={handleDeleteIngredient}
+                      suggestions={suggestionNames}
+                      selectedIndex={selectedIndex}
+                      searchLoading={searchLoading}
+                    />
+                  ))}
                 </div>
               )}
             </section>
@@ -206,16 +284,25 @@ const CategoryBlock = ({
 }) => (
   <div className="refrigerator-page__category-block">
     <div className="refrigerator-page__category-header">
-      <span className="refrigerator-page__category-color" style={{ backgroundColor: cat.color }} />
+      <span
+        className="refrigerator-page__category-color"
+        style={{ backgroundColor: normalizeCategoryColor(cat.color) }}
+      />
       <h3 className="refrigerator-page__category-title">{cat.label}</h3>
-      <Pill color={cat.color} asButton onClick={() => setActiveCategoryId(cat.id)} className="refrigerator-page__category-add">
+      <Pill
+        color={normalizeCategoryColor(cat.color)}
+        asButton
+        onClick={() => setActiveCategoryId(cat.id)}
+        className="refrigerator-page__category-add"
+      >
         +
       </Pill>
     </div>
+
     <div className="refrigerator-page__ingredients">
       {ingredients.map((ing) => (
         <div key={ing.id} className="refrigerator-page__ingredient">
-          <Pill color={ing.color}>{ing.label}</Pill>
+          <Pill color={normalizeCategoryColor(ing.color)}>{ing.label}</Pill>
           <button
             type="button"
             className="refrigerator-page__icon-btn"
@@ -227,6 +314,7 @@ const CategoryBlock = ({
         </div>
       ))}
     </div>
+
     {activeCategoryId === cat.id && (
       <div className="refrigerator-page__input-wrap">
         <TextInput
