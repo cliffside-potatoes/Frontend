@@ -23,7 +23,8 @@
 .mypage-title {
   margin: 0;
   font-size: 18px;
-  font-weight: 600;
+  font-weight: 700;
+  color: #111111;
 }
 
 .icon-button {
@@ -55,17 +56,17 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-top: 60px;
-  margin-bottom: 60px;
+  margin-top: 52px;
+  margin-bottom: 48px;
 }
 
 .profile-main {
   display: grid;
-  grid-template-columns: 70px 1fr;
-  grid-template-rows: auto auto;
-  gap: 6px 40px;
-  align-items: start;
-  width: 100%
+  grid-template-columns: 80px 1fr;
+  grid-template-rows: auto;
+  gap: 6px 28px;
+  align-items: center;
+  width: 100%;
 }
 
 .profile-avatar {
@@ -75,16 +76,17 @@
   height: 80px;
   border-radius: 50%;
   background-color: #ffffff;
-  border: 2px solid #efefef;
+  border: 2px solid #e5e5e5;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 20px;
+  overflow: hidden;
+  flex-shrink: 0;
 }
 
 .profile-avatar-image {
-  width: 54px;
-  height: 54px;
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
   object-fit: cover;
   display: block;
@@ -96,7 +98,8 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 6px;
+  gap: 8px;
+  min-width: 0;
 }
 
 .profile-name-row {
@@ -106,41 +109,31 @@
   flex-wrap: wrap;
 }
 
-.profile-count-div {
-  text-align: left;
-  width: 100%;
-}
-
-.mypage-posts-empty {
-  margin: 0;
-  padding: 20px 0;
-  font-size: 14px;
-  color: #888;
-  text-align: center;
-}
-
 .profile-nickname {
   margin: 0;
   font-size: 15px;
   font-weight: 700;
   color: #1a1a1a;
+  line-height: 1.25;
 }
 
 .profile-id {
   margin: 0;
   font-size: 13px;
   color: #888;
+  line-height: 1.25;
 }
 
 .profile-count-div {
   text-align: left;
-
+  width: 100%;
 }
 
 .profile-count {
   margin: 0;
   font-size: 13px;
   color: #444;
+  line-height: 1.4;
 }
 
 .profile-count .highlight {
@@ -151,22 +144,25 @@
 .profile-bio-div {
   text-align: left;
   width: 100%;
+  margin-top: 18px;
 }
 
 .profile-bio {
-  margin: 12px 0 16px;
+  margin: 0 0 16px;
   font-size: 13px;
   color: #666;
-  /* text-align: center; */
+  line-height: 1.5;
 }
 
 .profile-edit-button {
   width: 100%;
-  padding: 10px;
-  border-radius: 5px;
+  padding: 12px 10px;
+  border-radius: 8px;
   border: 1px solid #e5e5e5;
   background-color: #ffffff;
   font-size: 14px;
+  font-weight: 500;
+  color: #222;
   cursor: pointer;
 }
 
@@ -179,27 +175,31 @@
 
 .shortcut-card {
   flex: 1;
-  border-radius: 5px;
+  min-height: 78px;
+  border-radius: 8px;
   border: none;
   background-color: #f7f7f7;
-  padding: 12px 8px;
+  padding: 14px 8px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
+  gap: 6px;
   cursor: pointer;
 }
 
 .shortcut-icon {
   font-size: 18px;
+  line-height: 1;
 }
 
 .shortcut-label {
   font-size: 12px;
+  color: #222;
 }
 
 .mypage-tabs-section {
-  margin-top: 24px;
+  margin-top: 28px;
 }
 
 .mypage-tabs {
@@ -209,7 +209,7 @@
 
 .tab {
   flex: 1;
-  padding: 10px 0;
+  padding: 12px 0;
   border: none;
   background: none;
   font-size: 14px;
@@ -220,14 +220,24 @@
 .tab.active {
   color: #ff4b4b;
   font-weight: 600;
-  border-radius: 0%;
+  border-radius: 0;
   border-bottom: 2px solid #ff4b4b;
 }
 
 .mypage-posts {
   padding-top: 12px;
   border-bottom: 1px solid #eee;
+  min-height: 220px;
+}
 
+.mypage-posts-empty,
+.mypage-posts-loading,
+.mypage-posts-error {
+  margin: 0;
+  padding: 20px 0;
+  font-size: 14px;
+  color: #888;
+  text-align: center;
 }
 
 /* 게시물 카드: 프로필사진 | 닉네임 날짜 → 구분선 → 게시글 | 사진 | 좋아요 */
@@ -248,6 +258,14 @@
   border-radius: 50%;
   background-color: #f5f5f5;
   flex-shrink: 0;
+  overflow: hidden;
+}
+
+.post-avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
 .post-header-right {
@@ -366,22 +384,22 @@
   position: fixed;
   right: 16px;
   bottom: calc(var(--bottom-nav-base-height) + var(--safe-bottom) + 16px);
-  width: 44px;
-  height: 44px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
-  border: none;
-  background-color: #ff4b4b;
-  color: #ffffff;
+  border: 2px solid #5d5d5d;
+  background-color: #ffffff;
+  color: #4a4a4a;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
   cursor: pointer;
   outline: none;
 }
 
 .floating-write-button .material-symbols-outlined {
-  font-size: 24px;
+  font-size: 30px;
 }
 
 /* 모달 공통 */
@@ -491,28 +509,7 @@
   cursor: pointer;
 }
 
-/* --- 글쓰기/수정 모달 스타일 동기화 --- */
-
-.write-modal {
-  position: fixed;
-  left: 50%;
-  bottom: 0;
-  z-index: 201;
-  width: 100%;
-  max-width: var(--app-max-width);
-  height: 92vh;
-  background: #fff;
-  border-radius: 20px 20px 0 0;
-  box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.15);
-  transform: translate(-50%, 100%);
-  transition: transform 0.3s ease-out;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-/* --- 글쓰기/수정 모달 스타일 동기화 --- */
-
+/* 글쓰기/수정 모달 */
 .write-modal {
   position: fixed;
   left: 50%;
@@ -591,7 +588,6 @@
   color: #1a1a1a;
 }
 
-/* 닉네임 시작점과 맞추기 위한 56px 여백 (44px 아바타 + 12px 간격) */
 .write-modal-content-area {
   flex: 1;
   display: flex;
@@ -603,82 +599,18 @@
 .write-modal-textarea {
   width: 100%;
   min-height: 120px;
-  padding: 0;
-  margin-bottom: 20px;
-  border: none;
-  font-size: 15px;
-  line-height: 1.6;
-  resize: none;
-  background: transparent;
+  padding: 12px;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+  resize: vertical;
+  box-sizing: border-box;
 }
 
 .write-modal-textarea:focus {
   outline: none;
-}
-
-.write-modal-image-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  margin-bottom: 12px;
-  flex-wrap: wrap;
-}
-
-.write-modal-image-placeholder {
-  position: relative;
-  width: 72px;
-  height: 72px;
-  border-radius: 8px;
-  background: #f5f5f5;
-  overflow: hidden;
-}
-
-.write-modal-preview {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.write-modal-actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 12px;
-}
-
-.write-modal-add-image-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 16px;
-  border: 1px dashed #ccc;
-  border-radius: 8px;
-  background: #fafafa;
-  font-size: 14px;
-  color: #666;
-  cursor: pointer;
-}
-
-.write-modal-save-btn {
-  padding: 10px 24px;
-  border: none;
-  border-radius: 8px;
-  font-size: 15px;
-  font-weight: 500;
-  color: #fff;
-  background: #ff4b4b;
-  cursor: pointer;
-}
-
-.write-modal-prompt {
-  margin: 0;
-  font-size: 13px;
-  color: #888;
-}
-
-.write-modal-body {
-  padding: 0 16px 24px;
-  overflow-y: auto;
+  border-color: #ff4b4b;
 }
 
 .write-modal-file-input {
@@ -732,14 +664,17 @@
   font-size: 16px;
 }
 
-.write-modal-image-placeholder .material-symbols-outlined {
-  font-size: 28px;
-}
-
 .write-modal-preview {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.write-modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
 }
 
 .write-modal-add-image-btn {
@@ -770,32 +705,12 @@
   cursor: pointer;
 }
 
-.write-modal-textarea {
-  width: 100%;
-  min-height: 120px;
-  padding: 12px;
-  border: 1px solid #e5e5e5;
-  border-radius: 8px;
-  font-size: 14px;
-  line-height: 1.5;
-  resize: vertical;
-  box-sizing: border-box;
-}
-
-.write-modal-textarea:focus {
-  outline: none;
-  border-color: #ff4b4b;
-}
-
-.post-avatar-img {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
 @media screen and (max-width: 428px) {
   .mypage-content {
     padding: 16px 14px;
+  }
+
+  .profile-main {
+    gap: 6px 18px;
   }
 }
