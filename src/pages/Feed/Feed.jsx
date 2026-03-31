@@ -75,7 +75,6 @@ const Feed = () => {
   const [editingPostId, setEditingPostId] = useState(null);
   const [draftContent, setDraftContent] = useState('');
   const [draftImages, setDraftImages] = useState([]);
-  const [otherPostsLike, setOtherPostsLike] = useState({});
   const fileInputRef = useRef(null);
   const textareaRef = useRef(null);
 
@@ -217,6 +216,7 @@ const Feed = () => {
     setServerFeed((prev) =>
       prev.map((p) => {
         if (p.id !== postId) return p;
+
         const nextLiked = !p.liked;
         return {
           ...p,
@@ -225,11 +225,6 @@ const Feed = () => {
         };
       })
     );
-
-    setOtherPostsLike((prev) => {
-      const current = prev[postId] ?? false;
-      return { ...prev, [postId]: !current };
-    });
   };
 
   const openWriteModal = (post = null) => {
@@ -365,14 +360,6 @@ const Feed = () => {
   };
 
   const getPostForCard = (item) => {
-    const isMine = myPostIds.has(item.id) || Boolean(item.isMine);
-
-    if (!isMine) {
-      const liked = otherPostsLike[item.id] ?? item.liked;
-      const likeCount = (item.likeCount ?? 0) + (liked ? 1 : 0) - (item.liked ? 1 : 0);
-      return { ...item, liked, likeCount: Math.max(0, likeCount) };
-    }
-
     return item;
   };
 
