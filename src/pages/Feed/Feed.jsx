@@ -187,6 +187,9 @@ const Feed = () => {
     setPosts((prev) =>
       (prev || []).map((p) => (p.id === postId ? { ...p, hideLikeCount: !p.hideLikeCount } : p))
     );
+    setServerFeed((prev) =>
+      (prev || []).map((p) => (p.id === postId ? { ...p, hideLikeCount: !p.hideLikeCount } : p))
+    );
     setPostMenuPostId(null);
   };
 
@@ -194,27 +197,15 @@ const Feed = () => {
     setPosts((prev) =>
       (prev || []).map((p) => (p.id === postId ? { ...p, pinned: !p.pinned } : p))
     );
+    setServerFeed((prev) =>
+      (prev || []).map((p) => (p.id === postId ? { ...p, pinned: !p.pinned } : p))
+    );
     setPostMenuPostId(null);
   };
 
   const handleToggleLike = (postId) => {
-    if (myPostIds.has(postId)) {
-      setPosts((prev) =>
-        (prev || []).map((p) => {
-          if (p.id !== postId) return p;
-          const nextLiked = !p.liked;
-          return {
-            ...p,
-            liked: nextLiked,
-            likeCount: Math.max(0, (p.likeCount ?? 0) + (nextLiked ? 1 : -1)),
-          };
-        })
-      );
-      return;
-    }
-
-    setServerFeed((prev) =>
-      prev.map((p) => {
+    const toggleLikeInList = (list = []) =>
+      list.map((p) => {
         if (p.id !== postId) return p;
 
         const nextLiked = !p.liked;
@@ -223,8 +214,10 @@ const Feed = () => {
           liked: nextLiked,
           likeCount: Math.max(0, (p.likeCount ?? 0) + (nextLiked ? 1 : -1)),
         };
-      })
-    );
+      });
+
+    setPosts((prev) => toggleLikeInList(prev || []));
+    setServerFeed((prev) => toggleLikeInList(prev || []));
   };
 
   const openWriteModal = (post = null) => {
@@ -359,10 +352,6 @@ const Feed = () => {
     closeWriteModal();
   };
 
-  const getPostForCard = (item) => {
-    return item;
-  };
-
   return (
     <div className="feed-page">
       <header className="feed-header">
@@ -388,8 +377,7 @@ const Feed = () => {
         )}
 
         <div className="feed-list">
-          {feedList.map((item) => {
-            const post = getPostForCard(item);
+          {feedList.map((post) => {
             const isMine = myPostIds.has(post.id) || Boolean(post.isMine);
 
             return (
