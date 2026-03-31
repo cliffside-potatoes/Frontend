@@ -74,7 +74,6 @@ const MyPage = () => {
   const [activeTab, setActiveTab] = useState('POST');
   const [likedPosts, setLikedPosts] = useState([]);
 
-  // 로그인 안 된 상태에서는 마이페이지 접근만 막음
   useEffect(() => {
     if (isInitializing) return;
     if (!isLoggedIn) {
@@ -95,9 +94,7 @@ const MyPage = () => {
   const [hasNext, setHasNext] = useState(false);
   const [nextCursor, setNextCursor] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [loadingMore] = useState(false);
   const [feedError, setFeedError] = useState(null);
-  const loadMoreRef = useRef(null);
 
   const [postMenuPostId, setPostMenuPostId] = useState(null);
   const [deleteConfirmPostId, setDeleteConfirmPostId] = useState(null);
@@ -107,7 +104,6 @@ const MyPage = () => {
   const [draftImages, setDraftImages] = useState([]);
   const fileInputRef = useRef(null);
 
-  // 탭에 따라 데이터 로딩
   useEffect(() => {
     if (isInitializing) return;
     if (!isLoggedIn) return;
