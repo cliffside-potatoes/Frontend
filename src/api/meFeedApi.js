@@ -53,6 +53,7 @@ const getMockFeed = (params) => {
   const { size = 20 } = params;
   const items = MOCK_FEED_ITEMS.slice(0, size);
   const last = items[items.length - 1];
+
   return {
     items,
     hasNext: false,
@@ -61,8 +62,8 @@ const getMockFeed = (params) => {
 };
 
 /**
- * 내 피드 조회 (게시글만: type=POST)
- * 백엔드 없거나 실패 시 목 데이터 반환
+ * 내 피드 조회
+ * GET /me/feed
  */
 export const getMyFeed = async (params = {}) => {
   const {
@@ -70,13 +71,12 @@ export const getMyFeed = async (params = {}) => {
     cursorCreatedAt,
     cursorId,
     sort = 'LATEST',
-    type = 'POST',
   } = params;
 
   const searchParams = new URLSearchParams();
   searchParams.set('size', String(size));
   searchParams.set('sort', sort);
-  searchParams.set('type', type);
+
   if (cursorCreatedAt != null && cursorId != null) {
     searchParams.set('cursorCreatedAt', cursorCreatedAt);
     searchParams.set('cursorId', String(cursorId));
@@ -88,6 +88,7 @@ export const getMyFeed = async (params = {}) => {
       typeof window !== 'undefined' &&
       base &&
       (base.startsWith(window.location.origin) || base === window.location.origin);
+
     if (!base || isSameOrigin) return getMockFeed(params);
 
     const url = `${base}/me/feed?${searchParams.toString()}`;
@@ -111,10 +112,12 @@ export const getMyFeed = async (params = {}) => {
       return getMockFeed(params);
     }
 
+    const payload = data?.data ?? {};
+
     return {
-      items: Array.isArray(data.items) ? data.items : [],
-      hasNext: Boolean(data.hasNext),
-      nextCursor: data.nextCursor ?? null,
+      items: Array.isArray(payload.items) ? payload.items : [],
+      hasNext: Boolean(payload.hasNext),
+      nextCursor: payload.nextCursor ?? null,
     };
   } catch {
     return getMockFeed(params);
