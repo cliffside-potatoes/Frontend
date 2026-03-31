@@ -24,7 +24,7 @@ const MOCK_FEED_ITEMS = [
     source: null,
     writer: { profileId: 1, nickname: '사용자 닉네A', profileImageUrl: null },
     likeCount: 12,
-    hidLikeCount: false,
+    hideLikeCount: false,
     liked: false,
     isMine: false,
     updatedAt: '2026-01-19T12:30:00+09:00',
@@ -38,7 +38,7 @@ const MOCK_FEED_ITEMS = [
     source: null,
     writer: { profileId: 2, nickname: '요리왕', profileImageUrl: null },
     likeCount: 8,
-    hidLikeCount: false,
+    hideLikeCount: false,
     liked: false,
     isMine: false,
     updatedAt: '2026-01-18T10:00:00+09:00',
@@ -52,7 +52,7 @@ const MOCK_FEED_ITEMS = [
     source: '김치찌개[유튜브-3분 뚝딱이 형]',
     writer: { profileId: 3, nickname: '친구B', profileImageUrl: null },
     likeCount: 5,
-    hidLikeCount: false,
+    hideLikeCount: false,
     liked: false,
     isMine: false,
     updatedAt: '2026-01-17T15:00:00+09:00',
@@ -64,6 +64,7 @@ const getMockFeed = (params) => {
   const { size = 20 } = params;
   const items = MOCK_FEED_ITEMS.slice(0, size);
   const last = items[items.length - 1];
+
   return {
     items,
     hasNext: false,
@@ -77,11 +78,11 @@ const getMockFeed = (params) => {
  * 전체 피드 조회 (무한 스크롤)
  * @param {Object} params
  * @param {number} [params.size=20]
- * @param {string} [params.sort=LATEST] - LATEST | 인기순 등
- * @param {string} [params.cursorCreatedAt] - 최신순 커서 (cursorId와 쌍)
+ * @param {string} [params.sort=LATEST]
+ * @param {string} [params.cursorCreatedAt]
  * @param {number} [params.cursorId]
- * @param {number} [params.cursorLikeCount] - 인기순 커서 (cursorId와 쌍)
- * @param {number} [params.cursorReviewCount] - 리뷰순 커서 (cursorId와 쌍)
+ * @param {number} [params.cursorLikeCount]
+ * @param {number} [params.cursorReviewCount]
  */
 export const getFeed = async (params = {}) => {
   const {
@@ -96,6 +97,7 @@ export const getFeed = async (params = {}) => {
   const searchParams = new URLSearchParams();
   searchParams.set('size', String(size));
   searchParams.set('sort', sort);
+
   if (cursorCreatedAt != null && cursorId != null) {
     searchParams.set('cursorCreatedAt', cursorCreatedAt);
     searchParams.set('cursorId', String(cursorId));
@@ -113,7 +115,10 @@ export const getFeed = async (params = {}) => {
       typeof window !== 'undefined' &&
       base &&
       (base.startsWith(window.location.origin) || base === window.location.origin);
-    if (!base || isSameOrigin || !getStoredAccessToken()) return getMockFeed(params);
+
+    if (!base || isSameOrigin || !getStoredAccessToken()) {
+      return getMockFeed(params);
+    }
 
     const url = `${base}/feed?${searchParams.toString()}`;
     const res = await fetch(url, {
@@ -124,10 +129,14 @@ export const getFeed = async (params = {}) => {
       },
     });
 
-    if (!res.ok) return getMockFeed(params);
+    if (!res.ok) {
+      return getMockFeed(params);
+    }
 
     const contentType = res.headers.get('content-type') || '';
-    if (!contentType.includes('application/json')) return getMockFeed(params);
+    if (!contentType.includes('application/json')) {
+      return getMockFeed(params);
+    }
 
     let data;
     try {
@@ -136,10 +145,12 @@ export const getFeed = async (params = {}) => {
       return getMockFeed(params);
     }
 
+    const payload = data?.data ?? {};
+
     return {
-      items: Array.isArray(data.items) ? data.items : [],
-      hasNext: Boolean(data.hasNext),
-      nextCursor: data.nextCursor ?? null,
+      items: Array.isArray(payload.items) ? payload.items : [],
+      hasNext: Boolean(payload.hasNext),
+      nextCursor: payload.nextCursor ?? null,
     };
   } catch {
     return getMockFeed(params);
