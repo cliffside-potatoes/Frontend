@@ -1,12 +1,13 @@
-import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import React, { useMemo, useRef, useEffect, useCallback, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useMyPosts } from '../../context/MyPostsContext';
-import { useUser } from '../../context/UserContext';
 import BottomNav from '../../components/common/BottomNav';
 import FeedCard from '../../components/card/FeedCard';
+import { useMyPosts } from '../../context/MyPostsContext';
+import { useUser } from '../../context/UserContext';
 import { getFeed } from '../../api/feedApi';
 import { createPost, updatePost, deletePost } from '../../api/postApi';
 import { buildSignInState } from '../../utils/authStorage';
+import { toImageUrl } from '../../utils/imageUrl';
 import profileImg from '../../assets/image/profile.png';
 import './Feed.css';
 
@@ -26,14 +27,25 @@ const mapApiItemToPost = (item) => ({
   id: item.id,
   type: item.type,
   author: item.writer?.nickname ?? item.author ?? '사용자',
+  avatarUrl: item.writer?.profileImageUrl ? toImageUrl(item.writer.profileImageUrl) : '',
   date: item.createdAt
-    ? new Date(item.createdAt).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })
+    ? new Date(item.createdAt).toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    })
     : '',
   createdAt: item.createdAt ?? '',
   updatedAt: item.updatedAt ?? item.createdAt ?? '',
   content: item.content ?? '',
-  images: Array.isArray(item.images) ? item.images : (item.image ? [item.image] : []),
-  image: Array.isArray(item.images) ? (item.images[0] ?? '') : (item.image ?? ''),
+  images: Array.isArray(item.images)
+    ? item.images.map((img) => toImageUrl(img))
+    : item.image
+      ? [toImageUrl(item.image)]
+      : [],
+  image: Array.isArray(item.images)
+    ? toImageUrl(item.images[0] ?? '')
+    : toImageUrl(item.image ?? ''),
   likeCount: item.likeCount ?? 0,
   liked: Boolean(item.liked),
   hideLikeCount: Boolean(item.hidLikeCount ?? item.hideLikeCount),
@@ -48,7 +60,7 @@ const Feed = () => {
   const { posts: myPosts, setPosts } = useMyPosts();
 
   const currentNickname = user?.nickname ?? '사용자 닉네임';
-  const currentProfileImg = user?.profileImage || profileImg;
+  const currentProfileImg = toImageUrl(user?.profileImage) || profileImg;
 
   const myPostIds = useMemo(() => new Set((myPosts || []).map((p) => p.id)), [myPosts]);
 
@@ -69,15 +81,19 @@ const Feed = () => {
 
   const loadFeed = useCallback(async (cursor = null) => {
     setFeedLoading(true);
+
     try {
       const params = { size: 20, sort: 'LATEST' };
+
       if (cursor) {
         params.cursorCreatedAt = cursor.cursorCreatedAt;
         params.cursorId = cursor.cursorId;
       }
+
       const result = await getFeed(params);
       const mapped = (result.items ?? []).map(mapApiItemToPost);
-      setServerFeed((prev) => cursor ? [...prev, ...mapped] : mapped);
+
+      setServerFeed((prev) => (cursor ? [...prev, ...mapped] : mapped));
       setHasNext(Boolean(result.hasNext));
       setNextCursor(result.nextCursor ?? null);
     } catch (error) {
@@ -102,12 +118,18 @@ const Feed = () => {
   const feedList = useMemo(() => {
     const serverIds = new Set(serverFeed.map((p) => p.id));
     const localOnly = (myPosts || []).filter((p) => !serverIds.has(p.id));
+
     const combined = [
       ...serverFeed,
-      ...localOnly.map((p) => ({ ...p, isOther: false })),
+      ...localOnly.map((p) => ({
+        ...p,
+        isOther: false,
+        avatarUrl: p.avatarUrl || currentProfileImg,
+      })),
     ];
+
     return combined.sort((a, b) => toTime(b.createdAt) - toTime(a.createdAt));
-  }, [serverFeed, myPosts]);
+  }, [serverFeed, myPosts, currentProfileImg]);
 
   const openPostMenu = (e, postId) => {
     e.stopPropagation();
@@ -145,6 +167,7 @@ const Feed = () => {
 
   const handleDeletePost = async () => {
     if (!deleteConfirmPostId) return;
+
     if (!isLoggedIn) {
       navigateToSignIn('/feed');
       return;
@@ -155,6 +178,7 @@ const Feed = () => {
     } catch (error) {
       console.error('게시글 삭제 실패:', error);
     }
+
     setPosts((prev) => (prev || []).filter((p) => p.id !== deleteConfirmPostId));
     setServerFeed((prev) => prev.filter((p) => p.id !== deleteConfirmPostId));
     setDeleteConfirmPostId(null);
@@ -187,12 +211,25 @@ const Feed = () => {
           };
         })
       );
-    } else {
-      setOtherPostsLike((prev) => {
-        const current = prev[postId] ?? false;
-        return { ...prev, [postId]: !current };
-      });
+      return;
     }
+
+    setServerFeed((prev) =>
+      prev.map((p) => {
+        if (p.id !== postId) return p;
+        const nextLiked = !p.liked;
+        return {
+          ...p,
+          liked: nextLiked,
+          likeCount: Math.max(0, (p.likeCount ?? 0) + (nextLiked ? 1 : -1)),
+        };
+      })
+    );
+
+    setOtherPostsLike((prev) => {
+      const current = prev[postId] ?? false;
+      return { ...prev, [postId]: !current };
+    });
   };
 
   const openWriteModal = (post = null) => {
@@ -216,6 +253,7 @@ const Feed = () => {
       setDraftContent('');
       setDraftImages([]);
     }
+
     setPostMenuPostId(null);
     setWriteModalOpen(true);
   };
@@ -241,9 +279,11 @@ const Feed = () => {
       e.target.value = '';
       return;
     }
+
     Promise.all(files.map(readFileAsDataUrl)).then((urls) => {
       setDraftImages((prev) => [...prev, ...urls].slice(0, MAX_POST_IMAGES));
     });
+
     e.target.value = '';
   };
 
@@ -264,7 +304,11 @@ const Feed = () => {
     const images = draftImages.slice(0, MAX_POST_IMAGES);
     const image = images[0] || '';
     const nowIso = new Date().toISOString();
-    const dateStr = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+    const dateStr = new Date().toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
 
     if (editingPostId) {
       try {
@@ -272,11 +316,13 @@ const Feed = () => {
       } catch (error) {
         console.error('게시글 수정 실패:', error);
       }
+
       setPosts((prev) =>
         (prev || []).map((p) =>
           p.id === editingPostId ? { ...p, content: trimmed, image, images, updatedAt: nowIso } : p
         )
       );
+
       setServerFeed((prev) =>
         prev.map((p) =>
           p.id === editingPostId ? { ...p, content: trimmed, image, images, updatedAt: nowIso } : p
@@ -284,9 +330,12 @@ const Feed = () => {
       );
     } else {
       let newId = Date.now();
+
       try {
         const result = await createPost({ content: trimmed, images });
-        if (result.success && result.data?.id) newId = result.data.id;
+        if (result.success && result.data?.id) {
+          newId = result.data.id;
+        }
       } catch (error) {
         console.error('게시글 생성 실패:', error);
       }
@@ -295,6 +344,7 @@ const Feed = () => {
         id: newId,
         type: 'POST',
         author: currentNickname,
+        avatarUrl: currentProfileImg,
         date: dateStr,
         createdAt: nowIso,
         updatedAt: nowIso,
@@ -316,11 +366,13 @@ const Feed = () => {
 
   const getPostForCard = (item) => {
     const isMine = myPostIds.has(item.id) || Boolean(item.isMine);
+
     if (!isMine) {
       const liked = otherPostsLike[item.id] ?? item.liked;
       const likeCount = (item.likeCount ?? 0) + (liked ? 1 : 0) - (item.liked ? 1 : 0);
       return { ...item, liked, likeCount: Math.max(0, likeCount) };
     }
+
     return item;
   };
 
@@ -339,7 +391,7 @@ const Feed = () => {
       <main className="feed-content">
         <button type="button" className="feed-new-story" onClick={() => openWriteModal()}>
           <div className="feed-new-story-avatar">
-            <img src={profileImg} alt="" />
+            <img src={currentProfileImg} alt="" />
           </div>
           <span className="feed-new-story-placeholder">새로운 이야기가 있나요?</span>
         </button>
@@ -352,16 +404,18 @@ const Feed = () => {
           {feedList.map((item) => {
             const post = getPostForCard(item);
             const isMine = myPostIds.has(post.id) || Boolean(post.isMine);
+
             return (
               <div key={post.id} className="feed-card-wrap">
                 <FeedCard
                   post={post}
                   isMine={isMine}
-                  avatarUrl={profileImg}
+                  avatarUrl={post.avatarUrl || (isMine ? currentProfileImg : profileImg)}
                   onToggleLike={handleToggleLike}
-                  onOpenMenu={openPostMenu}
+                  onOpenMenu={isMine ? openPostMenu : undefined}
                 />
-                {postMenuPostId === post.id && (
+
+                {isMine && postMenuPostId === post.id && (
                   <>
                     <div className="modal-backdrop" onClick={closePostMenu} aria-hidden="true" />
                     <div className="modal post-menu-modal feed-post-menu">
@@ -393,13 +447,25 @@ const Feed = () => {
               </div>
             );
           })}
+
           {hasNext && (
             <button
               type="button"
               className="feed-load-more"
               onClick={() => loadFeed(nextCursor)}
               disabled={feedLoading}
-              style={{ display: 'block', width: '100%', padding: '12px', textAlign: 'center', background: 'none', border: '1px solid #e0e0e0', borderRadius: 8, cursor: 'pointer', color: '#666', margin: '8px 0' }}
+              style={{
+                display: 'block',
+                width: '100%',
+                padding: '12px',
+                textAlign: 'center',
+                background: 'none',
+                border: '1px solid #e0e0e0',
+                borderRadius: 8,
+                cursor: 'pointer',
+                color: '#666',
+                margin: '8px 0',
+              }}
             >
               {feedLoading ? '불러오는 중...' : '더 보기'}
             </button>
@@ -446,6 +512,7 @@ const Feed = () => {
                 {editingPostId ? '게시글 수정' : '새로운 게시글'}
               </h2>
             </header>
+
             <div className="write-modal-body">
               <input
                 ref={fileInputRef}
@@ -456,11 +523,13 @@ const Feed = () => {
                 aria-hidden="true"
                 onChange={handleImageSelect}
               />
+
               <div className="write-modal-user-row">
                 <img src={currentProfileImg} alt="" className="write-modal-avatar" />
                 <span className="write-modal-nickname">{currentNickname}</span>
                 <span className="write-modal-spacer" />
               </div>
+
               <div className="write-modal-content-area">
                 <textarea
                   ref={textareaRef}
@@ -471,23 +540,35 @@ const Feed = () => {
                   maxLength={500}
                   rows={5}
                 />
+
                 {draftImages.length > 0 && (
                   <div className="write-modal-image-row">
                     {draftImages.map((src, i) => (
                       <div key={i} className="write-modal-image-placeholder">
                         <img src={src} alt="" className="write-modal-preview" />
-                        <button type="button" className="write-modal-image-remove" onClick={() => removeDraftImage(i)} aria-label="사진 제거">
+                        <button
+                          type="button"
+                          className="write-modal-image-remove"
+                          onClick={() => removeDraftImage(i)}
+                          aria-label="사진 제거"
+                        >
                           <span className="material-symbols-outlined">close</span>
                         </button>
                       </div>
                     ))}
                   </div>
                 )}
+
                 <div className="write-modal-actions">
-                  <button type="button" className="write-modal-add-image-btn" onClick={() => fileInputRef.current?.click()}>
+                  <button
+                    type="button"
+                    className="write-modal-add-image-btn"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
                     <span className="material-symbols-outlined">add_photo_alternate</span>
                     {draftImages.length > 0 && `(${draftImages.length}/${MAX_POST_IMAGES})`}
                   </button>
+
                   <button type="button" className="write-modal-save-btn" onClick={handleSavePost}>
                     저장
                   </button>
