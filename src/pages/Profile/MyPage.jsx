@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import BottomNav from '../../components/common/BottomNav';
 import FeedCard from '../../components/card/FeedCard';
 import { getMyFeed } from '../../api/meFeedApi';
+import { getFeed } from '../../api/feedApi';
 import { useUser } from '../../context/UserContext';
 import { useMyPosts } from '../../context/MyPostsContext';
 import { toImageUrl } from '../../utils/imageUrl';
@@ -13,7 +14,7 @@ const MAX_POST_IMAGES = 5;
 const FEED_PAGE_SIZE = 20;
 
 /** API item을 FeedCard용 post 형태로 변환 (createdAt은 정렬/커서용) */
-const mapFeedItemToPost = (item, authorName) => {
+const mapFeedItemToPost = (item, fallbackAuthorName) => {
   const createdAt = item.createdAt || '';
   const dateStr =
     createdAt &&
@@ -32,18 +33,20 @@ const mapFeedItemToPost = (item, authorName) => {
   return {
     id: item.id,
     type: item.type,
-    author: authorName,
+    author: item.writer?.nickname ?? fallbackAuthorName,
+    avatarUrl: item.writer?.profileImageUrl ? toImageUrl(item.writer.profileImageUrl) : '',
     date: dateStr,
     content: item.content ?? '',
     images: (item.images ?? []).map((img) => toImageUrl(img)),
     image: item.images?.[0] ? toImageUrl(item.images[0]) : '',
     likeCount: item.likeCount ?? 0,
-    liked: false,
+    liked: Boolean(item.liked),
     hideLikeCount: Boolean(item.hideLikeCount),
     pinned: Boolean(item.pinned),
     createdAt,
     updatedAt: item.updatedAt ?? createdAt,
     cookCount: item.cookCount ?? 0,
+    isMine: Boolean(item.isMine),
   };
 };
 
@@ -54,10 +57,22 @@ const mergePostsByIdPreferLocal = (localPosts, serverPosts) => {
   return Array.from(map.values());
 };
 
+const sortPosts = (posts) =>
+  [...(posts || [])].sort((a, b) => {
+    if (a.pinned && !b.pinned) return -1;
+    if (!a.pinned && b.pinned) return 1;
+    const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return bTime - aTime;
+  });
+
 const MyPage = () => {
   const navigate = useNavigate();
   const { user, isLoggedIn, isInitializing } = useUser();
   const { posts: myPosts, setPosts } = useMyPosts();
+
+  const [activeTab, setActiveTab] = useState('POST');
+  const [likedPosts, setLikedPosts] = useState([]);
 
   // 로그인 안 된 상태에서는 마이페이지 접근만 막음
   useEffect(() => {
@@ -80,7 +95,7 @@ const MyPage = () => {
   const [hasNext, setHasNext] = useState(false);
   const [nextCursor, setNextCursor] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
+  const [loadingMore] = useState(false);
   const [feedError, setFeedError] = useState(null);
   const loadMoreRef = useRef(null);
 
@@ -92,7 +107,7 @@ const MyPage = () => {
   const [draftImages, setDraftImages] = useState([]);
   const fileInputRef = useRef(null);
 
-  // 로그인 상태가 확보된 뒤에만 내 피드 로딩
+  // 탭에 따라 데이터 로딩
   useEffect(() => {
     if (isInitializing) return;
     if (!isLoggedIn) return;
@@ -100,21 +115,47 @@ const MyPage = () => {
     let cancelled = false;
     setLoading(true);
     setFeedError(null);
+    setPostMenuPostId(null);
 
-    getMyFeed({ type: 'POST', size: FEED_PAGE_SIZE, sort: 'LATEST' })
+    if (activeTab === 'POST') {
+      getMyFeed({ type: 'POST', size: FEED_PAGE_SIZE, sort: 'LATEST' })
+        .then(({ items, hasNext: next, nextCursor: cursor }) => {
+          if (cancelled) return;
+
+          const serverPosts = (items || []).map((item) =>
+            mapFeedItemToPost(item, displayUser.nickname)
+          );
+
+          setPosts((prev) => mergePostsByIdPreferLocal(prev, serverPosts));
+          setHasNext(Boolean(next));
+          setNextCursor(cursor ?? null);
+        })
+        .catch(() => {
+          if (!cancelled) setFeedError('게시글을 불러올 수 없습니다.');
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false);
+        });
+
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    getFeed({ size: FEED_PAGE_SIZE, sort: 'LATEST' })
       .then(({ items, hasNext: next, nextCursor: cursor }) => {
         if (cancelled) return;
 
-        const serverPosts = (items || []).map((item) =>
-          mapFeedItemToPost(item, displayUser.nickname)
-        );
+        const likedOnly = (items || [])
+          .filter((item) => item.liked === true && item.isMine !== true)
+          .map((item) => mapFeedItemToPost(item, item.writer?.nickname ?? '사용자'));
 
-        setPosts((prev) => mergePostsByIdPreferLocal(prev, serverPosts));
+        setLikedPosts(likedOnly);
         setHasNext(Boolean(next));
         setNextCursor(cursor ?? null);
       })
       .catch(() => {
-        if (!cancelled) setFeedError('게시글을 불러올 수 없습니다.');
+        if (!cancelled) setFeedError('좋아요한 피드를 불러올 수 없습니다.');
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -123,7 +164,7 @@ const MyPage = () => {
     return () => {
       cancelled = true;
     };
-  }, [isInitializing, isLoggedIn, displayUser.nickname, setPosts]);
+  }, [activeTab, isInitializing, isLoggedIn, displayUser.nickname, setPosts]);
 
   const openPostMenu = (e, postId) => {
     e.stopPropagation();
@@ -159,26 +200,44 @@ const MyPage = () => {
   };
 
   const handleToggleLike = (postId) => {
-    setPosts((prev) =>
-      prev.map((p) => {
-        if (p.id !== postId) return p;
+    if (activeTab === 'POST') {
+      setPosts((prev) =>
+        prev.map((p) => {
+          if (p.id !== postId) return p;
+          const nextLiked = !p.liked;
+          return {
+            ...p,
+            liked: nextLiked,
+            likeCount: Math.max(0, (p.likeCount ?? 0) + (nextLiked ? 1 : -1)),
+          };
+        })
+      );
+      return;
+    }
+
+    setLikedPosts((prev) =>
+      prev.flatMap((p) => {
+        if (p.id !== postId) return [p];
+
         const nextLiked = !p.liked;
-        return {
-          ...p,
-          liked: nextLiked,
-          likeCount: Math.max(0, (p.likeCount ?? 0) + (nextLiked ? 1 : -1)),
-        };
+
+        if (!nextLiked) {
+          return [];
+        }
+
+        return [
+          {
+            ...p,
+            liked: nextLiked,
+            likeCount: Math.max(0, (p.likeCount ?? 0) + 1),
+          },
+        ];
       })
     );
   };
 
-  const sortedPosts = [...(myPosts || [])].sort((a, b) => {
-    if (a.pinned && !b.pinned) return -1;
-    if (!a.pinned && b.pinned) return 1;
-    const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-    const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-    return bTime - aTime;
-  });
+  const sortedPosts =
+    activeTab === 'POST' ? sortPosts(myPosts) : sortPosts(likedPosts);
 
   const openWriteModal = (post = null) => {
     if (post) {
@@ -255,6 +314,7 @@ const MyPage = () => {
             id: nextId,
             type: 'POST',
             author: displayUser.nickname,
+            avatarUrl: profileImageSrc,
             date: dateStr,
             content: draftContent,
             image,
@@ -266,6 +326,7 @@ const MyPage = () => {
             createdAt: nowIso,
             updatedAt: nowIso,
             cookCount: 0,
+            isMine: true,
           },
           ...(prev || []),
         ];
@@ -315,11 +376,13 @@ const MyPage = () => {
             <div className="profile-avatar">
               <img src={profileImageSrc} alt="프로필" className="profile-avatar-image" />
             </div>
+
             <div className="profile-info-line">
-              <div>
-                <span className="profile-nickname">{displayUser.nickname}&nbsp;&nbsp;</span>
+              <div className="profile-name-row">
+                <span className="profile-nickname">{displayUser.nickname}</span>
                 <span className="profile-id">{displayUser.id ? `@${displayUser.id}` : ''}</span>
               </div>
+
               <div className="profile-count-div">
                 <span className="profile-count">
                   🍽 도전한 음식 수 : <span className="highlight">{displayUser.triedCount}</span>
@@ -337,11 +400,20 @@ const MyPage = () => {
           </button>
 
           <div className="profile-shortcuts">
-            <button type="button" className="shortcut-card">
+            <button
+              type="button"
+              className="shortcut-card"
+              onClick={() => navigate('/refrigerator')}
+            >
               <span className="shortcut-icon">🔎</span>
               <span className="shortcut-label">my 냉장고</span>
             </button>
-            <button type="button" className="shortcut-card">
+
+            <button
+              type="button"
+              className="shortcut-card"
+              onClick={() => navigate('/recipe-saved')}
+            >
               <span className="shortcut-icon">🔖</span>
               <span className="shortcut-label">레시피 저장</span>
             </button>
@@ -350,33 +422,49 @@ const MyPage = () => {
 
         <section className="mypage-tabs-section">
           <div className="mypage-tabs">
-            <button type="button" className="tab active">
+            <button
+              type="button"
+              className={`tab ${activeTab === 'POST' ? 'active' : ''}`}
+              onClick={() => setActiveTab('POST')}
+            >
               게시물
             </button>
-            <button type="button" className="tab">
+            <button
+              type="button"
+              className={`tab ${activeTab === 'LIKED' ? 'active' : ''}`}
+              onClick={() => setActiveTab('LIKED')}
+            >
               마음에 들어요
             </button>
           </div>
 
           <div className="mypage-posts">
             {loading && sortedPosts.length === 0 && (
-              <p className="mypage-posts-loading">게시글을 불러오는 중...</p>
+              <p className="mypage-posts-loading">
+                {activeTab === 'POST' ? '게시글을 불러오는 중...' : '좋아요한 피드를 불러오는 중...'}
+              </p>
             )}
             {feedError && sortedPosts.length === 0 && (
               <p className="mypage-posts-error">{feedError}</p>
+            )}
+
+            {!loading && !feedError && sortedPosts.length === 0 && (
+              <p className="mypage-posts-empty">
+                {activeTab === 'POST' ? '작성한 게시글이 없어요.' : '좋아요한 피드가 없어요.'}
+              </p>
             )}
 
             {sortedPosts.map((post) => (
               <div key={post.id} className="mypage-post-item">
                 <FeedCard
                   post={post}
-                  isMine
-                  avatarUrl={profileImageSrc}
+                  isMine={activeTab === 'POST'}
+                  avatarUrl={post.avatarUrl || profileImageSrc}
                   onToggleLike={handleToggleLike}
-                  onOpenMenu={openPostMenu}
+                  onOpenMenu={activeTab === 'POST' ? openPostMenu : undefined}
                 />
 
-                {postMenuPostId === post.id && (
+                {activeTab === 'POST' && postMenuPostId === post.id && (
                   <>
                     <div className="modal-backdrop" onClick={closePostMenu} aria-hidden="true" />
                     <div className="modal post-menu-modal">
@@ -405,14 +493,16 @@ const MyPage = () => {
         </section>
       </main>
 
-      <button
-        type="button"
-        className="floating-write-button"
-        aria-label="게시물 작성"
-        onClick={() => openWriteModal()}
-      >
-        <span className="material-symbols-outlined">add</span>
-      </button>
+      {activeTab === 'POST' && (
+        <button
+          type="button"
+          className="floating-write-button"
+          aria-label="게시물 작성"
+          onClick={() => openWriteModal()}
+        >
+          <span className="material-symbols-outlined">add</span>
+        </button>
+      )}
 
       {deleteConfirmPostId && (
         <>
