@@ -3,11 +3,9 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { getMyProfile } from '../api/profileApi';
 import { logoutFromServer, refreshAccessToken } from '../api/tokenApi';
 import {
-  AUTH_SESSION_INVALIDATED_EVENT,
   clearLoggedOutMarker,
   clearStoredAuth,
   consumePostLoginRedirect,
-  getStoredAccessToken,
   hasLoggedOutMarker,
   markLoggedOut,
 } from '../utils/authStorage';
@@ -51,16 +49,6 @@ export function UserProvider({ children }) {
   };
 
   useEffect(() => {
-    const onSessionInvalidated = () => {
-      setUserState(null);
-    };
-    window.addEventListener(AUTH_SESSION_INVALIDATED_EVENT, onSessionInvalidated);
-    return () => {
-      window.removeEventListener(AUTH_SESSION_INVALIDATED_EVENT, onSessionInvalidated);
-    };
-  }, []);
-
-  useEffect(() => {
     const initialPath = initialPathRef.current;
 
     if (initialPath.startsWith('/oauth/callback/kakao')) {
@@ -84,14 +72,6 @@ export function UserProvider({ children }) {
       console.log('[UserContext] bootstrapUser 시작');
 
       try {
-        if (!getStoredAccessToken()) {
-          if (!cancelled && !hadStoredUser) {
-            clearStoredAuth();
-            setUserState(null);
-          }
-          return;
-        }
-
         const payload = await refreshAccessToken();
         console.log('[UserContext] bootstrap refresh 결과:', payload);
         if (!payload?.accessToken) {

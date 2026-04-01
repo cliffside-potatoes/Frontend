@@ -20,11 +20,6 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
           secure: true,
           cookieDomainRewrite: '',
-          configure: (proxy) => {
-            proxy.on('proxyRes', (proxyRes) => {
-              delete proxyRes.headers['www-authenticate']
-            })
-          },
         },
       },
     },

@@ -1,6 +1,11 @@
 import axios from 'axios';
 import { refreshAccessToken } from './tokenApi';
-import { getStoredAccessToken, invalidateAuthSession } from '../utils/authStorage';
+import {
+  clearStoredAuth,
+  getCurrentPath,
+  getStoredAccessToken,
+  savePostLoginRedirect,
+} from '../utils/authStorage';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 const DEFAULT_CATEGORY_COLOR = '#90CAF9';
@@ -19,7 +24,10 @@ export const apiClient = axios.create({
 });
 
 const handle401 = () => {
-  invalidateAuthSession();
+  alert('로그인 정보가 만료되었습니다. 다시 로그인해주세요.');
+  savePostLoginRedirect(getCurrentPath());
+  clearStoredAuth();
+  window.location.href = '/signin';
 };
 
 apiClient.interceptors.request.use((config) => {
@@ -43,10 +51,6 @@ apiClient.interceptors.response.use(
     }
 
     if (error.response?.status === 401 && !originalRequest._retry) {
-      if (!getStoredAccessToken()) {
-        return Promise.reject(error);
-      }
-
       originalRequest._retry = true;
 
       try {

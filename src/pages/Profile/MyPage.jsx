@@ -74,6 +74,13 @@ const MyPage = () => {
   const [activeTab, setActiveTab] = useState('POST');
   const [likedPosts, setLikedPosts] = useState([]);
 
+  useEffect(() => {
+    if (isInitializing) return;
+    if (!isLoggedIn) {
+      navigate('/signin', { replace: true });
+    }
+  }, [isInitializing, isLoggedIn, navigate]);
+
   const displayUser = user ?? {
     nickname: '사용자 닉네임',
     id: '',

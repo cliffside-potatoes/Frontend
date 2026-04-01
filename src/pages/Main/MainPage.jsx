@@ -67,9 +67,8 @@ const MainPage = () => {
   const { isLoggedIn, isInitializing } = useUser();
 
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [popularRecipes, setPopularRecipes] = useState([]);
-  const [fridgeMatchRecipes, setFridgeMatchRecipes] = useState([]);
-  const [popularSubtitle, setPopularSubtitle] = useState('');
+  const [displayedRecipes, setDisplayedRecipes] = useState([]);
+  const [recipeSectionKind, setRecipeSectionKind] = useState('popular');
   const [recipesLoading, setRecipesLoading] = useState(false);
 
   useEffect(() => {
@@ -77,46 +76,25 @@ const MainPage = () => {
 
     let cancelled = false;
 
-    const loadPopular = async () => {
-      let list = await getPopularRecipes({ size: 10, sort: 'LIKE_COUNT' });
-      if (cancelled) return { list: [], subtitle: '' };
-      if (list.length > 0) {
-        return { list, subtitle: '' };
-      }
-      let pool = await getPopularRecipes({ size: 30, sort: 'LATEST' });
-      if (cancelled) return { list: [], subtitle: '' };
-      pool = shuffleArray(pool).slice(0, 10);
-      return {
-        list: pool,
-        subtitle: pool.length > 0 ? '새로 골라 볼 만한 레시피' : '',
-      };
-    };
-
     const loadMainRecipes = async () => {
       setRecipesLoading(true);
       try {
-        const { list: popularList, subtitle } = await loadPopular();
-        if (cancelled) return;
-        setPopularRecipes(popularList);
-        setPopularSubtitle(subtitle);
+        let nextList = [];
+        let nextKind = 'popular';
 
-        if (!isLoggedIn) {
-          setFridgeMatchRecipes([]);
-        } else {
+        if (isLoggedIn) {
           try {
             const fridgeRes = await fridgeApi.getMyFridge();
             if (cancelled) return;
             const ingredientCount = countFridgeIngredients(fridgeRes.data);
-            if (ingredientCount <= 0) {
-              setFridgeMatchRecipes([]);
-            } else {
+            if (ingredientCount > 0) {
               const matchRes = await fridgeApi.getRecommendedRecipes({
                 sort: 'MATCH_COUNT',
                 size: 20,
               });
               if (cancelled) return;
               const rows = extractRecipeRowsFromListBody(matchRes.data);
-              let nextList = rows.map(normalizeRecipe);
+              nextList = rows.map(normalizeRecipe);
               nextList.sort(
                 (a, b) =>
                   (b.matchedIngredientCount - a.matchedIngredientCount) ||
@@ -126,24 +104,44 @@ const MainPage = () => {
               const hasRealMatch = nextList.some(
                 (r) => (r.matchedIngredientCount ?? 0) > 0
               );
-              setFridgeMatchRecipes(
-                nextList.length > 0 && hasRealMatch ? nextList : []
-              );
+              if (nextList.length > 0 && hasRealMatch) {
+                nextKind = 'fridge';
+              } else {
+                nextList = [];
+              }
             }
           } catch (error) {
             console.error('냉장고·매칭 레시피 조회 실패:', error);
-            if (!cancelled) setFridgeMatchRecipes([]);
           }
+        }
+
+        if (nextList.length === 0) {
+          let popular = await getPopularRecipes({ size: 10, sort: 'LIKE_COUNT' });
+          if (cancelled) return;
+          if (popular.length > 0) {
+            nextList = popular;
+            nextKind = 'popular';
+          } else {
+            let pool = await getPopularRecipes({ size: 30, sort: 'LATEST' });
+            if (cancelled) return;
+            pool = shuffleArray(pool).slice(0, 10);
+            nextList = pool;
+            nextKind = pool.length > 0 ? 'random' : 'popular';
+          }
+        }
+
+        if (!cancelled) {
+          setDisplayedRecipes(nextList);
+          setRecipeSectionKind(nextKind);
         }
       } catch (error) {
         console.error('메인 레시피 조회 실패:', error);
         if (!cancelled) {
-          setPopularRecipes([]);
-          setPopularSubtitle('');
-          setFridgeMatchRecipes([]);
+          setDisplayedRecipes([]);
+          setRecipeSectionKind('popular');
         }
       } finally {
-        if (!cancelled) setRecipesLoading(false);
+        setRecipesLoading(false);
       }
     };
 
@@ -166,6 +164,13 @@ const MainPage = () => {
       setShowLoginModal(true);
     }
   };
+
+  const sectionTitle =
+    recipeSectionKind === 'fridge'
+      ? '내 냉장고 레시피 추천'
+      : recipeSectionKind === 'random'
+        ? '오늘의 추천 레시피'
+        : '인기 레시피';
 
   const handleSearchClick = () => {
     navigate('/search');
@@ -218,37 +223,21 @@ const MainPage = () => {
         </section>
 
         <section className="recipe-section">
-          <h2 className="section-title">인기 레시피</h2>
-          {popularSubtitle ? (
-            <p className="section-subtitle" style={{ margin: '-8px 0 12px', fontSize: 13, color: '#666' }}>
-              {popularSubtitle}
-            </p>
-          ) : null}
+          <h2 className="section-title">{sectionTitle}</h2>
 
           {recipesLoading ? (
             <p style={{ padding: '16px', color: '#888' }}>레시피 불러오는 중...</p>
           ) : (
             <div className="recipe-list">
-              {popularRecipes.map((recipe) => (
-                <RecipeCard key={`pop-${recipe.recipeId}`} recipe={recipe} />
+              {displayedRecipes.map((recipe) => (
+                <RecipeCard key={recipe.recipeId} recipe={recipe} />
               ))}
-              {popularRecipes.length === 0 && (
-                <p style={{ padding: '16px', color: '#888' }}>인기 레시피를 불러올 수 없어요</p>
+              {displayedRecipes.length === 0 && (
+                <p style={{ padding: '16px', color: '#888' }}>추천 레시피가 없어요</p>
               )}
             </div>
           )}
         </section>
-
-        {isLoggedIn && !recipesLoading && fridgeMatchRecipes.length > 0 && (
-          <section className="recipe-section">
-            <h2 className="section-title">내 냉장고와 잘 맞는 레시피</h2>
-            <div className="recipe-list">
-              {fridgeMatchRecipes.map((recipe) => (
-                <RecipeCard key={`fridge-${recipe.recipeId}`} recipe={recipe} />
-              ))}
-            </div>
-          </section>
-        )}
       </main>
 
       <BottomNav />
