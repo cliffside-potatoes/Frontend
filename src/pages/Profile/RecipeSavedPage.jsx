@@ -1,17 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../../components/common/BottomNav';
+import GuestLoginPrompt from '../../components/common/GuestLoginPrompt';
 import RecipeCard from '../../components/card/RecipeCard';
 import { getWishlistRecipes } from '../../api/recipeApi';
+import { useUser } from '../../context/UserContext';
 import './RecipeSavedPage.css';
 
 const RecipeSavedPage = () => {
   const navigate = useNavigate();
+  const { isLoggedIn, isInitializing } = useUser();
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    if (isInitializing) return;
+
+    if (!isLoggedIn) {
+      setLoading(false);
+      setRecipes([]);
+      setError(null);
+      return;
+    }
+
     const fetchWishlist = async () => {
       setLoading(true);
       setError(null);
@@ -27,7 +39,7 @@ const RecipeSavedPage = () => {
     };
 
     fetchWishlist();
-  }, []);
+  }, [isInitializing, isLoggedIn]);
 
   const handleBack = () => navigate(-1);
 
@@ -66,6 +78,8 @@ const RecipeSavedPage = () => {
       </main>
 
       <BottomNav />
+
+      <GuestLoginPrompt afterLoginPath="/recipe-saved" />
     </div>
   );
 };

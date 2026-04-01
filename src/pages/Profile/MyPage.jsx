@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../../components/common/BottomNav';
+import GuestLoginPrompt from '../../components/common/GuestLoginPrompt';
 import FeedCard from '../../components/card/FeedCard';
 import { getMyFeed } from '../../api/meFeedApi';
 import { getFeed } from '../../api/feedApi';
@@ -77,9 +78,9 @@ const MyPage = () => {
   useEffect(() => {
     if (isInitializing) return;
     if (!isLoggedIn) {
-      navigate('/main', { replace: true });
+      setLoading(false);
     }
-  }, [isInitializing, isLoggedIn, navigate]);
+  }, [isInitializing, isLoggedIn]);
 
   const displayUser = user ?? {
     nickname: '사용자 닉네임',
@@ -595,6 +596,8 @@ const MyPage = () => {
       )}
 
       <BottomNav />
+
+      <GuestLoginPrompt afterLoginPath="/profile" />
     </div>
   );
 };

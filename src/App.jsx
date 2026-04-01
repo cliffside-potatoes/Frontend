@@ -53,16 +53,17 @@ function App() {
                 <Route path="/recipe/:recipeId" element={<RecipeDetailPage />} />
                 <Route path="/recipe/:recipeId/reviews" element={<ReviewListPage />} />
 
+                <Route path="/profile" element={<MyPage />} />
+                <Route path="/recipe-saved" element={<RecipeSavedPage />} />
+                <Route path="/refrigerator" element={<RefrigeratorPage />} />
+
                 <Route element={<RequireAuth />}>
                   <Route path="/new-info" element={<SignUpPage />} />
-                  <Route path="/profile" element={<MyPage />} />
                   <Route path="/profile/edit" element={<SignUpPage />} />
                   <Route path="/profile/settings" element={<SettingsPage />} />
                   <Route path="/profile/settings/notifications" element={<NotificationSettingsPage />} />
                   <Route path="/profile/my-recipes" element={<MyRecipesPage />} />
                   <Route path="/profile/my-reviews" element={<MyReviewsPage />} />
-                  <Route path="/recipe-saved" element={<RecipeSavedPage />} />
-                  <Route path="/refrigerator" element={<RefrigeratorPage />} />
                   <Route path="/refrigerator/category" element={<CategoryRegistrationPage />} />
                   <Route path="/refrigerator/category/settings" element={<CategorySettingsPage />} />
                   <Route path="/recipe/:recipeId/reviews/write" element={<ReviewWritePage />} />
