@@ -1,26 +1,31 @@
-import React, { useState } from 'react';
+import React from 'react';
 import './SearchBar.css';
 
-const SearchBar = ({ onSearch }) => {
-  const [searchText, setSearchText] = useState('');
+const SearchBar = ({ value, onChange, onSearch, inputRef }) => {
+  const handleSearch = () => {
+    onSearch?.(value ?? '');
+  };
 
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
-      onSearch(searchText);
+  const handleKeyDown = (event) => {
+    if (event.key === 'Enter') {
+      onSearch?.(value ?? '');
     }
   };
 
   return (
     <div className="search-bar-container">
       <input
+        ref={inputRef}
         type="text"
         placeholder="음식 이름을 검색해 보세요"
         className="search-input"
-        value={searchText}
-        onChange={(e) => setSearchText(e.target.value)}
-        onKeyPress={handleKeyPress}
+        value={value}
+        onChange={(event) => onChange?.(event.target.value)}
+        onKeyDown={handleKeyDown}
       />
-      <button className="search-button" onClick={() => onSearch(searchText)}>🔍</button>
+      <button type="button" className="search-button" aria-label="검색" onClick={handleSearch}>
+        🔍
+      </button>
     </div>
   );
 };

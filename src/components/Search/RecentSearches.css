@@ -22,13 +22,26 @@
   font-size: 14px;
   display: flex;
   align-items: center;
+  gap: 6px;
 }
 
-.search-tag button {
+.search-tag-label,
+.search-tag-remove {
   background: none;
   border: none;
-  color: #777;
-  margin-left: 5px;
+  color: inherit;
+  font: inherit;
   cursor: pointer;
+  padding: 0;
+}
+
+.search-tag-remove {
+  color: #777;
   font-size: 12px;
+}
+
+.search-tag-label:focus-visible,
+.search-tag-remove:focus-visible {
+  outline: 2px solid #666;
+  outline-offset: 2px;
 }

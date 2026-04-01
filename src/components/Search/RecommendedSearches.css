@@ -23,3 +23,14 @@
   display: flex;
   align-items: center;
 }
+
+.search-tag-button {
+  border: none;
+  cursor: pointer;
+  font: inherit;
+}
+
+.search-tag-button:focus-visible {
+  outline: 2px solid #666;
+  outline-offset: 2px;
+}
