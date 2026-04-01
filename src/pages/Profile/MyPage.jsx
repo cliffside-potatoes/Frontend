@@ -77,7 +77,7 @@ const MyPage = () => {
   useEffect(() => {
     if (isInitializing) return;
     if (!isLoggedIn) {
-      navigate('/signin', { replace: true });
+      navigate('/main', { replace: true });
     }
   }, [isInitializing, isLoggedIn, navigate]);
 

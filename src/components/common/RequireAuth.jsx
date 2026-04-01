@@ -1,10 +1,8 @@
 import React from 'react';
-import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { Navigate, Outlet } from 'react-router-dom';
 import { useUser } from '../../context/UserContext';
-import { buildSignInState } from '../../utils/authStorage';
 
 const RequireAuth = () => {
-  const location = useLocation();
   const { isLoggedIn, isInitializing } = useUser();
 
   if (isInitializing) {
@@ -16,15 +14,7 @@ const RequireAuth = () => {
   }
 
   if (!isLoggedIn) {
-    const currentPath = `${location.pathname}${location.search}${location.hash}`;
-
-    return (
-      <Navigate
-        to="/signin"
-        replace
-        state={buildSignInState(currentPath, '/main')}
-      />
-    );
+    return <Navigate to="/main" replace />;
   }
 
   return <Outlet />;
