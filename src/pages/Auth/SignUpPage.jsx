@@ -1,16 +1,16 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import naengGuIcon from '../../assets/image/naeng-gu.png';
-import './SignUpPage.css';
-import { createOrUpdateProfile } from '../../api/profileApi';
-import { requestProfilePresignedUrl } from '../../api/presignedApi';
-import { uploadFileToS3 } from '../../api/uploadToS3';
-import { useUser } from '../../context/UserContext';
-import { consumePostLoginRedirect } from '../../utils/authStorage';
-import { useMyPosts } from '../../context/MyPostsContext';
-import { toImageUrl } from '../../utils/imageUrl';
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import naengGuIcon from "../../assets/image/naeng-gu.png";
+import "./SignUpPage.css";
+import { createOrUpdateProfile } from "../../api/profileApi";
+import { requestProfilePresignedUrl } from "../../api/presignedApi";
+import { uploadFileToS3 } from "../../api/uploadToS3";
+import { useUser } from "../../context/UserContext";
+import { consumePostLoginRedirect } from "../../utils/authStorage";
+import { useMyPosts } from "../../context/MyPostsContext";
+import { toImageUrl } from "../../utils/imageUrl";
 
-const DEFAULT_BIO = '아직 자기소개가 없어요😊';
+const DEFAULT_BIO = "아직 자기소개가 없어요😊";
 
 const SignUpPage = () => {
   const navigate = useNavigate();
@@ -18,30 +18,36 @@ const SignUpPage = () => {
   const { user, setUser } = useUser();
   const { setPosts } = useMyPosts();
 
-  const isNewInfoMode = location.pathname === '/new-info';
-  const isEditMode = location.pathname === '/profile/edit';
+  const isNewInfoMode = location.pathname === "/new-info";
+  const isEditMode = location.pathname === "/profile/edit";
 
   const initialStep = useMemo(() => {
     if (isEditMode) return 2;
     if (isNewInfoMode) return 1;
-    if (typeof location.state?.step === 'number') return location.state.step;
+    if (typeof location.state?.step === "number") return location.state.step;
     return 1;
   }, [isEditMode, isNewInfoMode, location.state]);
 
   const [step, setStep] = useState(initialStep);
 
-  const [nickname, setNickname] = useState(isEditMode ? user?.nickname ?? '' : '');
-  const [bio, setBio] = useState(isEditMode ? user?.bio ?? DEFAULT_BIO : DEFAULT_BIO);
-  const [userEmail, setUserEmail] = useState(user?.email ?? '');
+  const [nickname, setNickname] = useState(
+    isEditMode ? (user?.nickname ?? "") : "",
+  );
+  const [bio, setBio] = useState(
+    isEditMode ? (user?.bio ?? DEFAULT_BIO) : DEFAULT_BIO,
+  );
+  const [userEmail, setUserEmail] = useState(user?.email ?? "");
 
   const [profileImageFile, setProfileImageFile] = useState(null);
   const [profileImagePreview, setProfileImagePreview] = useState(
-    user?.profileImage ? toImageUrl(user.profileImage) : ''
+    user?.profileImage ? toImageUrl(user.profileImage) : "",
   );
 
-  const [nicknameError, setNicknameError] = useState('');
+  const [nicknameError, setNicknameError] = useState("");
   const [saving, setSaving] = useState(false);
-  const [bioTouched, setBioTouched] = useState(isEditMode && Boolean(user?.bio));
+  const [bioTouched, setBioTouched] = useState(
+    isEditMode && Boolean(user?.bio),
+  );
 
   const fileInputRef = useRef(null);
 
@@ -76,16 +82,18 @@ const SignUpPage = () => {
     */
 
     if (!v.trim()) {
-      setNicknameError('닉네임을 입력해줘');
+      setNicknameError("닉네임을 입력해줘");
       return;
     }
 
     if (!validateNickname(v.trim())) {
-      setNicknameError('닉네임은 영문, 숫자, 밑줄(_), 마침표(.)만 사용할 수 있어');
+      setNicknameError(
+        "닉네임은 영문, 숫자, 밑줄(_), 마침표(.)만 사용할 수 있어",
+      );
       return;
     }
 
-    setNicknameError('');
+    setNicknameError("");
   };
 
   /*
@@ -141,7 +149,7 @@ const SignUpPage = () => {
 
     setProfileImageFile(file);
 
-    if (profileImagePreview && profileImagePreview.startsWith('blob:')) {
+    if (profileImagePreview && profileImagePreview.startsWith("blob:")) {
       URL.revokeObjectURL(profileImagePreview);
     }
 
@@ -151,7 +159,7 @@ const SignUpPage = () => {
 
   const handleBioFocus = () => {
     if (!bioTouched && bio === DEFAULT_BIO) {
-      setBio('');
+      setBio("");
     }
     setBioTouched(true);
   };
@@ -167,15 +175,16 @@ const SignUpPage = () => {
       return null;
     }
 
-    const { presignedUrl, s3Key } = await requestProfilePresignedUrl(profileImageFile);
+    const { presignedUrl, s3Key } =
+      await requestProfilePresignedUrl(profileImageFile);
 
     await uploadFileToS3(presignedUrl, profileImageFile);
 
     return {
       s3Key,
-      contentType: profileImageFile.type || 'application/octet-stream',
+      contentType: profileImageFile.type || "application/octet-stream",
       size: profileImageFile.size || 0,
-      accessType: 'public',
+      accessType: "public",
     };
   };
 
@@ -184,12 +193,14 @@ const SignUpPage = () => {
     const finalBio = bio.trim() ? bio.trim() : DEFAULT_BIO;
 
     if (!v) {
-      setNicknameError('닉네임을 입력해줘');
+      setNicknameError("닉네임을 입력해줘");
       return;
     }
 
     if (!validateNickname(v)) {
-      setNicknameError('닉네임은 영문, 숫자, 밑줄(_), 마침표(.)만 사용할 수 있어');
+      setNicknameError(
+        "닉네임은 영문, 숫자, 밑줄(_), 마침표(.)만 사용할 수 있어",
+      );
       return;
     }
 
@@ -205,7 +216,7 @@ const SignUpPage = () => {
     */
 
     setSaving(true);
-    setNicknameError('');
+    setNicknameError("");
 
     try {
       const uploadedProfileImage = await uploadProfileImageIfNeeded();
@@ -217,12 +228,12 @@ const SignUpPage = () => {
       });
 
       const nextProfileImageKey =
-        uploadedProfileImage?.s3Key ?? user?.profileImage ?? '';
+        uploadedProfileImage?.s3Key ?? user?.profileImage ?? "";
 
       setUser({
         ...(user ?? {}),
-        id: String(user?.id ?? ''),
-        email: userEmail ?? '',
+        id: String(user?.id ?? ""),
+        email: userEmail ?? "",
         nickname: v,
         profileImage: nextProfileImageKey,
         triedCount: user?.triedCount ?? 0,
@@ -234,31 +245,33 @@ const SignUpPage = () => {
         (prev || []).map((post) => ({
           ...post,
           author: v,
-        }))
+        })),
       );
 
       const nextPath = isEditMode
-        ? '/profile'
-        : consumePostLoginRedirect() ?? '/main';
+        ? "/profile"
+        : (consumePostLoginRedirect() ?? "/main");
 
       navigate(nextPath, { replace: true });
     } catch (e) {
       console.error(e);
 
-      const serverMessage = e?.message ?? '';
+      const serverMessage = e?.message ?? "";
 
       if (e?.status === 400) {
-        setNicknameError(serverMessage || '닉네임 형식이 올바르지 않거나 이미 사용 중이야');
+        setNicknameError(
+          serverMessage || "닉네임 형식이 올바르지 않거나 이미 사용 중이야",
+        );
         return;
       }
 
       if (e?.status === 401) {
-        alert('로그인 정보가 만료되었습니다. 다시 로그인해주세요.');
-        navigate('/signin', { replace: true });
+        alert("로그인 정보가 만료되었습니다. 다시 로그인해주세요.");
+        navigate("/signin", { replace: true });
         return;
       }
 
-      alert('프로필 저장 실패했어. 잠깐 뒤에 다시 해줘');
+      alert("프로필 저장 실패했어. 잠깐 뒤에 다시 해줘");
     } finally {
       setSaving(false);
     }
@@ -268,13 +281,15 @@ const SignUpPage = () => {
     setStep(initialStep);
 
     if (isEditMode) {
-      setNickname(user?.nickname ?? '');
+      setNickname(user?.nickname ?? "");
       setBio(user?.bio ?? DEFAULT_BIO);
-      setUserEmail(user?.email ?? '');
-      setProfileImagePreview(user?.profileImage ? toImageUrl(user.profileImage) : '');
+      setUserEmail(user?.email ?? "");
+      setProfileImagePreview(
+        user?.profileImage ? toImageUrl(user.profileImage) : "",
+      );
       setProfileImageFile(null);
       setBioTouched(Boolean(user?.bio));
-      setNicknameError('');
+      setNicknameError("");
 
       /*
       닉네임 중복확인 API 생기면 다시 살릴 부분
@@ -284,13 +299,15 @@ const SignUpPage = () => {
       setDupMsg('');
       */
     } else {
-      setNickname('');
+      setNickname("");
       setBio(DEFAULT_BIO);
-      setUserEmail(user?.email ?? '');
-      setProfileImagePreview(user?.profileImage ? toImageUrl(user.profileImage) : '');
+      setUserEmail(user?.email ?? "");
+      setProfileImagePreview(
+        user?.profileImage ? toImageUrl(user.profileImage) : "",
+      );
       setProfileImageFile(null);
       setBioTouched(false);
-      setNicknameError('');
+      setNicknameError("");
 
       /*
       닉네임 중복확인 API 생기면 다시 살릴 부분
@@ -304,7 +321,7 @@ const SignUpPage = () => {
 
   useEffect(() => {
     return () => {
-      if (profileImagePreview && profileImagePreview.startsWith('blob:')) {
+      if (profileImagePreview && profileImagePreview.startsWith("blob:")) {
         URL.revokeObjectURL(profileImagePreview);
       }
     };
@@ -313,7 +330,12 @@ const SignUpPage = () => {
   return (
     <div className="auth-page">
       <div className="auth-modal">
-        <button type="button" className="auth-close" onClick={handleClose} aria-label="닫기">
+        <button
+          type="button"
+          className="auth-close"
+          onClick={handleClose}
+          aria-label="닫기"
+        >
           ✕
         </button>
 
@@ -327,7 +349,11 @@ const SignUpPage = () => {
 
             <p className="welcome-sub">저와 함께 냉장고를 구해봐요!</p>
 
-            <button type="button" className="primary-btn" onClick={goProfileSetup}>
+            <button
+              type="button"
+              className="primary-btn"
+              onClick={goProfileSetup}
+            >
               프로필 설정하러 가기
             </button>
           </div>
@@ -340,7 +366,11 @@ const SignUpPage = () => {
             <div className="profile-avatar-wrap">
               <div className="profile-avatar">
                 {profileImagePreview ? (
-                  <img src={profileImagePreview} alt="프로필" className="profile-avatar-img" />
+                  <img
+                    src={profileImagePreview}
+                    alt="프로필"
+                    className="profile-avatar-img"
+                  />
                 ) : (
                   <div className="profile-avatar-empty" />
                 )}
@@ -359,7 +389,7 @@ const SignUpPage = () => {
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"
-                style={{ display: 'none' }}
+                style={{ display: "none" }}
                 onChange={handleImageChange}
               />
             </div>
@@ -431,18 +461,16 @@ const SignUpPage = () => {
                 disabled
                 readOnly
               />
-              <p className="help">
-                본인만 볼 수 있고 수정할 수 없는 카카오 계정 정보야.
-              </p>
+              <p className="help">본인만 볼 수 있는 정보입니다.</p>
             </div>
 
             <button
               type="button"
-              className={`primary-btn ${saving ? 'disabled' : ''}`}
+              className={`primary-btn ${saving ? "disabled" : ""}`}
               onClick={handleSubmitProfile}
               disabled={saving}
             >
-              {saving ? '저장중...' : '저장'}
+              {saving ? "저장중..." : "저장"}
             </button>
           </div>
         )}
