@@ -1,11 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { clearLoggedOutMarker } from '../../utils/authStorage';
+import { buildKakaoLoginStartUrl } from '../../utils/kakaoLoginUrl';
 
 const KakaoLoginStart = () => {
     const isRequested = useRef(false);
-
-    const API_BASE_URL = import.meta.env.VITE_API_URL || '';
-    const LOGIN_PATH = import.meta.env.VITE_KAKAO_LOGIN_START_PATH || '/login';
 
     useEffect(() => {
         if (isRequested.current) return;
@@ -14,9 +12,8 @@ const KakaoLoginStart = () => {
         // 다시 로그인 시도하는 순간 로그아웃 마커 해제
         clearLoggedOutMarker();
 
-        const base = API_BASE_URL.replace(/\/$/, '');
-        window.location.replace(`${base}${LOGIN_PATH}`);
-    }, [API_BASE_URL, LOGIN_PATH]);
+        window.location.replace(buildKakaoLoginStartUrl());
+    }, []);
 
     return (
         <div style={{ padding: '20px', textAlign: 'center' }}>

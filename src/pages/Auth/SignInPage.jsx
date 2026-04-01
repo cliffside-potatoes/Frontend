@@ -2,21 +2,17 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import kakaoLoginBtn from '../../assets/kakao_login_medium_narrow.png';
 import { clearLoggedOutMarker } from '../../utils/authStorage';
+import { buildKakaoLoginStartUrl } from '../../utils/kakaoLoginUrl';
 import './SignInPage.css';
 
 const SignInPage = () => {
   const navigate = useNavigate();
 
-  const API_BASE_URL = import.meta.env.VITE_API_URL || '';
-  const LOGIN_PATH = import.meta.env.VITE_KAKAO_LOGIN_START_PATH || '/login';
-
   const handleKakaoLogin = () => {
     // 다시 로그인 시도하는 순간 로그아웃 마커 해제
     clearLoggedOutMarker();
 
-    const base = API_BASE_URL.replace(/\/$/, '');
-    const path = LOGIN_PATH.startsWith('/') ? LOGIN_PATH : `/${LOGIN_PATH}`;
-    window.location.href = `${base}${path}`;
+    window.location.href = buildKakaoLoginStartUrl();
   };
 
   const handleClose = () => {
