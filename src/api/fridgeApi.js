@@ -9,7 +9,7 @@ import {
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
-const apiClient = axios.create({
+export const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
@@ -132,6 +132,27 @@ export const fridgeApi = {
 
   // 재료 삭제
   deleteIngredient: (id) => apiClient.delete(`/ingredients/${id}`),
+
+  /** 메인 등: 냉장고 재료 매칭 순 레시피 GET /recipes */
+  getRecommendedRecipes: (params = {}) => {
+    const {
+      sort = 'MATCH_COUNT',
+      size = 3,
+      cursorMatchCount,
+      cursorId,
+      keyword,
+    } = params;
+    return apiClient.get('/recipes', {
+      params: {
+        sort,
+        size,
+        ...(keyword != null && keyword !== '' ? { keyword } : {}),
+        ...(cursorMatchCount != null && cursorId != null
+          ? { cursorMatchCount, cursorId }
+          : {}),
+      },
+    });
+  },
 };
 
 export default fridgeApi;

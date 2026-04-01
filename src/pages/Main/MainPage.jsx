@@ -30,67 +30,127 @@ const normalizeRecipe = (item) => ({
   liked: item?.liked ?? false,
 });
 
+const shuffleArray = (arr) => {
+  const out = [...arr];
+  for (let i = out.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const t = out[i];
+    out[i] = out[j];
+    out[j] = t;
+  }
+  return out;
+};
+
+const countFridgeIngredients = (body) => {
+  const items = body?.data?.items ?? [];
+  if (!Array.isArray(items)) return 0;
+  let n = 0;
+  for (let s = 0; s < items.length; s += 1) {
+    const categories = items[s]?.categories ?? [];
+    for (let c = 0; c < categories.length; c += 1) {
+      const ings = categories[c]?.ingredients ?? [];
+      n += ings.length;
+    }
+  }
+  return n;
+};
+
+const extractRecipeRowsFromListBody = (body) => {
+  const rows =
+    body?.data?.items ?? body?.data?.Recipes ?? body?.Recipes ?? [];
+  return Array.isArray(rows) ? rows : [];
+};
+
 const MainPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { isLoggedIn, isInitializing } = useUser();
 
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [matchedRecipes, setMatchedRecipes] = useState([]);
-  const [popularRecipes, setPopularRecipes] = useState([]);
+  const [displayedRecipes, setDisplayedRecipes] = useState([]);
+  const [recipeSectionKind, setRecipeSectionKind] = useState('popular');
   const [recipesLoading, setRecipesLoading] = useState(false);
 
   useEffect(() => {
-    if (!isLoggedIn) {
-      setPopularRecipes([]);
-      setRecipesLoading(false);
-      return;
-    }
-
     if (isInitializing) return;
 
-    const fetchRecipes = async () => {
+    let cancelled = false;
+
+    const loadMainRecipes = async () => {
       setRecipesLoading(true);
       try {
-        const popular = await getPopularRecipes({ size: 10 });
-        setPopularRecipes(Array.isArray(popular) ? popular : []);
+        let nextList = [];
+        let nextKind = 'popular';
+
+        if (isLoggedIn) {
+          try {
+            const fridgeRes = await fridgeApi.getMyFridge();
+            if (cancelled) return;
+            const ingredientCount = countFridgeIngredients(fridgeRes.data);
+            if (ingredientCount > 0) {
+              const matchRes = await fridgeApi.getRecommendedRecipes({
+                sort: 'MATCH_COUNT',
+                size: 20,
+              });
+              if (cancelled) return;
+              const rows = extractRecipeRowsFromListBody(matchRes.data);
+              nextList = rows.map(normalizeRecipe);
+              nextList.sort(
+                (a, b) =>
+                  (b.matchedIngredientCount - a.matchedIngredientCount) ||
+                  (b.likeCount - a.likeCount)
+              );
+              nextList = nextList.slice(0, 10);
+              const hasRealMatch = nextList.some(
+                (r) => (r.matchedIngredientCount ?? 0) > 0
+              );
+              if (nextList.length > 0 && hasRealMatch) {
+                nextKind = 'fridge';
+              } else {
+                nextList = [];
+              }
+            }
+          } catch (error) {
+            console.error('냉장고·매칭 레시피 조회 실패:', error);
+          }
+        }
+
+        if (nextList.length === 0) {
+          let popular = await getPopularRecipes({ size: 10, sort: 'LIKE_COUNT' });
+          if (cancelled) return;
+          if (popular.length > 0) {
+            nextList = popular;
+            nextKind = 'popular';
+          } else {
+            let pool = await getPopularRecipes({ size: 30, sort: 'LATEST' });
+            if (cancelled) return;
+            pool = shuffleArray(pool).slice(0, 10);
+            nextList = pool;
+            nextKind = pool.length > 0 ? 'random' : 'popular';
+          }
+        }
+
+        if (!cancelled) {
+          setDisplayedRecipes(nextList);
+          setRecipeSectionKind(nextKind);
+        }
       } catch (error) {
-        console.error('레시피 조회 실패:', error);
-        setPopularRecipes([]);
+        console.error('메인 레시피 조회 실패:', error);
+        if (!cancelled) {
+          setDisplayedRecipes([]);
+          setRecipeSectionKind('popular');
+        }
       } finally {
         setRecipesLoading(false);
       }
     };
 
-    fetchRecipes();
-  }, [isLoggedIn, isInitializing]);
+    void loadMainRecipes();
 
-  useEffect(() => {
-    if (!isLoggedIn) {
-      setMatchedRecipes([]);
-      return;
-    }
-
-    if (isInitializing) return;
-
-    const fetchMatched = async () => {
-      try {
-        const res = await fridgeApi.getRecommendedRecipes({
-          sort: 'MATCH_COUNT',
-          size: 3,
-        });
-
-        const data = res.data?.data?.Recipes ?? res.data?.Recipes ?? [];
-        const normalized = Array.isArray(data) ? data.map(normalizeRecipe) : [];
-        setMatchedRecipes(normalized);
-      } catch (error) {
-        console.error('내 냉장고 매칭 레시피 조회 실패:', error);
-        setMatchedRecipes([]);
-      }
+    return () => {
+      cancelled = true;
     };
-
-    fetchMatched();
-  }, [isLoggedIn, isInitializing]);
+  }, [isInitializing, isLoggedIn]);
 
   const handleFillRefrigeratorClick = () => {
     if (isInitializing) {
@@ -105,13 +165,12 @@ const MainPage = () => {
     }
   };
 
-  const displayedRecipes =
-    isLoggedIn && matchedRecipes.length > 0 ? matchedRecipes : popularRecipes;
-
   const sectionTitle =
-    isLoggedIn && matchedRecipes.length > 0
+    recipeSectionKind === 'fridge'
       ? '내 냉장고 레시피 추천'
-      : '인기 레시피';
+      : recipeSectionKind === 'random'
+        ? '오늘의 추천 레시피'
+        : '인기 레시피';
 
   const handleSearchClick = () => {
     navigate('/search');
