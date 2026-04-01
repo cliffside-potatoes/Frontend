@@ -5,7 +5,11 @@ import './SearchResultsList.css';
 const RecipeCardSmall = ({ recipe }) => {
   if (!recipe) return null;
   const id = recipe.recipeId ?? recipe.id;
-  const imageUrl = recipe.thumbnailImage ?? recipe.imageUrl ?? '';
+  const imageUrl =
+    recipe.thumbnailImage ??
+    recipe.thumbnailUrl ??
+    recipe.imageUrl ??
+    '';
   const title = recipe.title ?? '';
   const description = recipe.source ?? recipe.description ?? '';
   const time = recipe.cookingTime != null ? `${recipe.cookingTime}분` : (recipe.time ?? '');

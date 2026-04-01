@@ -44,7 +44,11 @@ const SearchPage = () => {
       });
 
       const data = result?.data;
-      const newRecipes = Array.isArray(data?.Recipes) ? data.Recipes : [];
+      const newRecipes = Array.isArray(data?.items)
+        ? data.items
+        : Array.isArray(data?.Recipes)
+          ? data.Recipes
+          : [];
       setSearchResults(prev => [...prev, ...newRecipes]);
       setHasNext(Boolean(data?.hasNext));
       setNextCursor(data?.nextCursor ?? null);
@@ -117,7 +121,11 @@ const SearchPage = () => {
       const result = await searchRecipes(text, { size: 20, sort: 'LATEST' });
       
       const data = result?.data;
-      const recipes = Array.isArray(data?.Recipes) ? data.Recipes : [];
+      const recipes = Array.isArray(data?.items)
+        ? data.items
+        : Array.isArray(data?.Recipes)
+          ? data.Recipes
+          : [];
       setSearchResults(recipes);
       setHasNext(Boolean(data?.hasNext));
       setNextCursor(data?.nextCursor ?? null);
