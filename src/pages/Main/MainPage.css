@@ -158,6 +158,11 @@
   gap: 6px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
 }
 
 .category-icon {

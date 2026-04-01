@@ -1,0 +1,31 @@
+.situation-recipes-page {
+  width: 100%;
+  max-width: var(--app-max-width);
+  margin: 0 auto;
+  min-height: 100vh;
+  background-color: #ffffff;
+  padding-bottom: calc(var(--bottom-nav-base-height) + var(--safe-bottom));
+  display: flex;
+  flex-direction: column;
+}
+
+.situation-recipes-page__main {
+  flex: 1;
+  padding: 16px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.situation-recipes-page__list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+}
+
+.situation-recipes-page__hint {
+  padding: 20px 8px;
+  color: #888;
+  font-size: 14px;
+  line-height: 1.5;
+}
