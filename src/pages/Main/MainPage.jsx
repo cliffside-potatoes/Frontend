@@ -209,10 +209,15 @@ const MainPage = () => {
           <h2 className="section-title">상황별 레시피 추천</h2>
           <div className="category-grid">
             {RECIPE_CATEGORIES.map((category) => (
-              <div key={category.id} className="category-item">
+              <button
+                key={category.id}
+                type="button"
+                className="category-item"
+                onClick={() => navigate(`/situation/${category.id}`)}
+              >
                 <div className="category-icon">{category.icon}</div>
                 <span className="category-label">{category.label}</span>
-              </div>
+              </button>
             ))}
           </div>
         </section>

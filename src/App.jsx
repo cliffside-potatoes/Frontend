@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { MyPostsProvider } from './context/MyPostsContext';
 import { UserProvider } from './context/UserContext';
 import MainPage from './pages/Main/MainPage';
+import SituationRecipesPage from './pages/Main/SituationRecipesPage';
 import MyPage from './pages/Profile/MyPage';
 import SettingsPage from './pages/Profile/SettingsPage';
 import NotificationSettingsPage from './pages/Profile/NotificationSettingsPage';
@@ -40,6 +41,7 @@ function App() {
               <Routes>
                 <Route path="/" element={<Navigate to="/main" replace />} />
                 <Route path="/main" element={<MainPage />} />
+                <Route path="/situation/:categoryId" element={<SituationRecipesPage />} />
                 <Route path="/feed" element={<Feed />} />
 
                 <Route path="/signup" element={<SignUpPage />} />
