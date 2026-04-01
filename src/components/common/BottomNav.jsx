@@ -1,7 +1,6 @@
 import React from 'react';
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { useUser } from '../../context/UserContext';
-import { buildSignInState } from '../../utils/authStorage';
 import './BottomNav.css';
 
 const navItems = [
@@ -15,25 +14,13 @@ const navItems = [
 const protectedPaths = new Set(['/refrigerator', '/recipe-saved', '/profile']);
 
 const BottomNav = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const { isLoggedIn, isInitializing } = useUser();
-
-  const currentPath = `${location.pathname}${location.search}${location.hash}`;
+  const { isInitializing } = useUser();
 
   const handleClick = (event, item) => {
     if (!protectedPaths.has(item.path)) return;
 
     if (isInitializing) {
       event.preventDefault();
-      return;
-    }
-
-    if (!isLoggedIn) {
-      event.preventDefault();
-      navigate('/signin', {
-        state: buildSignInState(item.path, currentPath),
-      });
     }
   };
 

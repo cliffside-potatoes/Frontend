@@ -4,6 +4,8 @@ import PageHeader from '../../components/common/PageHeader';
 import PrimaryButton from '../../components/common/PrimaryButton';
 import TextInput from '../../components/common/TextInput';
 import BottomNav from '../../components/common/BottomNav';
+import GuestLoginPrompt from '../../components/common/GuestLoginPrompt';
+import { useUser } from '../../context/UserContext';
 import Pill from '../../components/ui/Pill';
 import SuggestionList from '../../components/ui/SuggestionList';
 import { fridgeApi } from '../../api/fridgeApi';
@@ -39,6 +41,7 @@ const normalizeCategoryColor = (color) => {
 
 const RefrigeratorPage = () => {
   const navigate = useNavigate();
+  const { isLoggedIn, isInitializing } = useUser();
 
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -68,8 +71,15 @@ const RefrigeratorPage = () => {
   }, []);
 
   useEffect(() => {
+    if (isInitializing) return;
+    if (!isLoggedIn) {
+      setLoading(false);
+      setCategories([]);
+      setActiveCategoryId(null);
+      return;
+    }
     void loadFridge();
-  }, [loadFridge]);
+  }, [loadFridge, isInitializing, isLoggedIn]);
 
   const handleBack = () => navigate(-1);
   const handleHome = () => navigate('/main');
@@ -222,6 +232,8 @@ const RefrigeratorPage = () => {
       </div>
 
       <BottomNav />
+
+      <GuestLoginPrompt afterLoginPath="/refrigerator" />
     </div>
   );
 };
