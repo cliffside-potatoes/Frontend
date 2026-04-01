@@ -6,52 +6,52 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 const MOCK_SEARCH_RESULTS = [
   {
     recipeId: 1,
-    title: 'Kimchi Fried Rice',
+    title: '비빔밥',
     thumbnailImage: 'https://via.placeholder.com/100',
-    source: 'Home Kitchen',
-    cookingTime: 15,
-    difficulty: 'Easy',
+    source: '백종원의 요리비책',
+    cookingTime: 30,
+    difficulty: '초보',
     likeCount: 45,
-    reviewCount: 12,
+    reviewCount: 120,
     totalIngredientCount: 8,
     matchedIngredientCount: 5,
     liked: false,
   },
   {
     recipeId: 2,
-    title: 'Soy Garlic Chicken',
+    title: '김치찌개',
     thumbnailImage: 'https://via.placeholder.com/100',
-    source: 'Weekend Table',
-    cookingTime: 35,
-    difficulty: 'Medium',
-    likeCount: 82,
-    reviewCount: 21,
-    totalIngredientCount: 10,
+    source: '유튜브 - 릴리쿡',
+    cookingTime: 40,
+    difficulty: '초보',
+    likeCount: 120,
+    reviewCount: 200,
+    totalIngredientCount: 6,
     matchedIngredientCount: 4,
     liked: false,
   },
   {
     recipeId: 3,
-    title: 'Cream Pasta',
+    title: '크림 파스타',
     thumbnailImage: 'https://via.placeholder.com/100',
-    source: 'Quick Meals',
-    cookingTime: 20,
-    difficulty: 'Easy',
-    likeCount: 37,
-    reviewCount: 9,
+    source: '만개의 레시피',
+    cookingTime: 25,
+    difficulty: '중급',
+    likeCount: 89,
+    reviewCount: 80,
     totalIngredientCount: 7,
     matchedIngredientCount: 3,
     liked: false,
   },
 ];
 
-const DEFAULT_RECENT_SEARCHES = ['kimchi', 'pasta', 'rice'];
+const DEFAULT_RECENT_SEARCHES = ['비빔밥', '김치찌개', '파스타'];
 const DEFAULT_RECOMMENDED_SEARCHES = [
-  'easy meal',
-  'lunch box',
-  'low carb',
-  'one pan',
-  'soup',
+  '간단 요리',
+  '샐러드',
+  '한식',
+  '중식',
+  '양식',
 ];
 
 const isSameOriginBase = (base) =>
@@ -78,7 +78,7 @@ const normalizeRecipeItem = (item) => ({
     '',
   source: item?.source ?? item?.recipeSource ?? item?.description ?? '',
   cookingTime: item?.cookingTime ?? item?.cookTime ?? 0,
-  difficulty: item?.difficulty ?? 'Easy',
+  difficulty: item?.difficulty ?? '초보',
   likeCount: item?.likeCount ?? 0,
   reviewCount: item?.reviewCount ?? 0,
   totalIngredientCount: item?.totalIngredientCount ?? 0,
@@ -105,7 +105,7 @@ const normalizeSearchResponse = (payload) => ({
     hasNext: Boolean(payload?.data?.hasNext ?? payload?.hasNext),
     nextCursor: payload?.data?.nextCursor ?? payload?.nextCursor ?? null,
   },
-  message: payload?.message ?? 'Search completed',
+  message: payload?.message ?? '검색을 완료했습니다',
 });
 
 const getMockSearchResponse = (keyword) => {
@@ -123,7 +123,7 @@ const getMockSearchResponse = (keyword) => {
       hasNext: false,
       nextCursor: null,
     },
-    message: 'Mock search completed',
+    message: '검색을 완료했습니다',
   });
 };
 
@@ -163,7 +163,7 @@ export const searchRecipes = async (keyword, options = {}) => {
   if (!trimmedKeyword) {
     return normalizeSearchResponse({
       data: { Recipes: [], hasNext: false, nextCursor: null },
-      message: 'Empty keyword',
+      message: '검색어가 비어 있습니다',
     });
   }
 
@@ -185,18 +185,18 @@ export const searchRecipes = async (keyword, options = {}) => {
     }
 
     if (!response.ok) {
-      throw new Error(`Search failed: ${response.status}`);
+      throw new Error(`검색에 실패했습니다: ${response.status}`);
     }
 
     const contentType = response.headers.get('content-type') || '';
     if (!contentType.includes('application/json')) {
-      throw new Error('Search response is not JSON');
+      throw new Error('검색 응답 형식이 올바르지 않습니다');
     }
 
     const result = await response.json();
     return normalizeSearchResponse(result);
   } catch (error) {
-    console.error('searchRecipes failed:', error);
+    console.error('searchRecipes 오류:', error);
     return getMockSearchResponse(trimmedKeyword);
   }
 };
@@ -209,14 +209,14 @@ export const getRecentSearches = async () => {
     return {
       success: true,
       data: Array.isArray(searches) ? searches : DEFAULT_RECENT_SEARCHES,
-      message: 'Recent searches loaded',
+      message: '최근 검색어를 불러왔습니다',
     };
   } catch (error) {
-    console.error('getRecentSearches failed:', error);
+    console.error('getRecentSearches 오류:', error);
     return {
       success: true,
       data: DEFAULT_RECENT_SEARCHES,
-      message: 'Default recent searches returned',
+      message: '기본 최근 검색어를 반환합니다',
     };
   }
 };
@@ -225,7 +225,7 @@ export const getRecommendedSearches = async () => {
   return {
     success: true,
     data: DEFAULT_RECOMMENDED_SEARCHES,
-    message: 'Recommended searches loaded',
+    message: '추천 검색어를 불러왔습니다',
   };
 };
 
@@ -235,7 +235,7 @@ export const saveRecentSearch = async (keyword) => {
     if (!trimmedKeyword) {
       return {
         success: false,
-        message: 'Keyword is empty',
+        message: '검색어가 비어 있습니다',
       };
     }
 
@@ -248,13 +248,13 @@ export const saveRecentSearch = async (keyword) => {
     return {
       success: true,
       data: searches,
-      message: 'Recent search saved',
+      message: '최근 검색어를 저장했습니다',
     };
   } catch (error) {
-    console.error('saveRecentSearch failed:', error);
+    console.error('saveRecentSearch 오류:', error);
     return {
       success: false,
-      message: 'Failed to save recent search',
+      message: '최근 검색어 저장에 실패했습니다',
     };
   }
 };
@@ -270,13 +270,13 @@ export const deleteRecentSearch = async (keyword) => {
     return {
       success: true,
       data: searches,
-      message: 'Recent search deleted',
+      message: '최근 검색어를 삭제했습니다',
     };
   } catch (error) {
-    console.error('deleteRecentSearch failed:', error);
+    console.error('deleteRecentSearch 오류:', error);
     return {
       success: false,
-      message: 'Failed to delete recent search',
+      message: '최근 검색어 삭제에 실패했습니다',
     };
   }
 };

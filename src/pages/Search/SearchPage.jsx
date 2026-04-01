@@ -15,6 +15,11 @@ import './SearchPage.css';
 
 const SearchPage = () => {
   const navigate = useNavigate();
+  const searchInputRef = useRef(null);
+  const observerRef = useRef(null);
+  const loadMoreTriggerRef = useRef(null);
+
+  const [inputValue, setInputValue] = useState('');
   const [searchText, setSearchText] = useState('');
   const [recentSearches, setRecentSearches] = useState([]);
   const [recommendedSearches, setRecommendedSearches] = useState([]);
@@ -24,8 +29,22 @@ const SearchPage = () => {
   const [error, setError] = useState(null);
   const [hasNext, setHasNext] = useState(false);
   const [nextCursor, setNextCursor] = useState(null);
-  const observerRef = useRef(null);
-  const loadMoreTriggerRef = useRef(null);
+
+  const focusSearchInput = useCallback((value) => {
+    if (typeof window === 'undefined') return;
+
+    window.requestAnimationFrame(() => {
+      const input = searchInputRef.current;
+      if (!input) return;
+
+      input.focus();
+
+      if (typeof value === 'string' && typeof input.setSelectionRange === 'function') {
+        const cursorPosition = value.length;
+        input.setSelectionRange(cursorPosition, cursorPosition);
+      }
+    });
+  }, []);
 
   const loadMore = useCallback(async () => {
     if (!hasNext || loadingMore || !nextCursor || !searchText) return;
@@ -47,7 +66,7 @@ const SearchPage = () => {
       setHasNext(Boolean(data?.hasNext));
       setNextCursor(data?.nextCursor ?? null);
     } catch (err) {
-      console.error('Failed to load more search results:', err);
+      console.error('추가 검색 결과를 불러오지 못했습니다:', err);
     } finally {
       setLoadingMore(false);
     }
@@ -66,7 +85,7 @@ const SearchPage = () => {
           Array.isArray(recommendedData?.data) ? recommendedData.data : []
         );
       } catch (err) {
-        console.error('Failed to load search page data:', err);
+        console.error('검색 페이지 데이터를 불러오지 못했습니다:', err);
         setRecentSearches([]);
         setRecommendedSearches([]);
       }
@@ -103,6 +122,7 @@ const SearchPage = () => {
     const keyword = text?.trim();
     if (!keyword) return;
 
+    setInputValue(keyword);
     setSearchText(keyword);
     setLoading(true);
     setError(null);
@@ -125,7 +145,7 @@ const SearchPage = () => {
         : [keyword, ...recentSearches.filter((item) => item !== keyword)].slice(0, 10);
       setRecentSearches(nextRecentSearches);
     } catch (err) {
-      console.error('Search failed:', err);
+      console.error('검색에 실패했습니다:', err);
       setError('검색 중 오류가 발생했습니다. 다시 시도해주세요.');
       setSearchResults([]);
     } finally {
@@ -133,12 +153,17 @@ const SearchPage = () => {
     }
   };
 
+  const handleSelectKeyword = (keyword) => {
+    setInputValue(keyword);
+    focusSearchInput(keyword);
+  };
+
   const handleRemoveRecentSearch = async (itemToRemove) => {
     try {
       await deleteRecentSearch(itemToRemove);
       setRecentSearches((prev) => prev.filter((item) => item !== itemToRemove));
     } catch (err) {
-      console.error('Failed to remove recent search:', err);
+      console.error('최근 검색어를 삭제하지 못했습니다:', err);
     }
   };
 
@@ -154,7 +179,12 @@ const SearchPage = () => {
           &lt;
         </button>
         <div className="search-bar-wrapper">
-          <SearchBar onSearch={handleSearch} />
+          <SearchBar
+            value={inputValue}
+            onChange={setInputValue}
+            onSearch={handleSearch}
+            inputRef={searchInputRef}
+          />
         </div>
       </header>
 
@@ -191,8 +221,15 @@ const SearchPage = () => {
 
         {!loading && searchResults.length === 0 && !searchText ? (
           <>
-            <RecentSearches searches={recentSearches} onRemove={handleRemoveRecentSearch} />
-            <RecommendedSearches searches={recommendedSearches} />
+            <RecentSearches
+              searches={recentSearches}
+              onRemove={handleRemoveRecentSearch}
+              onSelect={handleSelectKeyword}
+            />
+            <RecommendedSearches
+              searches={recommendedSearches}
+              onSelect={handleSelectKeyword}
+            />
           </>
         ) : null}
 
@@ -225,7 +262,9 @@ const SearchPage = () => {
                 }}
               >
                 {loadingMore && (
-                  <div style={{ color: '#666', fontSize: '14px' }}>추가 결과를 불러오는 중...</div>
+                  <div style={{ color: '#666', fontSize: '14px' }}>
+                    추가 결과를 불러오는 중...
+                  </div>
                 )}
               </div>
             )}

@@ -1,7 +1,7 @@
 import React from 'react';
 import './RecommendedSearches.css';
 
-const RecommendedSearches = ({ searches }) => {
+const RecommendedSearches = ({ searches, onSelect }) => {
   const list = Array.isArray(searches) ? searches : [];
 
   return (
@@ -9,9 +9,14 @@ const RecommendedSearches = ({ searches }) => {
       <h2>추천 검색어</h2>
       <div className="search-tags">
         {list.map((item, index) => (
-          <span key={index} className="search-tag">
+          <button
+            key={`${item}-${index}`}
+            type="button"
+            className="search-tag search-tag-button"
+            onClick={() => onSelect?.(item)}
+          >
             {item}
-          </span>
+          </button>
         ))}
       </div>
     </section>
