@@ -113,3 +113,12 @@ export const clearStoredAuth = () => {
   window.localStorage.removeItem('user');
   window.localStorage.removeItem('myPosts');
 };
+
+export const AUTH_SESSION_INVALIDATED_EVENT = 'naeng-gu-auth-session-invalidated';
+
+export const invalidateAuthSession = () => {
+  clearStoredAuth();
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(AUTH_SESSION_INVALIDATED_EVENT));
+  }
+};
