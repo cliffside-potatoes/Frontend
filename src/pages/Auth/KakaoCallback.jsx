@@ -33,7 +33,11 @@ const KakaoCallback = () => {
 
       if (payload?.newMember) {
         console.log('[KakaoCallback] 신규 회원 -> /new-info');
-        setUser(baseUser);
+        setUser({
+          ...baseUser,
+          nickname: '',
+          profileImage: '',
+        });
         navigate('/new-info', { replace: true });
         return;
       }
@@ -43,7 +47,11 @@ const KakaoCallback = () => {
 
       if (!profile) {
         console.log('[KakaoCallback] profile 없음 -> /new-info');
-        setUser(baseUser);
+        setUser({
+          ...baseUser,
+          nickname: '',
+          profileImage: '',
+        });
         navigate('/new-info', { replace: true });
         return;
       }

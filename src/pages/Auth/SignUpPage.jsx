@@ -23,7 +23,7 @@ const SignUpPage = () => {
 
   const initialStep = useMemo(() => {
     if (isEditMode) return 2;
-    if (isNewInfoMode) return 1;
+    if (isNewInfoMode) return 2;
     if (typeof location.state?.step === "number") return location.state.step;
     return 1;
   }, [isEditMode, isNewInfoMode, location.state]);
@@ -44,6 +44,7 @@ const SignUpPage = () => {
   );
 
   const [nicknameError, setNicknameError] = useState("");
+  const [profileImageError, setProfileImageError] = useState("");
   const [saving, setSaving] = useState(false);
   const [bioTouched, setBioTouched] = useState(
     isEditMode && Boolean(user?.bio),
@@ -147,6 +148,7 @@ const SignUpPage = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setProfileImageError("");
     setProfileImageFile(file);
 
     if (profileImagePreview && profileImagePreview.startsWith("blob:")) {
@@ -203,6 +205,18 @@ const SignUpPage = () => {
       );
       return;
     }
+
+    if (isNewInfoMode) {
+      const hasNewImage = Boolean(profileImageFile);
+      const hasExistingImage = Boolean(
+        user?.profileImage && String(user.profileImage).trim(),
+      );
+      if (!hasNewImage && !hasExistingImage) {
+        setProfileImageError("프로필 사진을 등록해줘");
+        return;
+      }
+    }
+    setProfileImageError("");
 
     /*
     닉네임 중복확인 API 생기면 다시 살릴 부분
@@ -290,6 +304,7 @@ const SignUpPage = () => {
       setProfileImageFile(null);
       setBioTouched(Boolean(user?.bio));
       setNicknameError("");
+      setProfileImageError("");
 
       /*
       닉네임 중복확인 API 생기면 다시 살릴 부분
@@ -308,6 +323,7 @@ const SignUpPage = () => {
       setProfileImageFile(null);
       setBioTouched(false);
       setNicknameError("");
+      setProfileImageError("");
 
       /*
       닉네임 중복확인 API 생기면 다시 살릴 부분
@@ -363,6 +379,13 @@ const SignUpPage = () => {
           <div className="auth-step auth-step-profile">
             <h1 className="auth-title">프로필 설정</h1>
 
+            {isNewInfoMode && (
+              <p className="help" style={{ marginBottom: "16px" }}>
+                서비스 닉네임은 영문·숫자 형식으로 직접 정해줘. 카카오 프로필 이름은
+                그대로 쓰이지 않아.
+              </p>
+            )}
+
             <div className="profile-avatar-wrap">
               <div className="profile-avatar">
                 {profileImagePreview ? (
@@ -393,6 +416,12 @@ const SignUpPage = () => {
                 onChange={handleImageChange}
               />
             </div>
+
+            {profileImageError ? (
+              <p className="help bad">{profileImageError}</p>
+            ) : isNewInfoMode ? (
+              <p className="help">프로필 사진은 필수로 등록해줘.</p>
+            ) : null}
 
             <div className="form-group">
               <label className="form-label">닉네임</label>

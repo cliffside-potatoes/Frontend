@@ -94,7 +94,11 @@ export function UserProvider({ children }) {
         if (payload?.newMember) {
           if (cancelled) return;
 
-          setUser(baseUser);
+          setUser({
+            ...baseUser,
+            nickname: '',
+            profileImage: '',
+          });
 
           if (initialPath === '/main' || initialPath === '/signin') {
             navigate('/new-info', { replace: true });
