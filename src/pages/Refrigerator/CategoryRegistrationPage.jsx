@@ -15,22 +15,21 @@ const LOCATION_OPTIONS = [
 
 const CategoryRegistrationPage = () => {
   const navigate = useNavigate();
-
-  // storageType으로 변경
-  const [storageType, setStorageType] = useState('FROZEN');
-
+  const [storageType, setStorageType] = useState('REFRIGERATED');
   const [categoryName, setCategoryName] = useState('');
-  const [color, setColor] = useState('#90caf9');
+  const [color, setColor] = useState('#90CAF9');
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
-    if (!categoryName.trim()) return;
+    const trimmedName = categoryName.trim();
+    if (!trimmedName) return;
 
     setLoading(true);
+
     try {
       await fridgeApi.createCategory({
-        name: categoryName.trim(),
+        name: trimmedName,
         color,
         storageType,
       });
@@ -38,6 +37,7 @@ const CategoryRegistrationPage = () => {
       navigate(-1);
     } catch (error) {
       console.error('카테고리 생성 실패:', error);
+      alert('카테고리를 추가하지 못했습니다. 잠시 후 다시 시도해주세요.');
     } finally {
       setLoading(false);
     }
@@ -48,13 +48,12 @@ const CategoryRegistrationPage = () => {
       <PageHeader
         title="카테고리 등록"
         onBack={() => navigate(-1)}
-        onHome={() => navigate('/')}
+        onHome={() => navigate('/main')}
       />
 
       <main className="category-registration-page__main">
         <div className="category-registration-page__field">
           <label className="category-registration-page__label">위치 선택</label>
-
           <ToggleButton
             options={LOCATION_OPTIONS}
             value={storageType}
@@ -67,13 +66,12 @@ const CategoryRegistrationPage = () => {
             label="카테고리 입력"
             value={categoryName}
             onChange={setCategoryName}
-            placeholder="카테고리 입력"
+            placeholder="카테고리 이름을 입력해주세요"
           />
         </div>
 
         <div className="category-registration-page__field">
           <label className="category-registration-page__label">색상</label>
-
           <button
             type="button"
             className="category-registration-page__color-trigger"
@@ -101,7 +99,6 @@ const CategoryRegistrationPage = () => {
         onClose={() => setColorPickerOpen(false)}
         value={color}
         onChange={setColor}
-
       />
     </div>
   );
