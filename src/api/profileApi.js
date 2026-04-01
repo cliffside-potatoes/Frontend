@@ -1,10 +1,5 @@
 import { refreshAccessToken } from './tokenApi';
-import {
-  clearStoredAuth,
-  getCurrentPath,
-  getStoredAccessToken,
-  savePostLoginRedirect,
-} from '../utils/authStorage';
+import { getStoredAccessToken, invalidateAuthSession } from '../utils/authStorage';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
@@ -18,10 +13,7 @@ const getAuthHeader = () => {
 };
 
 const handle401 = () => {
-  alert('로그인 정보가 만료되었습니다. 다시 로그인해주세요.');
-  savePostLoginRedirect(getCurrentPath());
-  clearStoredAuth();
-  window.location.href = '/signin';
+  invalidateAuthSession();
 };
 
 const requestGetMyProfile = async () => {
