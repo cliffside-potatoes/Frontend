@@ -9,6 +9,11 @@ import { fridgeApi } from '../../api/fridgeApi';
 import { addWishlist, getPopularRecipes, removeWishlist } from '../../api/recipeApi';
 import { buildSignInState } from '../../utils/authStorage';
 import { notifyRecipeWishlistChanged } from '../../utils/recipeWishlistSync';
+import {
+  addRecipeWishlistIdToStorage,
+  mergeRecipeWithStoredWishlist,
+  removeRecipeWishlistIdFromStorage,
+} from '../../utils/recipeWishlistIdsStorage';
 import naengGuIcon from '../../assets/image/naeng-gu.png';
 import './MainPage.css';
 
@@ -65,7 +70,7 @@ const extractRecipeRowsFromListBody = (body) => {
 const MainPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { isLoggedIn, isInitializing } = useUser();
+  const { isLoggedIn, isInitializing, user } = useUser();
 
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [displayedRecipes, setDisplayedRecipes] = useState([]);
@@ -132,7 +137,11 @@ const MainPage = () => {
         }
 
         if (!cancelled) {
-          setDisplayedRecipes(nextList);
+          const withWishlist =
+            isLoggedIn && user?.id
+              ? nextList.map((r) => mergeRecipeWithStoredWishlist(r, user.id))
+              : nextList;
+          setDisplayedRecipes(withWishlist);
           setRecipeSectionKind(nextKind);
         }
       } catch (error) {
@@ -151,7 +160,7 @@ const MainPage = () => {
     return () => {
       cancelled = true;
     };
-  }, [isInitializing, isLoggedIn]);
+  }, [isInitializing, isLoggedIn, user?.id]);
 
   const handleFillRefrigeratorClick = () => {
     if (isInitializing) {
@@ -204,6 +213,14 @@ const MainPage = () => {
         };
       })
     );
+
+    if (user?.id) {
+      if (nextLiked) {
+        addRecipeWishlistIdToStorage(user.id, id);
+      } else {
+        removeRecipeWishlistIdFromStorage(user.id, id);
+      }
+    }
 
     notifyRecipeWishlistChanged(
       nextLiked ? { kind: 'add', recipeId: id } : { kind: 'remove', recipeId: id },

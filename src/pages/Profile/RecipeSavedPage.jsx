@@ -6,11 +6,12 @@ import RecipeCard from '../../components/card/RecipeCard';
 import { getWishlistRecipes, removeWishlist } from '../../api/recipeApi';
 import { useUser } from '../../context/UserContext';
 import { notifyRecipeWishlistChanged, RECIPE_WISHLIST_CHANGED_EVENT } from '../../utils/recipeWishlistSync';
+import { removeRecipeWishlistIdFromStorage } from '../../utils/recipeWishlistIdsStorage';
 import './RecipeSavedPage.css';
 
 const RecipeSavedPage = () => {
   const navigate = useNavigate();
-  const { isLoggedIn, isInitializing } = useUser();
+  const { isLoggedIn, isInitializing, user } = useUser();
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -67,6 +68,9 @@ const RecipeSavedPage = () => {
     setRecipes((prev) =>
       (prev || []).filter((recipe) => Number(recipe.recipeId) !== id)
     );
+    if (user?.id) {
+      removeRecipeWishlistIdFromStorage(user.id, id);
+    }
     notifyRecipeWishlistChanged({ kind: 'remove', recipeId: id });
     return true;
   };

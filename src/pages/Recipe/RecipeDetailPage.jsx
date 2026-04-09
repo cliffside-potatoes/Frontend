@@ -9,6 +9,11 @@ import {
 import { useUser } from '../../context/UserContext';
 import { buildSignInState } from '../../utils/authStorage';
 import { notifyRecipeWishlistChanged } from '../../utils/recipeWishlistSync';
+import {
+  addRecipeWishlistIdToStorage,
+  mergeRecipeWithStoredWishlist,
+  removeRecipeWishlistIdFromStorage,
+} from '../../utils/recipeWishlistIdsStorage';
 import { toImageUrl } from '../../utils/imageUrl';
 import './RecipeDetailPage.css';
 
@@ -21,7 +26,7 @@ const RecipeDetailPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { recipeId } = useParams();
-  const { isLoggedIn, isInitializing } = useUser();
+  const { isLoggedIn, isInitializing, user } = useUser();
 
   const [recipe, setRecipe] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -53,10 +58,20 @@ const RecipeDetailPage = () => {
           return;
         }
 
-        setRecipe(recipeData);
+        const mergedRecipe =
+          isLoggedIn && user?.id
+            ? mergeRecipeWithStoredWishlist(
+                {
+                  ...recipeData,
+                  recipeId: recipeData?.recipeId ?? recipeId,
+                },
+                user.id,
+              )
+            : recipeData;
+        setRecipe(mergedRecipe);
         setActiveTab(RECIPE_TABS.PUBLIC);
-        setIsLiked(Boolean(recipeData?.liked));
-        setLikeCount(recipeData?.likeCount ?? 0);
+        setIsLiked(Boolean(mergedRecipe?.liked));
+        setLikeCount(mergedRecipe?.likeCount ?? 0);
         setIngredients(Array.isArray(recipeData?.ingredients) ? recipeData.ingredients : []);
 
         if (isLoggedIn) {
@@ -85,7 +100,7 @@ const RecipeDetailPage = () => {
     return () => {
       cancelled = true;
     };
-  }, [recipeId, isLoggedIn, isInitializing]);
+  }, [recipeId, isLoggedIn, isInitializing, user?.id]);
 
   const handleLikeToggle = async () => {
     const currentPath = `${location.pathname}${location.search}${location.hash}`;
@@ -127,6 +142,13 @@ const RecipeDetailPage = () => {
 
       const rid = Number(recipeId);
       if (Number.isFinite(rid)) {
+        if (user?.id) {
+          if (nextLiked) {
+            addRecipeWishlistIdToStorage(user.id, rid);
+          } else {
+            removeRecipeWishlistIdFromStorage(user.id, rid);
+          }
+        }
         notifyRecipeWishlistChanged(
           nextLiked
             ? { kind: 'add', recipeId: rid }
