@@ -7,13 +7,8 @@ import { buildSignInState } from "../../utils/authStorage";
 /**
  * 비로그인 사용자 유도 모달 — 홈으로 가기 / 로그인
  * @param {number} [reopenSignal] 부모가 1씩 올리면 모달을 다시 연다(닫은 뒤 글쓰기 등).
- * @param {boolean} [showOnLoadWhenGuest=true] false면 첫 진입 시 자동으로 띄우지 않음(피드: 글쓰기 시에만 reopenSignal로 표시).
  */
-const GuestLoginPrompt = ({
-  afterLoginPath,
-  reopenSignal = 0,
-  showOnLoadWhenGuest = true,
-}) => {
+const GuestLoginPrompt = ({ afterLoginPath, reopenSignal = 0 }) => {
   const { isLoggedIn, isInitializing } = useUser();
   const navigate = useNavigate();
   const location = useLocation();
@@ -21,14 +16,8 @@ const GuestLoginPrompt = ({
 
   useEffect(() => {
     if (isInitializing) return;
-    if (isLoggedIn) {
-      setOpen(false);
-      return;
-    }
-    if (showOnLoadWhenGuest) {
-      setOpen(true);
-    }
-  }, [isInitializing, isLoggedIn, showOnLoadWhenGuest]);
+    setOpen(!isLoggedIn);
+  }, [isInitializing, isLoggedIn]);
 
   useEffect(() => {
     if (reopenSignal > 0 && !isLoggedIn && !isInitializing) {

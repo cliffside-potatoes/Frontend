@@ -706,11 +706,7 @@ const Feed = () => {
 
       {!writeModalOpen && <BottomNav />}
 
-      <GuestLoginPrompt
-        afterLoginPath="/feed"
-        reopenSignal={guestPromptTick}
-        showOnLoadWhenGuest={false}
-      />
+      <GuestLoginPrompt afterLoginPath="/feed" reopenSignal={guestPromptTick} />
     </div>
   );
 };
