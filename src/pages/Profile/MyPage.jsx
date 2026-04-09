@@ -77,8 +77,17 @@ const sortPosts = (posts) =>
     return bTime - aTime;
   });
 
+const resolveLikedItemIsMine = (item, currentUserId) => {
+  if (currentUserId == null || String(currentUserId).length === 0) return false;
+  if (item.isMine === true || item.isMine === 1 || item.isMine === '1') return true;
+  const writerId =
+    item.writer?.id ?? item.writerId ?? item.authorId ?? item.authorProfileId;
+  if (writerId == null || String(writerId).length === 0) return false;
+  return String(writerId) === String(currentUserId);
+};
+
 /** GET /me/liked/posts 항목 → FeedCard용 */
-const mapLikedPostItemToPost = (item) => {
+const mapLikedPostItemToPost = (item, currentUserId) => {
   const createdAt = item.postCreatedAt || item.likedAt || '';
   const dateStr =
     createdAt &&
@@ -127,11 +136,11 @@ const mapLikedPostItemToPost = (item) => {
     likeCount: item.likeCount ?? 0,
     liked: true,
     hideLikeCount: Boolean(item.hideLikeCount),
-    pinned: false,
+    pinned: Boolean(item.pinned),
     createdAt,
     updatedAt: item.postUpdatedAt ?? createdAt,
     cookCount: 0,
-    isMine: false,
+    isMine: resolveLikedItemIsMine(item, currentUserId),
   };
 };
 
@@ -221,7 +230,7 @@ const MyPage = () => {
 
         const meta = loadFeedPostMeta(user?.id);
         const mapped = (items || []).map((item) => {
-          const p = mapLikedPostItemToPost(item);
+          const p = mapLikedPostItemToPost(item, user?.id);
           const m = meta[String(item.postId)];
           if (m?.author) {
             return { ...p, author: m.author, avatarUrl: m.avatarUrl || p.avatarUrl };
@@ -260,7 +269,9 @@ const MyPage = () => {
 
   const handleDeletePost = () => {
     if (deleteConfirmPostId) {
-      setPosts((prev) => prev.filter((p) => p.id !== deleteConfirmPostId));
+      const id = deleteConfirmPostId;
+      setPosts((prev) => prev.filter((p) => p.id !== id));
+      setLikedPosts((prev) => prev.filter((p) => p.id !== id));
       setDeleteConfirmPostId(null);
     }
   };
@@ -269,11 +280,15 @@ const MyPage = () => {
     setPosts((prev) =>
       prev.map((p) => (p.id === postId ? { ...p, hideLikeCount: !p.hideLikeCount } : p))
     );
+    setLikedPosts((prev) =>
+      prev.map((p) => (p.id === postId ? { ...p, hideLikeCount: !p.hideLikeCount } : p))
+    );
     setPostMenuPostId(null);
   };
 
   const handleTogglePin = (postId) => {
     setPosts((prev) => prev.map((p) => (p.id === postId ? { ...p, pinned: !p.pinned } : p)));
+    setLikedPosts((prev) => prev.map((p) => (p.id === postId ? { ...p, pinned: !p.pinned } : p)));
     setPostMenuPostId(null);
   };
 
@@ -334,7 +349,21 @@ const MyPage = () => {
       removeFeedPostMeta(user.id, id);
       removeFeedLikedIdFromStorageAndNotify(user.id, id);
     }
-    setLikedPosts((prev) => prev.filter((p) => p.id !== postId));
+
+    const matchesId = (p) => Number(p.id) === id || p.id === postId;
+    setPosts((prev) =>
+      prev.map((p) =>
+        matchesId(p) && p.liked
+          ? {
+              ...p,
+              liked: false,
+              likeCount: Math.max(0, (p.likeCount ?? 0) - 1),
+            }
+          : p
+      )
+    );
+
+    setLikedPosts((prev) => prev.filter((p) => !matchesId(p)));
   };
 
   const sortedPosts = useMemo(() => {
@@ -404,10 +433,12 @@ const MyPage = () => {
     });
 
     if (editingPostId) {
+      const patch = { content: draftContent, image, images, updatedAt: nowIso };
       setPosts((prev) =>
-        prev.map((p) =>
-          p.id === editingPostId ? { ...p, content: draftContent, image, images, updatedAt: nowIso } : p
-        )
+        prev.map((p) => (p.id === editingPostId ? { ...p, ...patch } : p))
+      );
+      setLikedPosts((prev) =>
+        prev.map((p) => (p.id === editingPostId ? { ...p, ...patch } : p))
       );
     } else {
       setPosts((prev) => {
@@ -571,14 +602,14 @@ const MyPage = () => {
               <div key={post.id} className="mypage-post-item">
                 <FeedCard
                   post={post}
-                  isMine={activeTab === 'POST'}
+                  isMine={activeTab === 'POST' || post.isMine}
                   avatarUrl={post.avatarUrl || profileImageSrc}
                   onToggleLike={isLoggedIn ? handleToggleLike : () => {}}
                   onOpenMenu={
-                    activeTab === 'POST'
+                    activeTab === 'POST' || post.isMine
                       ? isLoggedIn
                         ? openPostMenu
-                        : (e, postId) => {
+                        : (e) => {
                             e.stopPropagation();
                             goSignInForProfile();
                           }
@@ -586,7 +617,9 @@ const MyPage = () => {
                   }
                 />
 
-                {isLoggedIn && activeTab === 'POST' && postMenuPostId === post.id && (
+                {isLoggedIn &&
+                  (activeTab === 'POST' || post.isMine) &&
+                  postMenuPostId === post.id && (
                   <>
                     <div className="modal-backdrop" onClick={closePostMenu} aria-hidden="true" />
                     <div className="modal post-menu-modal">
