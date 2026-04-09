@@ -1,5 +1,4 @@
 import { refreshAccessToken } from "./tokenApi";
-import { getStoredAccessToken } from "../utils/authStorage";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "";
 
@@ -14,10 +13,6 @@ const DEFAULT_RECOMMENDED_SEARCHES = [
 
 const shouldUsePublicSearchMock = (base) => !base;
 
-const getAuthHeader = () => {
-  const token = getStoredAccessToken();
-  return token ? { Authorization: `Bearer ${token}` } : {};
-};
 
 const normalizeRecipeItem = (item) => ({
   recipeId: item?.recipeId ?? item?.id ?? 0,
@@ -60,24 +55,11 @@ const normalizeSearchResponse = (payload) => ({
   message: payload?.message ?? "검색을 완료했습니다",
 });
 
-const getMockSearchResponse = (keyword) => {
-  const trimmedKeyword = keyword.trim().toLowerCase();
-
-  const filteredItems = trimmedKeyword
-    ? MOCK_SEARCH_RESULTS.filter((item) =>
-        `${item.title} ${item.source}`.toLowerCase().includes(trimmedKeyword),
-      )
-    : MOCK_SEARCH_RESULTS;
-
-  return normalizeSearchResponse({
-    data: {
-      Recipes: filteredItems,
-      hasNext: false,
-      nextCursor: null,
-    },
-    message: "검색을 완료했습니다",
+const getMockSearchResponse = () =>
+  normalizeSearchResponse({
+    data: { Recipes: [], hasNext: false, nextCursor: null },
+    message: "검색 결과가 없습니다",
   });
-};
 
 const buildSearchParams = (keyword, options = {}) => {
   const { size = 20, sort = "LATEST", cursorCreatedAt, cursorId } = options;
@@ -102,8 +84,7 @@ const requestSearchRecipes = async (keyword, options = {}) => {
   return fetch(`${base}/recipes?${params.toString()}`, {
     method: "GET",
     headers: {
-      "Content-Type": "application/json",
-      ...getAuthHeader(),
+      Accept: "application/json",
     },
   });
 };
@@ -120,7 +101,7 @@ export const searchRecipes = async (keyword, options = {}) => {
   }
 
   if (shouldUsePublicSearchMock(base)) {
-    return getMockSearchResponse(trimmedKeyword);
+    return getMockSearchResponse();
   }
 
   try {
@@ -132,7 +113,7 @@ export const searchRecipes = async (keyword, options = {}) => {
       if (refreshPayload?.accessToken) {
         response = await requestSearchRecipes(trimmedKeyword, options);
       } else {
-        return getMockSearchResponse(trimmedKeyword);
+        return getMockSearchResponse();
       }
     }
 
@@ -149,7 +130,7 @@ export const searchRecipes = async (keyword, options = {}) => {
     return normalizeSearchResponse(result);
   } catch (error) {
     console.error("searchRecipes 오류:", error);
-    return getMockSearchResponse(trimmedKeyword);
+    return getMockSearchResponse();
   }
 };
 
