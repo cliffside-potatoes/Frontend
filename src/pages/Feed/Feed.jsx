@@ -14,6 +14,12 @@ import {
   removeFeedPostMeta,
   upsertFeedPostMeta,
 } from '../../utils/feedPostMetaStorage';
+import {
+  FEED_POST_UNLIKED_EVENT,
+  feedLikedStorageKey,
+  loadFeedLikedIdSet,
+  saveFeedLikedIdSet,
+} from '../../utils/feedLikedIdsStorage';
 import profileImg from '../../assets/image/profile.png';
 import './Feed.css';
 
@@ -32,31 +38,6 @@ const toTime = (value) => {
 const resolveApiItemLiked = (item) => {
   const v = item?.liked ?? item?.isLiked ?? item?.myLike ?? item?.likedByMe;
   return v === true || v === 1 || v === '1' || v === 'true';
-};
-
-const feedLikedStorageKey = (userId) =>
-  userId != null && String(userId).length > 0
-    ? `nengtul:feedLikedPostIds:${String(userId)}`
-    : null;
-
-const loadFeedLikedIdSet = (key) => {
-  if (!key) return new Set();
-  try {
-    const raw = localStorage.getItem(key);
-    const arr = JSON.parse(raw || '[]');
-    return new Set(
-      (Array.isArray(arr) ? arr : [])
-        .map((x) => Number(x))
-        .filter((n) => Number.isFinite(n)),
-    );
-  } catch {
-    return new Set();
-  }
-};
-
-const saveFeedLikedIdSet = (key, set) => {
-  if (!key) return;
-  localStorage.setItem(key, JSON.stringify([...set]));
 };
 
 const mapApiItemToPost = (item, likedIdSet) => {
@@ -119,6 +100,32 @@ const Feed = () => {
   useEffect(() => {
     likedPostIdsRef.current = loadFeedLikedIdSet(likedPostsStorageKey);
   }, [likedPostsStorageKey]);
+
+  useEffect(() => {
+    const onExternalUnlike = (e) => {
+      const raw = e.detail?.postId;
+      const id = Number(raw);
+      if (!Number.isFinite(id)) return;
+      if (likedPostsStorageKey) {
+        likedPostIdsRef.current.delete(id);
+        saveFeedLikedIdSet(likedPostsStorageKey, likedPostIdsRef.current);
+      }
+      const matchId = (p) => Number(p.id) === id || p.id === raw;
+      const applyUnlike = (list = []) =>
+        list.map((p) => {
+          if (!matchId(p) || !p.liked) return p;
+          return {
+            ...p,
+            liked: false,
+            likeCount: Math.max(0, (p.likeCount ?? 0) - 1),
+          };
+        });
+      setPosts((prev) => applyUnlike(prev || []));
+      setServerFeed((prev) => applyUnlike(prev || []));
+    };
+    window.addEventListener(FEED_POST_UNLIKED_EVENT, onExternalUnlike);
+    return () => window.removeEventListener(FEED_POST_UNLIKED_EVENT, onExternalUnlike);
+  }, [likedPostsStorageKey, setPosts]);
 
   const [guestPromptTick, setGuestPromptTick] = useState(0);
 

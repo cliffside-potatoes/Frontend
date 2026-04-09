@@ -10,6 +10,7 @@ import { useMyPosts } from '../../context/MyPostsContext';
 import { buildSignInState } from '../../utils/authStorage';
 import { toImageUrl } from '../../utils/imageUrl';
 import { loadFeedPostMeta, removeFeedPostMeta } from '../../utils/feedPostMetaStorage';
+import { removeFeedLikedIdFromStorageAndNotify } from '../../utils/feedLikedIdsStorage';
 import profileImg from '../../assets/image/profile.png';
 import './MyPage.css';
 
@@ -297,6 +298,7 @@ const MyPage = () => {
 
     if (user?.id) {
       removeFeedPostMeta(user.id, id);
+      removeFeedLikedIdFromStorageAndNotify(user.id, id);
     }
     setLikedPosts((prev) => prev.filter((p) => p.id !== postId));
   };
