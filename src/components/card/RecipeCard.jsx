@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toImageUrl } from '../../utils/imageUrl';
 import './RecipeCard.css';
@@ -21,6 +21,10 @@ const RecipeCard = ({ recipe, onToggleLike }) => {
 
   const [isLiked, setIsLiked] = useState(liked);
   const recipeImage = toImageUrl(thumbnailImage);
+
+  useEffect(() => {
+    setIsLiked(Boolean(liked));
+  }, [liked]);
 
   const isComplete = matchedIngredientCount === totalIngredientCount;
   const displayLikeCount =
@@ -48,7 +52,8 @@ const RecipeCard = ({ recipe, onToggleLike }) => {
         <button
           type="button"
           className={`like-button ${isLiked ? 'liked' : ''}`}
-          onClick={() => {
+          onClick={(e) => {
+            e.stopPropagation();
             setIsLiked((prev) => {
               const next = !prev;
               if (onToggleLike) {
