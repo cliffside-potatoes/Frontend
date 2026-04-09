@@ -24,41 +24,90 @@ const toTime = (value) => {
   return 0;
 };
 
-const mapApiItemToPost = (item) => ({
-  id: item.id,
-  type: item.type,
-  author: item.writer?.nickname ?? item.author ?? '사용자',
-  avatarUrl: item.writer?.profileImageUrl ? toImageUrl(item.writer.profileImageUrl) : '',
-  date: item.createdAt
-    ? new Date(item.createdAt).toLocaleDateString('ko-KR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    })
-    : '',
-  createdAt: item.createdAt ?? '',
-  updatedAt: item.updatedAt ?? item.createdAt ?? '',
-  content: item.content ?? '',
-  images: Array.isArray(item.images)
-    ? item.images.map((img) => toImageUrl(img))
-    : item.image
-      ? [toImageUrl(item.image)]
-      : [],
-  image: Array.isArray(item.images)
-    ? toImageUrl(item.images[0] ?? '')
-    : toImageUrl(item.image ?? ''),
-  likeCount: item.likeCount ?? 0,
-  liked: Boolean(item.liked),
-  hideLikeCount: Boolean(item.hidLikeCount ?? item.hideLikeCount),
-  pinned: Boolean(item.pinned),
-  isMine: Boolean(item.isMine),
-});
+const resolveApiItemLiked = (item) => {
+  const v = item?.liked ?? item?.isLiked ?? item?.myLike ?? item?.likedByMe;
+  return v === true || v === 1 || v === '1' || v === 'true';
+};
+
+const feedLikedStorageKey = (userId) =>
+  userId != null && String(userId).length > 0
+    ? `nengtul:feedLikedPostIds:${String(userId)}`
+    : null;
+
+const loadFeedLikedIdSet = (key) => {
+  if (!key) return new Set();
+  try {
+    const raw = localStorage.getItem(key);
+    const arr = JSON.parse(raw || '[]');
+    return new Set(
+      (Array.isArray(arr) ? arr : [])
+        .map((x) => Number(x))
+        .filter((n) => Number.isFinite(n)),
+    );
+  } catch {
+    return new Set();
+  }
+};
+
+const saveFeedLikedIdSet = (key, set) => {
+  if (!key) return;
+  localStorage.setItem(key, JSON.stringify([...set]));
+};
+
+const mapApiItemToPost = (item, likedIdSet) => {
+  const id = Number(item.id);
+  const apiLiked = resolveApiItemLiked(item);
+  if (Number.isFinite(id) && apiLiked && likedIdSet) {
+    likedIdSet.add(id);
+  }
+
+  const storedLiked =
+    Number.isFinite(id) && likedIdSet ? likedIdSet.has(id) : false;
+  const liked = apiLiked || storedLiked;
+
+  return {
+    id: item.id,
+    type: item.type,
+    author: item.writer?.nickname ?? item.author ?? '사용자',
+    avatarUrl: item.writer?.profileImageUrl ? toImageUrl(item.writer.profileImageUrl) : '',
+    date: item.createdAt
+      ? new Date(item.createdAt).toLocaleDateString('ko-KR', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        })
+      : '',
+    createdAt: item.createdAt ?? '',
+    updatedAt: item.updatedAt ?? item.createdAt ?? '',
+    content: item.content ?? '',
+    images: Array.isArray(item.images)
+      ? item.images.map((img) => toImageUrl(img))
+      : item.image
+        ? [toImageUrl(item.image)]
+        : [],
+    image: Array.isArray(item.images)
+      ? toImageUrl(item.images[0] ?? '')
+      : toImageUrl(item.image ?? ''),
+    likeCount: item.likeCount ?? 0,
+    liked,
+    hideLikeCount: Boolean(item.hidLikeCount ?? item.hideLikeCount),
+    pinned: Boolean(item.pinned),
+    isMine: Boolean(item.isMine),
+  };
+};
 
 const Feed = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, isLoggedIn } = useUser();
   const { posts: myPosts, setPosts } = useMyPosts();
+
+  const likedPostsStorageKey = feedLikedStorageKey(user?.id);
+  const likedPostIdsRef = useRef(new Set());
+
+  useEffect(() => {
+    likedPostIdsRef.current = loadFeedLikedIdSet(likedPostsStorageKey);
+  }, [likedPostsStorageKey]);
 
   const [guestPromptTick, setGuestPromptTick] = useState(0);
 
@@ -94,7 +143,12 @@ const Feed = () => {
       }
 
       const result = await getFeed(params);
-      const mapped = (result.items ?? []).map(mapApiItemToPost);
+      const rawItems = result.items ?? [];
+      const idSet = likedPostIdsRef.current;
+      const mapped = rawItems.map((item) => mapApiItemToPost(item, idSet));
+      if (likedPostsStorageKey) {
+        saveFeedLikedIdSet(likedPostsStorageKey, idSet);
+      }
 
       setServerFeed((prev) => (cursor ? [...prev, ...mapped] : mapped));
       setHasNext(Boolean(result.hasNext));
@@ -104,7 +158,7 @@ const Feed = () => {
     } finally {
       setFeedLoading(false);
     }
-  }, []);
+  }, [likedPostsStorageKey]);
 
   useEffect(() => {
     loadFeed();
@@ -223,6 +277,11 @@ const Feed = () => {
         try {
           if (nextLiked) await addPostLike(id);
           else await removePostLike(id);
+          if (likedPostsStorageKey) {
+            if (nextLiked) likedPostIdsRef.current.add(id);
+            else likedPostIdsRef.current.delete(id);
+            saveFeedLikedIdSet(likedPostsStorageKey, likedPostIdsRef.current);
+          }
         } catch (e) {
           console.error('좋아요 처리 실패:', e);
           return;

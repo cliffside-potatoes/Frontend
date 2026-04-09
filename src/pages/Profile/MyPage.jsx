@@ -87,11 +87,28 @@ const mapLikedPostItemToPost = (item) => {
 
   const urls = (item.postImageUrls ?? []).map((img) => toImageUrl(img));
 
+  const writer = item.writer;
+  const author =
+    writer?.nickname ??
+    item.authorNickname ??
+    item.nickname ??
+    item.nickName ??
+    item.authorName ??
+    item.writerNickname ??
+    '작성자';
+
+  const avatarRaw =
+    writer?.profileImageUrl ??
+    item.authorProfileImageUrl ??
+    item.profileImageUrl ??
+    item.authorImageUrl ??
+    '';
+
   return {
     id: item.postId,
     type: 'POST',
-    author: '작성자',
-    avatarUrl: '',
+    author,
+    avatarUrl: avatarRaw ? toImageUrl(avatarRaw) : '',
     date: dateStr,
     content: item.content ?? '',
     images: urls,
