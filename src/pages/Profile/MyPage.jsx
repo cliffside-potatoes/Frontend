@@ -9,6 +9,7 @@ import { useUser } from '../../context/UserContext';
 import { useMyPosts } from '../../context/MyPostsContext';
 import { buildSignInState } from '../../utils/authStorage';
 import { toImageUrl } from '../../utils/imageUrl';
+import { loadFeedPostMeta, removeFeedPostMeta } from '../../utils/feedPostMetaStorage';
 import profileImg from '../../assets/image/profile.png';
 import './MyPage.css';
 
@@ -95,7 +96,9 @@ const mapLikedPostItemToPost = (item) => {
     item.nickName ??
     item.authorName ??
     item.writerNickname ??
-    '작성자';
+    (item.authorProfileId != null && item.authorProfileId !== ''
+      ? `사용자 ${item.authorProfileId}`
+      : '작성자');
 
   const avatarRaw =
     writer?.profileImageUrl ??
@@ -208,7 +211,16 @@ const MyPage = () => {
       .then(({ items, hasNext: next, nextCursor: cursor }) => {
         if (cancelled) return;
 
-        setLikedPosts((items || []).map(mapLikedPostItemToPost));
+        const meta = loadFeedPostMeta(user?.id);
+        const mapped = (items || []).map((item) => {
+          const p = mapLikedPostItemToPost(item);
+          const m = meta[String(item.postId)];
+          if (m?.author) {
+            return { ...p, author: m.author, avatarUrl: m.avatarUrl || p.avatarUrl };
+          }
+          return p;
+        });
+        setLikedPosts(mapped);
         setHasNext(Boolean(next));
         setNextCursor(cursor ?? null);
       })
@@ -222,7 +234,7 @@ const MyPage = () => {
     return () => {
       cancelled = true;
     };
-  }, [activeTab, isInitializing, isLoggedIn, displayUser.nickname, setPosts]);
+  }, [activeTab, isInitializing, isLoggedIn, displayUser.nickname, setPosts, user?.id]);
 
   const openPostMenu = (e, postId) => {
     e.stopPropagation();
@@ -283,6 +295,9 @@ const MyPage = () => {
       return;
     }
 
+    if (user?.id) {
+      removeFeedPostMeta(user.id, id);
+    }
     setLikedPosts((prev) => prev.filter((p) => p.id !== postId));
   };
 

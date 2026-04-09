@@ -9,6 +9,11 @@ import { getFeed } from '../../api/feedApi';
 import { createPost, updatePost, deletePost, addPostLike, removePostLike } from '../../api/postApi';
 import { buildSignInState } from '../../utils/authStorage';
 import { toImageUrl } from '../../utils/imageUrl';
+import {
+  mergeWriterMetaFromFeedApiItems,
+  removeFeedPostMeta,
+  upsertFeedPostMeta,
+} from '../../utils/feedPostMetaStorage';
 import profileImg from '../../assets/image/profile.png';
 import './Feed.css';
 
@@ -144,6 +149,9 @@ const Feed = () => {
 
       const result = await getFeed(params);
       const rawItems = result.items ?? [];
+      if (user?.id && rawItems.length > 0) {
+        mergeWriterMetaFromFeedApiItems(user.id, rawItems);
+      }
       const idSet = likedPostIdsRef.current;
       const mapped = rawItems.map((item) => mapApiItemToPost(item, idSet));
       if (likedPostsStorageKey) {
@@ -158,7 +166,7 @@ const Feed = () => {
     } finally {
       setFeedLoading(false);
     }
-  }, [likedPostsStorageKey]);
+  }, [likedPostsStorageKey, user?.id]);
 
   useEffect(() => {
     loadFeed();
@@ -281,6 +289,16 @@ const Feed = () => {
             if (nextLiked) likedPostIdsRef.current.add(id);
             else likedPostIdsRef.current.delete(id);
             saveFeedLikedIdSet(likedPostsStorageKey, likedPostIdsRef.current);
+          }
+          if (user?.id) {
+            if (nextLiked) {
+              upsertFeedPostMeta(user.id, id, {
+                author: post.author,
+                avatarUrl: post.avatarUrl || "",
+              });
+            } else {
+              removeFeedPostMeta(user.id, id);
+            }
           }
         } catch (e) {
           console.error('좋아요 처리 실패:', e);
