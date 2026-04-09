@@ -68,10 +68,6 @@ const sortPosts = (posts) =>
     return bTime - aTime;
   });
 
-/** 비로그인 마이페이지 미리보기(디자인 시안과 동일한 틀용) */
-const GUEST_DEMO_IMAGE =
-  'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=800&h=600&fit=crop';
-
 const MyPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -247,59 +243,9 @@ const MyPage = () => {
   };
 
   const sortedPosts = useMemo(() => {
-    if (!isLoggedIn) {
-      if (activeTab === 'POST') {
-        return sortPosts([
-          {
-            id: 'guest-preview-post',
-            type: 'POST',
-            author: displayUser.nickname,
-            avatarUrl: profileImageSrc,
-            date: '2025년 12월 23일',
-            content: '오늘은 이걸 먹었다~ 너무 맛있었다!',
-            images: [GUEST_DEMO_IMAGE],
-            image: GUEST_DEMO_IMAGE,
-            likeCount: 5,
-            liked: false,
-            hideLikeCount: false,
-            pinned: false,
-            createdAt: '2025-12-23T12:00:00.000Z',
-            updatedAt: '2025-12-23T12:00:00.000Z',
-            cookCount: 0,
-            isMine: true,
-          },
-        ]);
-      }
-      return sortPosts([
-        {
-          id: 'guest-preview-liked',
-          type: 'POST',
-          author: '다빈',
-          avatarUrl: '',
-          date: '2026년 1월 19일',
-          content: '대파는 이렇게 보관하면 오래 갑니다.',
-          images: [GUEST_DEMO_IMAGE],
-          image: GUEST_DEMO_IMAGE,
-          likeCount: 12,
-          liked: true,
-          hideLikeCount: false,
-          pinned: false,
-          createdAt: '2026-01-19T12:30:00.000Z',
-          updatedAt: '2026-01-19T12:30:00.000Z',
-          cookCount: 0,
-          isMine: false,
-        },
-      ]);
-    }
+    if (!isLoggedIn) return [];
     return activeTab === 'POST' ? sortPosts(myPosts) : sortPosts(likedPosts);
-  }, [
-    isLoggedIn,
-    activeTab,
-    myPosts,
-    likedPosts,
-    displayUser.nickname,
-    profileImageSrc,
-  ]);
+  }, [isLoggedIn, activeTab, myPosts, likedPosts]);
 
   const openWriteModal = (post = null) => {
     if (post) {
@@ -516,6 +462,14 @@ const MyPage = () => {
               <p className="mypage-posts-empty">
                 {activeTab === 'POST' ? '작성한 게시글이 없어요.' : '좋아요한 피드가 없어요.'}
               </p>
+            )}
+
+            {!isLoggedIn && activeTab === 'POST' && (
+              <p className="mypage-posts-empty">로그인 후 내 게시글을 확인할 수 있어요.</p>
+            )}
+
+            {!isLoggedIn && activeTab === 'LIKED' && (
+              <p className="mypage-posts-empty">로그인 후 좋아요한 게시글을 확인할 수 있어요.</p>
             )}
 
             {sortedPosts.map((post) => (
