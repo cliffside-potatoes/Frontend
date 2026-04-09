@@ -30,8 +30,10 @@ const requestWithdrawMePermanent = async () => {
     return fetch(`${base}/users/me/permanent`, {
         method: 'DELETE',
         headers: {
+            Accept: 'application/json',
             ...getAuthHeader(),
         },
+        credentials: 'include',
     });
 };
 
@@ -57,8 +59,21 @@ export const withdrawMePermanent = async () => {
     }
 
     if (!res.ok) {
-        const error = new Error(`회원탈퇴 실패 (${res.status})`);
+        let serverMessage = '';
+        try {
+            const contentType = res.headers.get('content-type') || '';
+            if (contentType.includes('application/json')) {
+                const data = await res.json();
+                serverMessage = data?.resultMessage || data?.message || '';
+            }
+        } catch {
+            serverMessage = '';
+        }
+
+        const message = serverMessage || `회원탈퇴 실패 (${res.status})`;
+        const error = new Error(message);
         error.status = res.status;
+        error.serverMessage = serverMessage;
         throw error;
     }
 
