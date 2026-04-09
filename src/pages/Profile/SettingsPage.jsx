@@ -44,6 +44,10 @@ const SettingsPage = () => {
     navigate('/profile');
   };
 
+  const handleLogout = () => {
+    logout({ redirectTo: '/profile' });
+  };
+
   const handleWithdraw = async () => {
     setWithdrawing(true);
 
@@ -119,7 +123,11 @@ const SettingsPage = () => {
           ))}
 
           <li className="settings-list-item">
-            <button type="button" className="settings-item-button settings-item-logout" onClick={logout}>
+            <button
+              type="button"
+              className="settings-item-button settings-item-logout"
+              onClick={handleLogout}
+            >
               <span className="settings-item-label">로그아웃</span>
             </button>
           </li>

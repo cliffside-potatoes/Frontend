@@ -179,12 +179,18 @@ export function UserProvider({ children }) {
     };
   }, [navigate]);
 
-  const logout = () => {
+  const logout = (options = {}) => {
+    const redirectTo =
+      typeof options.redirectTo === 'string' && options.redirectTo.trim()
+        ? options.redirectTo
+        : '/main';
+
     markLoggedOut();
     clearStoredAuth();
     setUserState(null);
+    setIsInitializing(false);
 
-    navigate('/main', { replace: true });
+    navigate(redirectTo, { replace: true });
     void logoutFromServer();
   };
 
