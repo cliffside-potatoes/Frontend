@@ -6,7 +6,6 @@ import {
   getRecipeReviews,
   removeWishlist,
 } from '../../api/recipeApi';
-import GuestLoginPrompt from '../../components/common/GuestLoginPrompt';
 import { useUser } from '../../context/UserContext';
 import { buildSignInState } from '../../utils/authStorage';
 import { toImageUrl } from '../../utils/imageUrl';
@@ -36,11 +35,6 @@ const RecipeDetailPage = () => {
   useEffect(() => {
     if (isInitializing) return;
 
-    if (!isLoggedIn) {
-      setLoading(false);
-      return;
-    }
-
     let cancelled = false;
 
     const fetchRecipe = async () => {
@@ -48,19 +42,28 @@ const RecipeDetailPage = () => {
       setError('');
 
       try {
-        const [recipeData, reviewData] = await Promise.all([
-          getRecipeDetail(recipeId),
-          getRecipeReviews(recipeId, { size: 2, sort: 'LATEST' }),
-        ]);
+        const recipeData = await getRecipeDetail(recipeId);
 
         if (cancelled) return;
+
+        if (!recipeData) {
+          setRecipe(null);
+          setError('레시피 정보를 불러오지 못했습니다.');
+          return;
+        }
 
         setRecipe(recipeData);
         setActiveTab(RECIPE_TABS.PUBLIC);
         setIsLiked(Boolean(recipeData?.liked));
         setLikeCount(recipeData?.likeCount ?? 0);
         setIngredients(Array.isArray(recipeData?.ingredients) ? recipeData.ingredients : []);
-        setReviewPreview(Array.isArray(reviewData?.items) ? reviewData.items : []);
+
+        if (isLoggedIn) {
+          const reviewData = await getRecipeReviews(recipeId, { size: 2, sort: 'LATEST' });
+          if (!cancelled) {
+            setReviewPreview(Array.isArray(reviewData?.items) ? reviewData.items : []);
+          }
+        }
       } catch (fetchError) {
         console.error('Failed to load recipe detail:', fetchError);
         if (cancelled) return;
@@ -176,14 +179,6 @@ const RecipeDetailPage = () => {
 
     window.open(recipeUrl, '_blank', 'noopener,noreferrer');
   };
-
-  if (!isLoggedIn && !isInitializing) {
-    return (
-      <div className="recipe-detail-page">
-        <GuestLoginPrompt afterLoginPath={`/recipe/${recipeId}`} />
-      </div>
-    );
-  }
 
   if (loading) {
     return (

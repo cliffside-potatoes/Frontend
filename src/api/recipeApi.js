@@ -539,6 +539,31 @@ const getMockRecipeDetail = (recipeId) => {
 };
 
 /**
+ * 레시피 상세 조회 (인증 불필요 — 401 시 리다이렉트 없이 null 반환)
+ * GET /recipes/details/{recipeId}
+ */
+const fetchRecipeDetailSafe = async (recipeId) => {
+  const base = (typeof API_BASE_URL === "string" && API_BASE_URL.trim()) || "";
+  if (!base) return null;
+
+  const url = `${base}/recipes/details/${recipeId}`;
+  const res = await fetch(url, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeader(),
+    },
+  });
+
+  if (!res.ok) return null;
+
+  const contentType = res.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) return null;
+
+  return res.json();
+};
+
+/**
  * 레시피 상세 조회
  * GET /recipes/details/{recipeId}
  */
@@ -551,28 +576,16 @@ export const getRecipeDetail = async (recipeId) => {
       return normalizeRecipeDetail(getMockRecipeDetail(recipeId), recipeId);
     }
 
-    const url = `${base}/recipes/details/${recipeId}`;
-    const res = await fetchWithAuthRetry(url, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+    const data = await fetchRecipeDetailSafe(recipeId);
 
-    if (!res || !res.ok) {
-      return normalizeRecipeDetail(getMockRecipeDetail(recipeId), recipeId);
+    if (!data) {
+      return null;
     }
 
-    const contentType = res.headers.get("content-type") || "";
-    if (!contentType.includes("application/json")) {
-      return normalizeRecipeDetail(getMockRecipeDetail(recipeId), recipeId);
-    }
-
-    const data = await res.json();
     return normalizeRecipeDetail(data, recipeId);
   } catch (error) {
     console.error("레시피 상세 조회 실패:", error);
-    return normalizeRecipeDetail(getMockRecipeDetail(recipeId), recipeId);
+    return null;
   }
 };
 
