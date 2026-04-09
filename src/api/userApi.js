@@ -24,17 +24,6 @@ const handle401 = () => {
     window.location.href = '/signin';
 };
 
-const requestWithdrawMe = async () => {
-    const base = API_BASE_URL.replace(/\/$/, '');
-
-    return fetch(`${base}/users/me`, {
-        method: 'DELETE',
-        headers: {
-            ...getAuthHeader(),
-        },
-    });
-};
-
 const requestWithdrawMePermanent = async () => {
     const base = API_BASE_URL.replace(/\/$/, '');
 
@@ -46,15 +35,16 @@ const requestWithdrawMePermanent = async () => {
     });
 };
 
-export const withdrawMe = async () => {
-    let res = await requestWithdrawMe();
+/** DELETE /users/me/permanent — 계정·연관 데이터 삭제 */
+export const withdrawMePermanent = async () => {
+    let res = await requestWithdrawMePermanent();
 
     if (res.status === 401) {
         try {
             const refreshPayload = await refreshAccessToken();
 
             if (refreshPayload?.accessToken) {
-                res = await requestWithdrawMe();
+                res = await requestWithdrawMePermanent();
             } else {
                 handle401();
                 return;
@@ -75,36 +65,6 @@ export const withdrawMe = async () => {
     return true;
 };
 
-export const withdrawMePermanent = async () => {
-    let res = await requestWithdrawMePermanent();
-
-    if (res.status === 401) {
-        try {
-            const refreshPayload = await refreshAccessToken();
-
-            if (refreshPayload?.accessToken) {
-                res = await requestWithdrawMePermanent();
-            } else {
-                handle401();
-                return;
-            }
-        } catch (error) {
-            console.error('회원 완전탈퇴 토큰 재발급 실패:', error);
-            handle401();
-            return;
-        }
-    }
-
-    if (!res.ok) {
-        const error = new Error(`회원 완전탈퇴 실패 (${res.status})`);
-        error.status = res.status;
-        throw error;
-    }
-
-    return true;
-};
-
 export default {
-    withdrawMe,
     withdrawMePermanent,
 };

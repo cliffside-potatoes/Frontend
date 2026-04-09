@@ -130,6 +130,53 @@ const MOCK_RECIPE_DETAIL = {
   matchedIngredientCount: 4,
 };
 
+/** 목록·상세 폴백용 (API 실패·로컬 개발) — normalizeRecipeItem 입력 형태 */
+const MOCK_RECIPE_LIST = [
+  {
+    recipeId: MOCK_RECIPE_DETAIL.recipeId,
+    title: MOCK_RECIPE_DETAIL.title,
+    thumbnailImage: MOCK_RECIPE_DETAIL.thumbnailImage,
+    source: MOCK_RECIPE_DETAIL.source,
+    cookingTime: MOCK_RECIPE_DETAIL.cookingTime,
+    difficulty: MOCK_RECIPE_DETAIL.difficulty,
+    likeCount: MOCK_RECIPE_DETAIL.likeCount,
+    reviewCount: MOCK_RECIPE_DETAIL.reviewCount,
+    totalIngredientCount: MOCK_RECIPE_DETAIL.totalIngredientCount,
+    matchedIngredientCount: MOCK_RECIPE_DETAIL.matchedIngredientCount,
+    liked: MOCK_RECIPE_DETAIL.liked,
+  },
+  {
+    recipeId: 2,
+    title: "된장찌개",
+    thumbnailImage:
+      "https://images.unsplash.com/photo-1547592166-23ac45744acd?w=800&h=600&fit=crop",
+    source: "만개의 레시피",
+    cookingTime: 25,
+    difficulty: "초보",
+    likeCount: 15,
+    reviewCount: 3,
+    totalIngredientCount: 5,
+    matchedIngredientCount: 2,
+    liked: false,
+  },
+  {
+    recipeId: 3,
+    title: "계란볶음밥",
+    thumbnailImage:
+      "https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=800&h=600&fit=crop",
+    source: "유튜브",
+    cookingTime: 15,
+    difficulty: "초보",
+    likeCount: 20,
+    reviewCount: 10,
+    totalIngredientCount: 4,
+    matchedIngredientCount: 4,
+    liked: false,
+  },
+];
+
+const MOCK_REVIEWS = [];
+
 const getMockReviews = (params) => {
   const { size = 20, sort = "LATEST" } = params;
   const items = [...MOCK_REVIEWS];
@@ -193,6 +240,8 @@ const hasRemoteRecipeApi = (base) => Boolean(base) && !isSameOriginBase(base);
 /**
  * GET /recipes — axios(apiClient)는 401 시 로그인 리다이렉트가 나와 비로그인 메인 노출에 부적합.
  * 게스트도 서버가 허용하면 목록을 받을 수 있도록 fetch로 호출한다.
+ * 인증 헤더는 붙이지 않는다. 일부 환경에서 Bearer 포함 시에만 500이 나고 비로그인과 동작이 달라지는 경우가 있어
+ * 공개 목록은 게스트와 동일한 요청으로 맞춘다.
  */
 const fetchRecipeListFromRemote = async (queryParams) => {
   const base = API_BASE_URL.replace(/\/$/, "");
@@ -205,8 +254,6 @@ const fetchRecipeListFromRemote = async (queryParams) => {
     Accept: "application/json",
     "Content-Type": "application/json",
   };
-  const token = getStoredAccessToken();
-  if (token) headers.Authorization = `Bearer ${token}`;
 
   const res = await fetch(url, {
     method: "GET",
