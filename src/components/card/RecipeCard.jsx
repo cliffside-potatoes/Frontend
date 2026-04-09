@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toImageUrl } from '../../utils/imageUrl';
 import './RecipeCard.css';
 
 const RecipeCard = ({ recipe, onToggleLike }) => {
@@ -19,6 +20,7 @@ const RecipeCard = ({ recipe, onToggleLike }) => {
   } = recipe;
 
   const [isLiked, setIsLiked] = useState(liked);
+  const recipeImage = toImageUrl(thumbnailImage);
 
   const isComplete = matchedIngredientCount === totalIngredientCount;
   const displayLikeCount =
@@ -31,14 +33,15 @@ const RecipeCard = ({ recipe, onToggleLike }) => {
     if (e.target.closest('.like-button')) {
       return;
     }
+    if (!recipeId) return;
     navigate(`/recipe/${recipeId}`);
   };
 
   return (
     <div className="recipe-card" onClick={handleCardClick}>
       <div className="recipe-image-container">
-        {thumbnailImage ? (
-          <img src={thumbnailImage} alt={title} className="recipe-image" />
+        {recipeImage ? (
+          <img src={recipeImage} alt={title} className="recipe-image" />
         ) : (
           <div className="recipe-image-placeholder"></div>
         )}
