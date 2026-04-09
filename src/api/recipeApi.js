@@ -486,7 +486,7 @@ const normalizeReviewItem = (item) => {
 };
 
 /** 원격 레시피 API 사용 가능 (목이 아닌 실제 서버로 요청) */
-const hasRemoteRecipeApi = (base) => Boolean(base) && !isSameOriginBase(base);
+const hasRemoteRecipeApi = (base) => Boolean(base);
 
 /**
  * GET /recipes — axios(apiClient)는 401 시 로그인 리다이렉트가 나와 비로그인 메인 노출에 부적합.

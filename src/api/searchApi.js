@@ -12,13 +12,7 @@ const DEFAULT_RECOMMENDED_SEARCHES = [
   "양식",
 ];
 
-const isSameOriginBase = (base) =>
-  typeof window !== "undefined" &&
-  base &&
-  (base.startsWith(window.location.origin) || base === window.location.origin);
-
-const shouldUsePublicSearchMock = (base) =>
-  !base || isSameOriginBase(base) || !getStoredAccessToken();
+const shouldUsePublicSearchMock = (base) => !base;
 
 const getAuthHeader = () => {
   const token = getStoredAccessToken();
