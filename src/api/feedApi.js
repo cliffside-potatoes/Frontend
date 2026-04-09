@@ -70,7 +70,6 @@ export const getFeed = async (params = {}) => {
     const res = await fetch(`${base}/feed?${searchParams.toString()}`, {
       method: "GET",
       headers,
-      credentials: "include",
     });
 
     if (!res.ok) {

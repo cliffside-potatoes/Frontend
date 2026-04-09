@@ -92,7 +92,7 @@ const mapApiItemToPost = (item, likedIdSet) => {
 const Feed = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, isLoggedIn } = useUser();
+  const { user, isLoggedIn, isInitializing } = useUser();
   const { posts: myPosts, setPosts } = useMyPosts();
 
   const likedPostsStorageKey = feedLikedStorageKey(user?.id);
@@ -209,8 +209,13 @@ const Feed = () => {
   }, [likedPostsStorageKey, user?.id]);
 
   useEffect(() => {
+    if (isInitializing) return;
+    if (!isLoggedIn) {
+      setFeedLoading(false);
+      return;
+    }
     loadFeed();
-  }, [loadFeed]);
+  }, [loadFeed, isLoggedIn, isInitializing]);
 
   const currentPath = `${location.pathname}${location.search}${location.hash}`;
 

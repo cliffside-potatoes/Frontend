@@ -30,22 +30,6 @@ const SearchPage = () => {
   const [hasNext, setHasNext] = useState(false);
   const [nextCursor, setNextCursor] = useState(null);
 
-  const focusSearchInput = useCallback((value) => {
-    if (typeof window === 'undefined') return;
-
-    window.requestAnimationFrame(() => {
-      const input = searchInputRef.current;
-      if (!input) return;
-
-      input.focus();
-
-      if (typeof value === 'string' && typeof input.setSelectionRange === 'function') {
-        const cursorPosition = value.length;
-        input.setSelectionRange(cursorPosition, cursorPosition);
-      }
-    });
-  }, []);
-
   const loadMore = useCallback(async () => {
     if (!hasNext || loadingMore || !nextCursor || !searchText) return;
 
@@ -148,10 +132,11 @@ const SearchPage = () => {
       setNextCursor(data?.nextCursor ?? null);
 
       const saved = await saveRecentSearch(keyword);
-      const nextRecentSearches = Array.isArray(saved?.data)
-        ? saved.data
-        : [keyword, ...recentSearches.filter((item) => item !== keyword)].slice(0, 10);
-      setRecentSearches(nextRecentSearches);
+      setRecentSearches((prev) =>
+        Array.isArray(saved?.data)
+          ? saved.data
+          : [keyword, ...prev.filter((item) => item !== keyword)].slice(0, 10)
+      );
     } catch (err) {
       console.error('검색에 실패했습니다:', err);
       setError('검색 중 오류가 발생했습니다. 다시 시도해주세요.');
@@ -162,8 +147,7 @@ const SearchPage = () => {
   };
 
   const handleSelectKeyword = (keyword) => {
-    setInputValue(keyword);
-    focusSearchInput(keyword);
+    void handleSearch(keyword);
   };
 
   const handleRemoveRecentSearch = async (itemToRemove) => {

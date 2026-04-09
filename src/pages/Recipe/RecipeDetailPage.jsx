@@ -1,43 +1,87 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { getRecipeDetail, addWishlist, removeWishlist } from '../../api/recipeApi';
+import {
+  addWishlist,
+  getRecipeDetail,
+  getRecipeReviews,
+  removeWishlist,
+} from '../../api/recipeApi';
+import GuestLoginPrompt from '../../components/common/GuestLoginPrompt';
 import { useUser } from '../../context/UserContext';
 import { buildSignInState } from '../../utils/authStorage';
+import { toImageUrl } from '../../utils/imageUrl';
 import './RecipeDetailPage.css';
+
+const RECIPE_TABS = {
+  PUBLIC: 'PUBLIC',
+  RECIPE: 'RECIPE',
+};
 
 const RecipeDetailPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { recipeId } = useParams();
-  const { isLoggedIn } = useUser();
+  const { isLoggedIn, isInitializing } = useUser();
 
   const [recipe, setRecipe] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [activeTab, setActiveTab] = useState(RECIPE_TABS.PUBLIC);
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [ingredients, setIngredients] = useState([]);
+  const [reviewPreview, setReviewPreview] = useState([]);
+  const [isWishlistSubmitting, setIsWishlistSubmitting] = useState(false);
 
-  // 레시피 데이터 로드
   useEffect(() => {
+    if (isInitializing) return;
+
+    if (!isLoggedIn) {
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
     const fetchRecipe = async () => {
       setLoading(true);
+      setError('');
+
       try {
-        const data = await getRecipeDetail(recipeId);
-        setRecipe(data);
-        setIsLiked(data.liked || false);
-        setLikeCount(data.likeCount || 0);
-        setIngredients(data.ingredients || []);
-      } catch (error) {
-        console.error('레시피 데이터 로드 실패:', error);
+        const [recipeData, reviewData] = await Promise.all([
+          getRecipeDetail(recipeId),
+          getRecipeReviews(recipeId, { size: 2, sort: 'LATEST' }),
+        ]);
+
+        if (cancelled) return;
+
+        setRecipe(recipeData);
+        setActiveTab(RECIPE_TABS.PUBLIC);
+        setIsLiked(Boolean(recipeData?.liked));
+        setLikeCount(recipeData?.likeCount ?? 0);
+        setIngredients(Array.isArray(recipeData?.ingredients) ? recipeData.ingredients : []);
+        setReviewPreview(Array.isArray(reviewData?.items) ? reviewData.items : []);
+      } catch (fetchError) {
+        console.error('Failed to load recipe detail:', fetchError);
+        if (cancelled) return;
+        setRecipe(null);
+        setReviewPreview([]);
+        setError('레시피 정보를 불러오지 못했습니다.');
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
 
     if (recipeId) {
-      fetchRecipe();
+      void fetchRecipe();
     }
-  }, [recipeId]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [recipeId, isLoggedIn, isInitializing]);
 
   const handleLikeToggle = async () => {
     const currentPath = `${location.pathname}${location.search}${location.hash}`;
@@ -49,27 +93,59 @@ const RecipeDetailPage = () => {
       return;
     }
 
+    if (isWishlistSubmitting) return;
+
     const nextLiked = !isLiked;
+    const previousLikeCount = likeCount;
+    const nextLikeCount = Math.max(0, previousLikeCount + (nextLiked ? 1 : -1));
+
     setIsLiked(nextLiked);
-    setLikeCount(nextLiked ? likeCount + 1 : likeCount - 1);
+    setLikeCount(nextLikeCount);
+    setRecipe((prev) =>
+      prev
+        ? {
+            ...prev,
+            liked: nextLiked,
+            likeCount: nextLikeCount,
+          }
+        : prev
+    );
+    setIsWishlistSubmitting(true);
 
     try {
-      if (nextLiked) {
-        await addWishlist(recipeId);
-      } else {
-        await removeWishlist(recipeId);
+      const result = nextLiked
+        ? await addWishlist(recipeId)
+        : await removeWishlist(recipeId);
+
+      if (!result?.success) {
+        throw new Error('Wishlist request failed');
       }
-    } catch (error) {
-      console.error('찜 토글 실패:', error);
+    } catch (wishlistError) {
+      console.error('Failed to update wishlist:', wishlistError);
       setIsLiked(!nextLiked);
-      setLikeCount(nextLiked ? likeCount - 1 : likeCount + 1);
+      setLikeCount(previousLikeCount);
+      setRecipe((prev) =>
+        prev
+          ? {
+              ...prev,
+              liked: !nextLiked,
+              likeCount: previousLikeCount,
+            }
+          : prev
+      );
+    } finally {
+      setIsWishlistSubmitting(false);
     }
   };
 
   const handleIngredientToggle = (index) => {
-    const newIngredients = [...ingredients];
-    newIngredients[index].checked = !newIngredients[index].checked;
-    setIngredients(newIngredients);
+    setIngredients((prev) =>
+      prev.map((ingredient, ingredientIndex) =>
+        ingredientIndex === index
+          ? { ...ingredient, checked: !ingredient.checked }
+          : ingredient
+      )
+    );
   };
 
   const handleReviewClick = () => {
@@ -91,17 +167,28 @@ const RecipeDetailPage = () => {
   };
 
   const handleLinkClick = () => {
-    if (recipe?.recipewithLink?.url) {
-      window.open(recipe.recipewithLink.url, '_blank');
-    } else {
-      alert('레시피 링크가 없습니다.');
+    const recipeUrl = recipe?.sourceUrl ?? recipe?.recipewithLink?.url;
+
+    if (!recipeUrl) {
+      alert('원본 레시피 링크가 없습니다.');
+      return;
     }
+
+    window.open(recipeUrl, '_blank', 'noopener,noreferrer');
   };
+
+  if (!isLoggedIn && !isInitializing) {
+    return (
+      <div className="recipe-detail-page">
+        <GuestLoginPrompt afterLoginPath={`/recipe/${recipeId}`} />
+      </div>
+    );
+  }
 
   if (loading) {
     return (
       <div className="recipe-detail-page">
-        <div style={{ padding: '20px', textAlign: 'center' }}>로딩 중...</div>
+        <div className="recipe-detail-state">로딩 중...</div>
       </div>
     );
   }
@@ -109,34 +196,55 @@ const RecipeDetailPage = () => {
   if (!recipe) {
     return (
       <div className="recipe-detail-page">
-        <div style={{ padding: '20px', textAlign: 'center' }}>레시피를 찾을 수 없습니다.</div>
+        <div className="recipe-detail-state">{error || '레시피를 찾을 수 없습니다.'}</div>
       </div>
     );
   }
 
+  const recipeImage = toImageUrl(recipe.thumbnailImage);
+  const recipeSteps = Array.isArray(recipe.recipeSteps) ? recipe.recipeSteps : [];
+  const hasRecipeSteps = recipeSteps.length > 0;
+
   return (
     <div className="recipe-detail-page">
-      {/* 헤더 */}
-      <header className="recipe-detail-header">
-        <button className="back-button" onClick={() => navigate(-1)}>
-          &lt;
-        </button>
-      </header>
-
-      {/* 레시피 이미지 */}
       <div className="recipe-image-section">
-        <img src={recipe.thumbnailImage} alt={recipe.title} className="recipe-main-image" />
+        {recipeImage ? (
+          <img src={recipeImage} alt={recipe.title} className="recipe-main-image" />
+        ) : (
+          <div className="recipe-main-image recipe-main-image--empty" aria-hidden="true" />
+        )}
+
+        <button
+          type="button"
+          className="recipe-image-back-button"
+          aria-label="뒤로가기"
+          onClick={() => navigate(-1)}
+        >
+          <span className="material-symbols-outlined">arrow_back_ios_new</span>
+        </button>
       </div>
 
-      {/* 레시피 정보 */}
       <div className="recipe-content">
         <div className="recipe-header-info">
-          <h1 className="recipe-detail-title">{recipe.title}</h1>
+          <div className="recipe-header-copy">
+            <h1 className="recipe-detail-title">{recipe.title}</h1>
+            {recipe.tags?.length > 0 && (
+              <div className="recipe-tag-list">
+                {recipe.tags.map((tag) => (
+                  <span key={tag} className="recipe-tag">
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div className="recipe-actions">
             <button
               type="button"
               className={`like-icon ${isLiked ? 'liked' : ''}`}
               onClick={handleLikeToggle}
+              disabled={isWishlistSubmitting}
             >
               <span className="material-symbols-outlined like-icon-symbol" aria-hidden="true">
                 {isLiked ? 'favorite' : 'favorite_border'}
@@ -148,68 +256,140 @@ const RecipeDetailPage = () => {
         </div>
 
         <div className="recipe-tabs">
-          <button className="tab-button active">공개자</button>
-          <button className="tab-button">레시피</button>
-        </div>
-
-        {/* 내 냉장고 재료상황 */}
-        <div className="refrigerator-status">
-          <p className="status-title">
-            내 냉장고 재료상황 ({recipe.matchedIngredientCount || 0} / {recipe.totalIngredientCount || 0})
-          </p>
-          <p className="status-description">{recipe.description}</p>
-          <div className="difficulty-icons">
-            <div className="difficulty-item">
-              <span className="icon">👨</span>
-              <span className="label">{recipe.servings || 1}인분</span>
-            </div>
-            <div className="difficulty-item">
-              <span className="icon">⏱️</span>
-              <span className="label">{recipe.cookingTime || 30}분</span>
-            </div>
-            <div className="difficulty-item">
-              <span className="icon">🔥</span>
-              <span className="label">난이도 {recipe.difficulty}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* 레시피 링크 */}
-        <div className="recipe-link-section">
-          <h3 className="section-title">🔗 레시피 링크</h3>
-          <p className="recipe-source">{recipe.source}</p>
-          <button className="link-button" onClick={handleLinkClick}>
-            🔍 레시피 보러가기 &gt;
+          <button
+            type="button"
+            className={`tab-button ${activeTab === RECIPE_TABS.PUBLIC ? 'active' : ''}`}
+            onClick={() => setActiveTab(RECIPE_TABS.PUBLIC)}
+          >
+            공개
+          </button>
+          <button
+            type="button"
+            className={`tab-button ${activeTab === RECIPE_TABS.RECIPE ? 'active' : ''}`}
+            onClick={() => setActiveTab(RECIPE_TABS.RECIPE)}
+          >
+            레시피
           </button>
         </div>
 
-        {/* 필수 요리 재료 */}
-        <div className="ingredients-section">
-          <h3 className="section-title">🥕 필수 요리 재료</h3>
-          <div className="ingredients-list">
-            {ingredients.map((ingredient, index) => (
-              <label key={index} className="ingredient-item">
-                <input
-                  type="checkbox"
-                  checked={ingredient.checked}
-                  onChange={() => handleIngredientToggle(index)}
-                />
-                <span>{ingredient.name}</span>
-              </label>
-            ))}
-          </div>
-        </div>
+        {activeTab === RECIPE_TABS.PUBLIC ? (
+          <>
+            <div className="refrigerator-status">
+              <p className="status-title">
+                내 냉장고 재료상황 ({recipe.matchedIngredientCount || 0} /{' '}
+                {recipe.totalIngredientCount || 0})
+              </p>
+              <p className="status-description">{recipe.description}</p>
 
-        {/* 후기 섹션 */}
-        <div className="review-section" onClick={handleReviewClick}>
+              <div className="difficulty-icons">
+                <div className="difficulty-item">
+                  <span className="icon">🍽</span>
+                  <span className="label">{recipe.servings || 1}인분</span>
+                </div>
+                <div className="difficulty-item">
+                  <span className="icon">⏱</span>
+                  <span className="label">{recipe.cookingTime || 0}분</span>
+                </div>
+                <div className="difficulty-item">
+                  <span className="icon">📈</span>
+                  <span className="label">난이도 {recipe.difficulty}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="recipe-link-section">
+              <h3 className="section-title">원본 레시피 링크</h3>
+              <p className="recipe-source">{recipe.source || '출처 정보 없음'}</p>
+              <button className="link-button" onClick={handleLinkClick}>
+                원본 레시피 보러가기
+                <span>&gt;</span>
+              </button>
+            </div>
+
+            <div className="ingredients-section">
+              <h3 className="section-title">준비할 재료</h3>
+              <div className="ingredients-list">
+                {ingredients.map((ingredient, index) => (
+                  <label
+                    key={ingredient.id ?? `${ingredient.name}-${index}`}
+                    className="ingredient-item"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={ingredient.checked}
+                      onChange={() => handleIngredientToggle(index)}
+                    />
+                    <span>
+                      {ingredient.name}
+                      {ingredient.amount ? ` ${ingredient.amount}` : ''}
+                    </span>
+                  </label>
+                ))}
+
+                {ingredients.length === 0 && (
+                  <p className="ingredients-empty">등록된 재료 정보가 없습니다.</p>
+                )}
+              </div>
+            </div>
+          </>
+        ) : (
+          <section className="recipe-steps-section">
+            <h3 className="section-title">레시피 설명</h3>
+
+            {hasRecipeSteps ? (
+              <ol className="recipe-step-list">
+                {recipeSteps.map((stepItem) => (
+                  <li key={`${stepItem.step}-${stepItem.text}`} className="recipe-step-item">
+                    <span className="recipe-step-badge">STEP {stepItem.step}</span>
+                    <p className="recipe-step-text">{stepItem.text}</p>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <div className="recipe-step-empty">
+                <p>
+                  이 레시피는 조리 순서가 직접 등록되어 있지 않습니다.
+                </p>
+                <button type="button" className="link-button" onClick={handleLinkClick}>
+                  원본 레시피에서 확인하기
+                  <span>&gt;</span>
+                </button>
+              </div>
+            )}
+          </section>
+        )}
+
+        <div className="review-section">
           <div className="review-header">
-            <h3 className="section-title">🍀 후기 ({recipe.reviewCount})</h3>
-            <span className="view-more">&gt;</span>
+            <h3 className="section-title">후기 ({recipe.reviewCount})</h3>
+            <button type="button" className="review-more-button" onClick={handleReviewClick}>
+              전체보기 &gt;
+            </button>
+          </div>
+
+          <div className="review-preview-list">
+            {reviewPreview.length > 0 ? (
+              reviewPreview.map((review) => (
+                <button
+                  key={review.reviewId}
+                  type="button"
+                  className="review-preview-item"
+                  onClick={handleReviewClick}
+                >
+                  <div className="review-preview-top">
+                    <strong>{review.nickName}</strong>
+                    <span>{review.updatedAt}</span>
+                  </div>
+                  <p>{review.content}</p>
+                </button>
+              ))
+            ) : (
+              <p className="review-preview-empty">아직 등록된 후기가 없습니다.</p>
+            )}
           </div>
         </div>
       </div>
 
-      {/* 후기 작성하기 버튼 */}
       <div className="write-review-section">
         <button className="write-review-button" onClick={handleWriteReviewClick}>
           <span className="heart-icon">❤️</span>
