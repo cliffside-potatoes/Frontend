@@ -381,8 +381,8 @@ const SignUpPage = () => {
 
             {isNewInfoMode && (
               <p className="help" style={{ marginBottom: "16px" }}>
-                서비스 닉네임은 영문·숫자 형식으로 직접 정해줘. 카카오 프로필 이름은
-                그대로 쓰이지 않아.
+                서비스 닉네임은 영문·숫자 형식으로 직접 정해줘. 카카오 프로필
+                이름은 그대로 쓰이지 않아.
               </p>
             )}
 
@@ -479,18 +479,6 @@ const SignUpPage = () => {
                 onChange={handleBioChange}
                 maxLength={150}
               />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">사용자 아이디</label>
-              <input
-                className="input disabled"
-                value={userEmail}
-                placeholder="@ 카카오 계정 이메일"
-                disabled
-                readOnly
-              />
-              <p className="help">본인만 볼 수 있는 정보입니다.</p>
             </div>
 
             <button
