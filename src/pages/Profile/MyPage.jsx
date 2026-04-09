@@ -368,7 +368,27 @@ const MyPage = () => {
 
   const sortedPosts = useMemo(() => {
     if (!isLoggedIn) return [];
-    return activeTab === 'POST' ? sortPosts(myPosts) : sortPosts(likedPosts);
+    if (activeTab === 'POST') return sortPosts(myPosts);
+
+    const myPostMap = new Map((myPosts || []).map((p) => [String(p.id), p]));
+    const mergedLikedPosts = (likedPosts || []).map((p) => {
+      const mine = myPostMap.get(String(p.id));
+      if (!mine) return p;
+      return {
+        ...p,
+        content: mine.content,
+        image: mine.image,
+        images: mine.images,
+        updatedAt: mine.updatedAt,
+        hideLikeCount: mine.hideLikeCount,
+        pinned: mine.pinned,
+        author: mine.author || p.author,
+        avatarUrl: mine.avatarUrl || p.avatarUrl,
+        isMine: true,
+      };
+    });
+
+    return sortPosts(mergedLikedPosts);
   }, [isLoggedIn, activeTab, myPosts, likedPosts]);
 
   const openWriteModal = (post = null) => {

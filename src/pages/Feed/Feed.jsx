@@ -225,11 +225,23 @@ const Feed = () => {
       return [...serverFeed].sort((a, b) => toTime(b.createdAt) - toTime(a.createdAt));
     }
 
-    const serverIds = new Set(serverFeed.map((p) => p.id));
-    const localOnly = (myPosts || []).filter((p) => !serverIds.has(p.id));
+    const myPostMap = new Map((myPosts || []).map((p) => [String(p.id), p]));
+    const mergedServer = (serverFeed || []).map((p) => {
+      const local = myPostMap.get(String(p.id));
+      if (!local) return p;
+      return {
+        ...p,
+        ...local,
+        isMine: true,
+        avatarUrl: local.avatarUrl || p.avatarUrl || currentProfileImg,
+      };
+    });
+
+    const serverIds = new Set(mergedServer.map((p) => String(p.id)));
+    const localOnly = (myPosts || []).filter((p) => !serverIds.has(String(p.id)));
 
     const combined = [
-      ...serverFeed,
+      ...mergedServer,
       ...localOnly.map((p) => ({
         ...p,
         isOther: false,
