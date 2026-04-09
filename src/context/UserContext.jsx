@@ -25,18 +25,33 @@ const UserContext = createContext(null);
 
 const DEFAULT_BIO = '아직 자기소개가 없어요😊';
 
+const getWindowPath = () => {
+  if (typeof window === 'undefined') return '';
+  return `${window.location.pathname}${window.location.search}${window.location.hash}`;
+};
+
+const getInitialIsInitializing = () => {
+  if (typeof window === 'undefined') return true;
+  const path = getWindowPath();
+  if (path.startsWith('/oauth/callback/kakao')) return false;
+  if (hasLoggedOutMarker()) return false;
+  return true;
+};
+
 export function UserProvider({ children }) {
   const location = useLocation();
   const navigate = useNavigate();
   const initialStoredUserRef = useRef(getInitialUser());
   const [user, setUserState] = useState(initialStoredUserRef.current);
-  const [isInitializing, setIsInitializing] = useState(true);
+  const [isInitializing, setIsInitializing] = useState(getInitialIsInitializing);
   const initialPathRef = useRef(
     `${location.pathname}${location.search}${location.hash}`
   );
 
   const setUser = (nextUser) => {
-    console.log('[UserContext] setUser 호출:', nextUser);
+    if (import.meta.env.DEV) {
+      console.log('[UserContext] setUser 호출:', nextUser);
+    }
 
     setUserState(nextUser);
 
@@ -57,7 +72,9 @@ export function UserProvider({ children }) {
     }
 
     if (hasLoggedOutMarker()) {
-      console.log('[UserContext] loggedOut marker 감지됨');
+      if (import.meta.env.DEV) {
+        console.log('[UserContext] loggedOut marker 감지됨');
+      }
 
       clearStoredAuth();
       setUserState(null);
@@ -69,11 +86,15 @@ export function UserProvider({ children }) {
     const hadStoredUser = Boolean(initialStoredUserRef.current);
 
     const bootstrapUser = async () => {
-      console.log('[UserContext] bootstrapUser 시작');
+      if (import.meta.env.DEV) {
+        console.log('[UserContext] bootstrapUser 시작');
+      }
 
       try {
         const payload = await refreshAccessToken();
-        console.log('[UserContext] bootstrap refresh 결과:', payload);
+        if (import.meta.env.DEV) {
+          console.log('[UserContext] bootstrap refresh 결과:', payload);
+        }
         if (!payload?.accessToken) {
           if (!cancelled && !hadStoredUser) {
             clearStoredAuth();
@@ -166,11 +187,7 @@ export function UserProvider({ children }) {
     navigate('/main', { replace: true });
     void logoutFromServer();
   };
-  console.log('[UserContext] 현재 상태', {
-    user,
-    isLoggedIn: Boolean(user),
-    isInitializing,
-  });
+
   const value = {
     user,
     setUser,
