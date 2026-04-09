@@ -1,24 +1,8 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import BottomNav from '../../components/common/BottomNav';
-import RecipeCard from '../../components/card/RecipeCard';
-import './MyRecipesPage.css';
-
-const MOCK_MY_RECIPES = [
-  {
-    recipeId: 1,
-    title: '김치찌개',
-    thumbnailImage: 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=400&h=400&fit=crop',
-    source: '유튜브 - 릴리쿡',
-    cookingTime: 30,
-    difficulty: '초보',
-    likeCount: 6,
-    reviewCount: 8,
-    totalIngredientCount: 7,
-    matchedIngredientCount: 4,
-    liked: false,
-  },
-];
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import BottomNav from "../../components/common/BottomNav";
+import RecipeCard from "../../components/card/RecipeCard";
+import "./MyRecipesPage.css";
 
 const MyRecipesPage = () => {
   const navigate = useNavigate();
@@ -29,7 +13,12 @@ const MyRecipesPage = () => {
   return (
     <div className="my-recipes-page">
       <header className="my-recipes-header">
-        <button type="button" className="mrp-header__back" onClick={handleBack} aria-label="뒤로가기">
+        <button
+          type="button"
+          className="mrp-header__back"
+          onClick={handleBack}
+          aria-label="뒤로가기"
+        >
           <span className="material-symbols-outlined">arrow_back_ios</span>
         </button>
         <h1 className="mrp-header__title">내가 쓴 레시피</h1>
@@ -45,7 +34,9 @@ const MyRecipesPage = () => {
           </div>
         ) : (
           <div className="my-recipes-empty">
-            <span className="material-symbols-outlined mrp-empty-icon">edit_note</span>
+            <span className="material-symbols-outlined mrp-empty-icon">
+              edit_note
+            </span>
             <p className="mrp-empty-text">아직 작성한 레시피가 없어요</p>
             <p className="mrp-empty-sub">레시피를 작성해보세요!</p>
           </div>
