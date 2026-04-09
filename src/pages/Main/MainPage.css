@@ -58,7 +58,7 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-.search-input {
+.search-bar .search-input {
   width: 100%;
   padding: 10px 38px 10px 12px;
   border: none;
@@ -74,8 +74,8 @@
   cursor: inherit;
 }
 
-.search-input:focus,
-.search-input:focus-visible {
+.search-bar .search-input:focus,
+.search-bar .search-input:focus-visible {
   outline: none;
 }
 
@@ -231,7 +231,7 @@
     height: 30px;
   }
 
-  .search-input {
+  .search-bar .search-input {
     padding: 9px 36px 9px 11px;
     font-size: 13px;
     box-sizing: border-box;
