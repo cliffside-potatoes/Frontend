@@ -8,6 +8,7 @@ import { RECIPE_CATEGORIES } from '../../constants/categories';
 import { fridgeApi } from '../../api/fridgeApi';
 import { addWishlist, getPopularRecipes, removeWishlist } from '../../api/recipeApi';
 import { buildSignInState } from '../../utils/authStorage';
+import { notifyRecipeWishlistChanged } from '../../utils/recipeWishlistSync';
 import naengGuIcon from '../../assets/image/naeng-gu.png';
 import './MainPage.css';
 
@@ -181,21 +182,16 @@ const MainPage = () => {
   const handleToggleRecipeLike = async (recipeId, nextLiked) => {
     if (!isLoggedIn) {
       setShowLoginModal(true);
-      return;
+      return false;
     }
 
     const id = Number(recipeId);
-    if (!Number.isFinite(id)) return;
+    if (!Number.isFinite(id)) return false;
 
-    try {
-      if (nextLiked) {
-        await addWishlist(id);
-      } else {
-        await removeWishlist(id);
-      }
-    } catch (error) {
-      console.error('메인 레시피 찜 토글 실패:', error);
-      return;
+    const result = nextLiked ? await addWishlist(id) : await removeWishlist(id);
+    if (!result?.success) {
+      console.error('메인 레시피 찜 토글 실패:', result?.error);
+      return false;
     }
 
     setDisplayedRecipes((prev) =>
@@ -208,6 +204,11 @@ const MainPage = () => {
         };
       })
     );
+
+    notifyRecipeWishlistChanged(
+      nextLiked ? { kind: 'add', recipeId: id } : { kind: 'remove', recipeId: id },
+    );
+    return true;
   };
 
   return (

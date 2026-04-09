@@ -8,6 +8,7 @@ import {
 } from '../../api/recipeApi';
 import { useUser } from '../../context/UserContext';
 import { buildSignInState } from '../../utils/authStorage';
+import { notifyRecipeWishlistChanged } from '../../utils/recipeWishlistSync';
 import { toImageUrl } from '../../utils/imageUrl';
 import './RecipeDetailPage.css';
 
@@ -122,6 +123,15 @@ const RecipeDetailPage = () => {
 
       if (!result?.success) {
         throw new Error('Wishlist request failed');
+      }
+
+      const rid = Number(recipeId);
+      if (Number.isFinite(rid)) {
+        notifyRecipeWishlistChanged(
+          nextLiked
+            ? { kind: 'add', recipeId: rid }
+            : { kind: 'remove', recipeId: rid },
+        );
       }
     } catch (wishlistError) {
       console.error('Failed to update wishlist:', wishlistError);

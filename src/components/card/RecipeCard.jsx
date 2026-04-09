@@ -52,15 +52,17 @@ const RecipeCard = ({ recipe, onToggleLike }) => {
         <button
           type="button"
           className={`like-button ${isLiked ? 'liked' : ''}`}
-          onClick={(e) => {
+          onClick={async (e) => {
             e.stopPropagation();
-            setIsLiked((prev) => {
-              const next = !prev;
-              if (onToggleLike) {
-                onToggleLike(recipeId, next);
-              }
-              return next;
-            });
+            const prev = isLiked;
+            const next = !prev;
+            if (onToggleLike) {
+              const ret = onToggleLike(recipeId, next);
+              const ok =
+                ret != null && typeof ret.then === "function" ? await ret : ret;
+              if (ok === false) return;
+            }
+            setIsLiked(next);
           }}
         >
           <span className="material-symbols-outlined" aria-hidden="true">

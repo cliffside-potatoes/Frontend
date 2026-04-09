@@ -5,6 +5,7 @@ import GuestLoginPrompt from '../../components/common/GuestLoginPrompt';
 import RecipeCard from '../../components/card/RecipeCard';
 import { getWishlistRecipes, removeWishlist } from '../../api/recipeApi';
 import { useUser } from '../../context/UserContext';
+import { notifyRecipeWishlistChanged, RECIPE_WISHLIST_CHANGED_EVENT } from '../../utils/recipeWishlistSync';
 import './RecipeSavedPage.css';
 
 const RecipeSavedPage = () => {
@@ -21,7 +22,7 @@ const RecipeSavedPage = () => {
       setLoading(false);
       setRecipes([]);
       setError(null);
-      return;
+      return undefined;
     }
 
     const fetchWishlist = async () => {
@@ -38,27 +39,36 @@ const RecipeSavedPage = () => {
       }
     };
 
-    fetchWishlist();
+    void fetchWishlist();
+
+    const onWishlistChanged = () => {
+      void fetchWishlist();
+    };
+
+    window.addEventListener(RECIPE_WISHLIST_CHANGED_EVENT, onWishlistChanged);
+    return () =>
+      window.removeEventListener(RECIPE_WISHLIST_CHANGED_EVENT, onWishlistChanged);
   }, [isInitializing, isLoggedIn]);
 
   const handleBack = () => navigate(-1);
 
   const handleToggleLike = async (recipeId, nextLiked) => {
-    if (nextLiked) return;
+    if (nextLiked) return false;
 
     const id = Number(recipeId);
-    if (!Number.isFinite(id)) return;
+    if (!Number.isFinite(id)) return false;
 
-    try {
-      await removeWishlist(id);
-    } catch (error) {
-      console.error('저장 레시피 찜 해제 실패:', error);
-      return;
+    const result = await removeWishlist(id);
+    if (!result?.success) {
+      console.error('저장 레시피 찜 해제 실패:', result?.error);
+      return false;
     }
 
     setRecipes((prev) =>
       (prev || []).filter((recipe) => Number(recipe.recipeId) !== id)
     );
+    notifyRecipeWishlistChanged({ kind: 'remove', recipeId: id });
+    return true;
   };
 
   return (
