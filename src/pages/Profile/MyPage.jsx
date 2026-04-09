@@ -4,13 +4,20 @@ import BottomNav from '../../components/common/BottomNav';
 import GuestLoginPrompt from '../../components/common/GuestLoginPrompt';
 import FeedCard from '../../components/card/FeedCard';
 import { getMyFeed } from '../../api/meFeedApi';
-import { getLikedPosts, removePostLike } from '../../api/postApi';
+import { addPostLike, getLikedPosts, removePostLike } from '../../api/postApi';
 import { useUser } from '../../context/UserContext';
 import { useMyPosts } from '../../context/MyPostsContext';
 import { buildSignInState } from '../../utils/authStorage';
 import { toImageUrl } from '../../utils/imageUrl';
-import { loadFeedPostMeta, removeFeedPostMeta } from '../../utils/feedPostMetaStorage';
-import { removeFeedLikedIdFromStorageAndNotify } from '../../utils/feedLikedIdsStorage';
+import {
+  loadFeedPostMeta,
+  removeFeedPostMeta,
+  upsertFeedPostMeta,
+} from '../../utils/feedPostMetaStorage';
+import {
+  addFeedLikedIdToStorageAndNotify,
+  removeFeedLikedIdFromStorageAndNotify,
+} from '../../utils/feedLikedIdsStorage';
 import profileImg from '../../assets/image/profile.png';
 import './MyPage.css';
 
@@ -272,10 +279,37 @@ const MyPage = () => {
 
   const handleToggleLike = async (postId) => {
     if (activeTab === 'POST') {
+      const post = myPosts.find((p) => p.id === postId);
+      if (!post || !isLoggedIn) return;
+
+      const nextLiked = !post.liked;
+      const id = Number(postId);
+      if (!Number.isFinite(id)) return;
+
+      try {
+        if (nextLiked) await addPostLike(id);
+        else await removePostLike(id);
+      } catch (e) {
+        console.error('좋아요 처리 실패:', e);
+        return;
+      }
+
+      if (user?.id) {
+        if (nextLiked) {
+          upsertFeedPostMeta(user.id, id, {
+            author: post.author,
+            avatarUrl: post.avatarUrl || '',
+          });
+          addFeedLikedIdToStorageAndNotify(user.id, id);
+        } else {
+          removeFeedPostMeta(user.id, id);
+          removeFeedLikedIdFromStorageAndNotify(user.id, id);
+        }
+      }
+
       setPosts((prev) =>
         prev.map((p) => {
           if (p.id !== postId) return p;
-          const nextLiked = !p.liked;
           return {
             ...p,
             liked: nextLiked,

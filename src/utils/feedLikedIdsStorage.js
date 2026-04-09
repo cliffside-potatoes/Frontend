@@ -1,4 +1,5 @@
 export const FEED_POST_UNLIKED_EVENT = 'naengtul-feed-post-unliked';
+export const FEED_POST_LIKED_EVENT = 'naengtul-feed-post-liked';
 
 export const feedLikedStorageKey = (userId) =>
   userId != null && String(userId).length > 0
@@ -46,4 +47,26 @@ export const notifyFeedPostUnliked = (postId) => {
 export const removeFeedLikedIdFromStorageAndNotify = (userId, postId) => {
   removeFeedLikedIdFromStorage(userId, postId);
   notifyFeedPostUnliked(postId);
+};
+
+export const addFeedLikedIdToStorage = (userId, postId) => {
+  const key = feedLikedStorageKey(userId);
+  if (!key) return;
+  const id = Number(postId);
+  if (!Number.isFinite(id)) return;
+  const set = loadFeedLikedIdSet(key);
+  set.add(id);
+  saveFeedLikedIdSet(key, set);
+};
+
+export const notifyFeedPostLiked = (postId) => {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(
+    new CustomEvent(FEED_POST_LIKED_EVENT, { detail: { postId } }),
+  );
+};
+
+export const addFeedLikedIdToStorageAndNotify = (userId, postId) => {
+  addFeedLikedIdToStorage(userId, postId);
+  notifyFeedPostLiked(postId);
 };

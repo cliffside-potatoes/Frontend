@@ -15,6 +15,7 @@ import {
   upsertFeedPostMeta,
 } from '../../utils/feedPostMetaStorage';
 import {
+  FEED_POST_LIKED_EVENT,
   FEED_POST_UNLIKED_EVENT,
   feedLikedStorageKey,
   loadFeedLikedIdSet,
@@ -125,6 +126,32 @@ const Feed = () => {
     };
     window.addEventListener(FEED_POST_UNLIKED_EVENT, onExternalUnlike);
     return () => window.removeEventListener(FEED_POST_UNLIKED_EVENT, onExternalUnlike);
+  }, [likedPostsStorageKey, setPosts]);
+
+  useEffect(() => {
+    const onExternalLike = (e) => {
+      const raw = e.detail?.postId;
+      const id = Number(raw);
+      if (!Number.isFinite(id)) return;
+      if (likedPostsStorageKey) {
+        likedPostIdsRef.current.add(id);
+        saveFeedLikedIdSet(likedPostsStorageKey, likedPostIdsRef.current);
+      }
+      const matchId = (p) => Number(p.id) === id || p.id === raw;
+      const applyLike = (list = []) =>
+        list.map((p) => {
+          if (!matchId(p) || p.liked) return p;
+          return {
+            ...p,
+            liked: true,
+            likeCount: (p.likeCount ?? 0) + 1,
+          };
+        });
+      setPosts((prev) => applyLike(prev || []));
+      setServerFeed((prev) => applyLike(prev || []));
+    };
+    window.addEventListener(FEED_POST_LIKED_EVENT, onExternalLike);
+    return () => window.removeEventListener(FEED_POST_LIKED_EVENT, onExternalLike);
   }, [likedPostsStorageKey, setPosts]);
 
   const [guestPromptTick, setGuestPromptTick] = useState(0);
