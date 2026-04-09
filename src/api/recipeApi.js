@@ -4,8 +4,6 @@ import {
   getStoredAccessToken,
   savePostLoginRedirect,
 } from "../utils/authStorage";
-import { apiClient } from "./fridgeApi";
-
 /**
  * 레시피 및 후기 API
  * - 레시피 상세 조회
@@ -132,50 +130,50 @@ const MOCK_RECIPE_DETAIL = {
   matchedIngredientCount: 4,
 };
 
-// const MOCK_RECIPE_LIST = [
-//   {
-//     recipeId: 1,
-//     title: '김치찌개',
-//     thumbnailImage:
-//       'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=800&h=600&fit=crop',
-//     source: '유튜브 - 릴리쿡',
-//     cookingTime: 30,
-//     difficulty: '초보',
-//     likeCount: 8,
-//     reviewCount: 8,
-//     totalIngredientCount: 7,
-//     matchedIngredientCount: 4,
-//     liked: false,
-//   },
-//   {
-//     recipeId: 2,
-//     title: '크림파스타',
-//     thumbnailImage:
-//       'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=800&h=600&fit=crop',
-//     source: '블로그 - 집밥연구소',
-//     cookingTime: 20,
-//     difficulty: '중급',
-//     likeCount: 5,
-//     reviewCount: 3,
-//     totalIngredientCount: 6,
-//     matchedIngredientCount: 2,
-//     liked: false,
-//   },
-//   {
-//     recipeId: 3,
-//     title: '계란볶음밥',
-//     thumbnailImage:
-//       'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=800&h=600&fit=crop',
-//     source: '유튜브 - 3분요리',
-//     cookingTime: 15,
-//     difficulty: '초보',
-//     likeCount: 11,
-//     reviewCount: 6,
-//     totalIngredientCount: 5,
-//     matchedIngredientCount: 3,
-//     liked: false,
-//   },
-// ];
+const MOCK_RECIPE_LIST = [
+  {
+    recipeId: 1,
+    title: "김치찌개",
+    thumbnailImage:
+      "https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=800&h=600&fit=crop",
+    source: "유튜브 - 릴리쿡",
+    cookingTime: 30,
+    difficulty: "초보",
+    likeCount: 8,
+    reviewCount: 8,
+    totalIngredientCount: 7,
+    matchedIngredientCount: 4,
+    liked: false,
+  },
+  {
+    recipeId: 2,
+    title: "크림파스타",
+    thumbnailImage:
+      "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=800&h=600&fit=crop",
+    source: "블로그 - 집밥연구소",
+    cookingTime: 20,
+    difficulty: "중급",
+    likeCount: 5,
+    reviewCount: 3,
+    totalIngredientCount: 6,
+    matchedIngredientCount: 2,
+    liked: false,
+  },
+  {
+    recipeId: 3,
+    title: "계란볶음밥",
+    thumbnailImage:
+      "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=800&h=600&fit=crop",
+    source: "유튜브 - 3분요리",
+    cookingTime: 15,
+    difficulty: "초보",
+    likeCount: 11,
+    reviewCount: 6,
+    totalIngredientCount: 5,
+    matchedIngredientCount: 3,
+    liked: false,
+  },
+];
 
 /** Mock 데이터 - 후기 목록 */
 const MOCK_REVIEWS = [
@@ -281,6 +279,45 @@ const extractRecipesListFromApiPayload = (payload) => {
   if (Array.isArray(inner)) return inner;
   if (Array.isArray(payload)) return payload;
   return [];
+};
+
+/** 원격 레시피 API 사용 가능 (목이 아닌 실제 서버로 요청) */
+const hasRemoteRecipeApi = (base) =>
+  Boolean(base) && !isSameOriginBase(base);
+
+/**
+ * GET /recipes — axios(apiClient)는 401 시 로그인 리다이렉트가 나와 비로그인 메인 노출에 부적합.
+ * 게스트도 서버가 허용하면 목록을 받을 수 있도록 fetch로 호출한다.
+ */
+const fetchRecipeListFromRemote = async (queryParams) => {
+  const base = API_BASE_URL.replace(/\/$/, "");
+  const searchParams = new URLSearchParams();
+  Object.entries(queryParams).forEach(([key, value]) => {
+    if (value != null && value !== "") searchParams.set(key, String(value));
+  });
+  const url = `${base}/recipes?${searchParams.toString()}`;
+  const headers = {
+    Accept: "application/json",
+    "Content-Type": "application/json",
+  };
+  const token = getStoredAccessToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const res = await fetch(url, {
+    method: "GET",
+    headers,
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    const err = new Error(`GET /recipes ${res.status}`);
+    err.status = res.status;
+    throw err;
+  }
+
+  const json = await res.json();
+  const rawItems = extractRecipesListFromApiPayload(json);
+  return rawItems.map(normalizeRecipeItem);
 };
 
 const getMockRecipeDetail = (recipeId) => {
@@ -593,7 +630,7 @@ export const getPopularRecipes = async (params = {}) => {
   try {
     const base =
       (typeof API_BASE_URL === "string" && API_BASE_URL.trim()) || "";
-    if (shouldUsePublicRecipeMock(base)) return getMockRecipeList(size);
+    if (!hasRemoteRecipeApi(base)) return getMockRecipeList(size);
 
     const queryParams = { size, sort };
     if (cursorCreatedAt != null && cursorId != null) {
@@ -609,12 +646,10 @@ export const getPopularRecipes = async (params = {}) => {
       queryParams.cursorId = cursorId;
     }
 
-    const res = await apiClient.get("/recipes", { params: queryParams });
-    const rawItems = extractRecipesListFromApiPayload(res.data);
-    return rawItems.map(normalizeRecipeItem);
+    return await fetchRecipeListFromRemote(queryParams);
   } catch (error) {
     console.error("인기 레시피 조회 실패:", error);
-    return [];
+    return getMockRecipeList(size);
   }
 };
 
@@ -628,7 +663,7 @@ export const getTaggedRecipes = async (category, params = {}) => {
   try {
     const base =
       (typeof API_BASE_URL === "string" && API_BASE_URL.trim()) || "";
-    if (shouldUsePublicRecipeMock(base)) return getMockRecipeList(size);
+    if (!hasRemoteRecipeApi(base)) return getMockRecipeList(size);
 
     const paramsObj = {
       category,
@@ -639,12 +674,10 @@ export const getTaggedRecipes = async (category, params = {}) => {
         : {}),
     };
 
-    const res = await apiClient.get("/recipes", { params: paramsObj });
-    const rawItems = extractRecipesListFromApiPayload(res.data);
-    return rawItems.map(normalizeRecipeItem);
+    return await fetchRecipeListFromRemote(paramsObj);
   } catch (error) {
     console.error("태그별 레시피 조회 실패:", error);
-    return [];
+    return getMockRecipeList(size);
   }
 };
 
