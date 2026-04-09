@@ -6,7 +6,7 @@ import FeedCard from '../../components/card/FeedCard';
 import { useMyPosts } from '../../context/MyPostsContext';
 import { useUser } from '../../context/UserContext';
 import { getFeed } from '../../api/feedApi';
-import { createPost, updatePost, deletePost } from '../../api/postApi';
+import { createPost, updatePost, deletePost, addPostLike, removePostLike } from '../../api/postApi';
 import { buildSignInState } from '../../utils/authStorage';
 import { toImageUrl } from '../../utils/imageUrl';
 import profileImg from '../../assets/image/profile.png';
@@ -211,12 +211,29 @@ const Feed = () => {
     setPostMenuPostId(null);
   };
 
-  const handleToggleLike = (postId) => {
+  const handleToggleLike = async (postId) => {
+    const post = feedList.find((p) => p.id === postId);
+    if (!post) return;
+
+    const nextLiked = !post.liked;
+
+    if (isLoggedIn) {
+      const id = Number(postId);
+      if (Number.isFinite(id)) {
+        try {
+          if (nextLiked) await addPostLike(id);
+          else await removePostLike(id);
+        } catch (e) {
+          console.error('좋아요 처리 실패:', e);
+          return;
+        }
+      }
+    }
+
     const toggleLikeInList = (list = []) =>
       list.map((p) => {
         if (p.id !== postId) return p;
 
-        const nextLiked = !p.liked;
         return {
           ...p,
           liked: nextLiked,

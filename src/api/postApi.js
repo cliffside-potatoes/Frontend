@@ -91,4 +91,86 @@ export const deletePost = async (postId) => {
   }
 };
 
-export default { createPost, updatePost, deletePost };
+/**
+ * 내가 좋아요한 게시글 목록
+ * GET /me/liked/posts?size=&cursorLikedAt=&cursorId=
+ */
+export const getLikedPosts = async (params = {}) => {
+  const { size = 20, cursorLikedAt, cursorId } = params;
+  const base = (typeof API_BASE_URL === 'string' && API_BASE_URL.trim()) || '';
+  if (!base) {
+    return { items: [], hasNext: false, nextCursor: null };
+  }
+
+  const searchParams = new URLSearchParams({ size: String(size) });
+  if (cursorLikedAt != null && cursorId != null) {
+    searchParams.set('cursorLikedAt', cursorLikedAt);
+    searchParams.set('cursorId', String(cursorId));
+  }
+
+  const res = await fetch(`${base}/me/liked/posts?${searchParams.toString()}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    },
+    credentials: 'include',
+  });
+
+  if (!res.ok) {
+    throw new Error(`좋아요 목록 조회 실패 (${res.status})`);
+  }
+
+  const json = await res.json();
+  const data = json?.data ?? {};
+  return {
+    items: Array.isArray(data.items) ? data.items : [],
+    hasNext: Boolean(data.hasNext),
+    nextCursor: data.nextCursor ?? null,
+  };
+};
+
+/**
+ * 게시글 좋아요
+ * POST /posts/{postId}/likes
+ */
+export const addPostLike = async (postId) => {
+  const base = (typeof API_BASE_URL === 'string' && API_BASE_URL.trim()) || '';
+  if (!base) return;
+
+  const res = await fetch(`${base}/posts/${postId}/likes`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    },
+    credentials: 'include',
+  });
+
+  if (!res.ok) {
+    throw new Error(`좋아요 실패 (${res.status})`);
+  }
+};
+
+/**
+ * 게시글 좋아요 취소
+ * DELETE /posts/{postId}/likes
+ */
+export const removePostLike = async (postId) => {
+  const base = (typeof API_BASE_URL === 'string' && API_BASE_URL.trim()) || '';
+  if (!base) return;
+
+  const res = await fetch(`${base}/posts/${postId}/likes`, {
+    method: 'DELETE',
+    headers: {
+      ...getAuthHeader(),
+    },
+    credentials: 'include',
+  });
+
+  if (!res.ok) {
+    throw new Error(`좋아요 취소 실패 (${res.status})`);
+  }
+};
+
+export default { createPost, updatePost, deletePost, getLikedPosts, addPostLike, removePostLike };

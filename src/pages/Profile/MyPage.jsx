@@ -4,7 +4,7 @@ import BottomNav from '../../components/common/BottomNav';
 import GuestLoginPrompt from '../../components/common/GuestLoginPrompt';
 import FeedCard from '../../components/card/FeedCard';
 import { getMyFeed } from '../../api/meFeedApi';
-import { getFeed } from '../../api/feedApi';
+import { getLikedPosts, removePostLike } from '../../api/postApi';
 import { useUser } from '../../context/UserContext';
 import { useMyPosts } from '../../context/MyPostsContext';
 import { buildSignInState } from '../../utils/authStorage';
@@ -67,6 +67,45 @@ const sortPosts = (posts) =>
     const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
     return bTime - aTime;
   });
+
+/** GET /me/liked/posts 항목 → FeedCard용 */
+const mapLikedPostItemToPost = (item) => {
+  const createdAt = item.postCreatedAt || item.likedAt || '';
+  const dateStr =
+    createdAt &&
+    (() => {
+      try {
+        return new Date(createdAt).toLocaleDateString('ko-KR', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        });
+      } catch {
+        return createdAt;
+      }
+    })();
+
+  const urls = (item.postImageUrls ?? []).map((img) => toImageUrl(img));
+
+  return {
+    id: item.postId,
+    type: 'POST',
+    author: '작성자',
+    avatarUrl: '',
+    date: dateStr,
+    content: item.content ?? '',
+    images: urls,
+    image: urls[0] || '',
+    likeCount: item.likeCount ?? 0,
+    liked: true,
+    hideLikeCount: Boolean(item.hideLikeCount),
+    pinned: false,
+    createdAt,
+    updatedAt: item.postUpdatedAt ?? createdAt,
+    cookCount: 0,
+    isMine: false,
+  };
+};
 
 const MyPage = () => {
   const navigate = useNavigate();
@@ -148,20 +187,16 @@ const MyPage = () => {
       };
     }
 
-    getFeed({ size: FEED_PAGE_SIZE, sort: 'LATEST' })
+    getLikedPosts({ size: FEED_PAGE_SIZE })
       .then(({ items, hasNext: next, nextCursor: cursor }) => {
         if (cancelled) return;
 
-        const likedOnly = (items || [])
-          .filter((item) => item.liked === true && item.isMine !== true)
-          .map((item) => mapFeedItemToPost(item, item.writer?.nickname ?? '사용자'));
-
-        setLikedPosts(likedOnly);
+        setLikedPosts((items || []).map(mapLikedPostItemToPost));
         setHasNext(Boolean(next));
         setNextCursor(cursor ?? null);
       })
       .catch(() => {
-        if (!cancelled) setFeedError('좋아요한 피드를 불러올 수 없습니다.');
+        if (!cancelled) setFeedError('좋아요한 게시글을 불러올 수 없습니다.');
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -205,7 +240,7 @@ const MyPage = () => {
     setPostMenuPostId(null);
   };
 
-  const handleToggleLike = (postId) => {
+  const handleToggleLike = async (postId) => {
     if (activeTab === 'POST') {
       setPosts((prev) =>
         prev.map((p) => {
@@ -221,25 +256,17 @@ const MyPage = () => {
       return;
     }
 
-    setLikedPosts((prev) =>
-      prev.flatMap((p) => {
-        if (p.id !== postId) return [p];
+    const id = Number(postId);
+    if (!Number.isFinite(id)) return;
 
-        const nextLiked = !p.liked;
+    try {
+      await removePostLike(id);
+    } catch (e) {
+      console.error('좋아요 취소 실패:', e);
+      return;
+    }
 
-        if (!nextLiked) {
-          return [];
-        }
-
-        return [
-          {
-            ...p,
-            liked: nextLiked,
-            likeCount: Math.max(0, (p.likeCount ?? 0) + 1),
-          },
-        ];
-      })
-    );
+    setLikedPosts((prev) => prev.filter((p) => p.id !== postId));
   };
 
   const sortedPosts = useMemo(() => {
