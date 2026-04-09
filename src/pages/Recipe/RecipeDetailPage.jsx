@@ -133,11 +133,15 @@ const RecipeDetailPage = () => {
         <div className="recipe-header-info">
           <h1 className="recipe-detail-title">{recipe.title}</h1>
           <div className="recipe-actions">
-            <button 
+            <button
+              type="button"
               className={`like-icon ${isLiked ? 'liked' : ''}`}
               onClick={handleLikeToggle}
             >
-              ❤️ {likeCount}
+              <span className="material-symbols-outlined like-icon-symbol" aria-hidden="true">
+                {isLiked ? 'favorite' : 'favorite_border'}
+              </span>
+              <span className="like-icon-count">{likeCount}</span>
             </button>
             <span className="review-count">💬 {recipe.reviewCount}</span>
           </div>

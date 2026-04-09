@@ -55,7 +55,9 @@ const RecipeCard = ({ recipe, onToggleLike }) => {
             });
           }}
         >
-          <span className="material-symbols-outlined" aria-hidden="true">favorite</span>
+          <span className="material-symbols-outlined" aria-hidden="true">
+            {isLiked ? 'favorite' : 'favorite_border'}
+          </span>
         </button>
       </div>
       <div className="recipe-info">

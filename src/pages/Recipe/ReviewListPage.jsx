@@ -242,7 +242,7 @@ const ReviewListPage = () => {
                       className={`like-button ${review.liked ? 'liked' : ''}`}
                       onClick={() => handleLikeToggle(review.reviewId)}
                     >
-                      ♡ {review.likeCount}
+                      {review.liked ? '❤️' : '♡'} {review.likeCount}
                     </button>
                   </div>
                 )}
