@@ -223,7 +223,7 @@
 
 .feed-card-like-button.liked .material-symbols-outlined {
   font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-  color: #dc2626;
+  color: var(--color-theme-primary, #ea6363);
 }
 
 .feed-card-like-count {

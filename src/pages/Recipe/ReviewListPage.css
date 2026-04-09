@@ -242,7 +242,7 @@
 }
 
 .like-button.liked {
-  color: #ff6b6b;
+  color: var(--color-theme-primary, #ea6363);
 }
 
 .write-review-fixed {
@@ -258,7 +258,7 @@
 .write-review-button {
   width: 100%;
   padding: 16px;
-  background-color: #ff6b6b;
+  background-color: var(--color-theme-primary, #ea6363);
   color: #fff;
   border: none;
   border-radius: 8px;

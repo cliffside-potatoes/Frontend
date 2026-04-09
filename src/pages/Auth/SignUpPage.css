@@ -52,7 +52,7 @@
   padding: 14px 12px;
   font-size: 15px;
   font-weight: 700;
-  background: #ff6b6b;
+  background: var(--color-theme-primary, #ea6363);
   color: #fff;
   cursor: pointer;
 }
@@ -220,7 +220,7 @@
   padding: 12px 10px;
   font-size: 13px;
   font-weight: 700;
-  background: #ff6b6b;
+  background: var(--color-theme-primary, #ea6363);
   color: #fff;
   cursor: pointer;
 }
@@ -250,7 +250,7 @@
 }
 
 .help.bad {
-  color: #dc2626;
+  color: var(--color-theme-primary, #ea6363);
   font-weight: 700;
 }
 

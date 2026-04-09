@@ -128,7 +128,7 @@
 .submit-button {
   width: 100%;
   padding: 16px;
-  background-color: #ff6b6b;
+  background-color: var(--color-theme-primary, #ea6363);
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -142,7 +142,7 @@
 }
 
 .submit-button:active {
-  background-color: #e64545;
+  background-color: #c74f4f;
 }
 
 .submit-button:disabled {

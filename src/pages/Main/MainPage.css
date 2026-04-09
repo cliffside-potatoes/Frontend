@@ -50,12 +50,18 @@
   align-items: center;
   min-width: 0;
   max-width: 75%;
+  border: 1.5px solid var(--color-theme-primary, #ea6363);
+  border-radius: 30px;
+  box-sizing: border-box;
+  background-color: #ffffff;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .search-input {
   width: 100%;
   padding: 10px 38px 10px 12px;
-  border: 1.5px solid #EA6363;
+  border: none;
   border-radius: 30px;
   font-size: 14px;
   outline: none;
@@ -63,6 +69,14 @@
   appearance: none;
   box-sizing: border-box;
   max-width: 100%;
+  background-color: transparent;
+  pointer-events: none;
+  cursor: inherit;
+}
+
+.search-input:focus,
+.search-input:focus-visible {
+  outline: none;
 }
 
 .search-icon {

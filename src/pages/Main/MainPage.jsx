@@ -186,7 +186,7 @@ const MainPage = () => {
             <img src={naengGuIcon} alt="냉구" className="tomato-image" />
           </div>
 
-          <div className="search-bar" onClick={handleSearchClick} style={{ cursor: 'pointer' }}>
+          <div className="search-bar" onClick={handleSearchClick}>
             <input type="text" placeholder="검색" className="search-input" readOnly />
             <span className="search-icon">🔍</span>
           </div>

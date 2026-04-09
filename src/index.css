@@ -7,6 +7,7 @@
   --app-max-width: 430px; /* iPhone 14 (390) 기준 살짝 여유 */
   --bottom-nav-base-height: 56px;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --color-theme-primary: #ea6363;
 
   color-scheme: light;
   color: #111;

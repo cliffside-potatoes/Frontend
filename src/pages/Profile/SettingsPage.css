@@ -109,7 +109,7 @@
 }
 
 .settings-item-logout {
-  color: #dc2626;
+  color: var(--color-theme-primary, #ea6363);
   font-weight: 600;
 }
 
@@ -118,7 +118,7 @@
 }
 
 .settings-item-withdraw {
-  color: #b91c1c;
+  color: var(--color-theme-primary, #ea6363);
   font-weight: 700;
 }
 

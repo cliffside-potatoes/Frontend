@@ -75,7 +75,7 @@
 
 .like-icon.liked .like-icon-symbol {
   font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-  color: #dc2626;
+  color: var(--color-theme-primary, #ea6363);
 }
 
 .like-icon-count {
@@ -84,7 +84,7 @@
 }
 
 .like-icon.liked {
-  color: #dc2626;
+  color: var(--color-theme-primary, #ea6363);
 }
 
 .review-count {
@@ -120,7 +120,7 @@
 }
 
 .status-title {
-  color: #ff6b6b;
+  color: var(--color-theme-primary, #ea6363);
   font-weight: bold;
   margin-bottom: 8px;
 }
@@ -238,7 +238,7 @@
 .write-review-button {
   width: 100%;
   padding: 16px;
-  background-color: #ff6b6b;
+  background-color: var(--color-theme-primary, #ea6363);
   color: #fff;
   border: none;
   border-radius: 8px;
