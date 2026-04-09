@@ -1,81 +1,22 @@
-import { getStoredAccessToken } from '../utils/authStorage';
+import { getStoredAccessToken } from "../utils/authStorage";
 
 /**
- * 전체 피드 API (다른 사용자 게시글 + 리뷰, 무한 스크롤)
- * - 최신순: cursorCreatedAt + cursorId
- * - 인기순: cursorLikeCount + cursorId
- * - 리뷰순: cursorReviewCount + cursorId
+ * 전체 피드 GET /feed (커서 기반)
+ * - 원격 API가 설정된 경우에만 요청. 목 데이터는 사용하지 않음.
+ * - 비로그인도 fetch로 호출(토큰이 있으면 헤더에 포함). 401 등 실패 시 빈 목록.
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+const API_BASE_URL = import.meta.env.VITE_API_URL || "";
 
-const getAuthHeader = () => {
-  const token = getStoredAccessToken();
-  return token ? { Authorization: `Bearer ${token}` } : {};
-};
+const isSameOriginBase = (base) =>
+  typeof window !== "undefined" &&
+  base &&
+  (base.startsWith(window.location.origin) || base === window.location.origin);
 
-/** API 실패 시 사용할 목 데이터 (Feed 스펙 형식) */
-const MOCK_FEED_ITEMS = [
-  {
-    type: 'POST',
-    id: 101,
-    images: ['https://images.unsplash.com/photo-1544025162-d76694265947?w=600&h=600&fit=crop'],
-    content: '오늘은 이걸 먹었다~ 너무 맛있었다!',
-    source: null,
-    writer: { profileId: 1, nickname: '사용자 닉네A', profileImageUrl: null },
-    likeCount: 12,
-    hideLikeCount: false,
-    liked: false,
-    isMine: false,
-    updatedAt: '2026-01-19T12:30:00+09:00',
-    createdAt: '2026-01-19T12:30:00+09:00',
-  },
-  {
-    type: 'POST',
-    id: 102,
-    images: ['https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=600&h=600&fit=crop'],
-    content: '주말에 파스타 만들어봤어요 🍝',
-    source: null,
-    writer: { profileId: 2, nickname: '요리왕', profileImageUrl: null },
-    likeCount: 8,
-    hideLikeCount: false,
-    liked: false,
-    isMine: false,
-    updatedAt: '2026-01-18T10:00:00+09:00',
-    createdAt: '2026-01-18T10:00:00+09:00',
-  },
-  {
-    type: 'RECIPE_REVIEW',
-    id: 201,
-    images: [],
-    content: '김치찌개 레시피 따라했는데 대성공!',
-    source: '김치찌개[유튜브-3분 뚝딱이 형]',
-    writer: { profileId: 3, nickname: '친구B', profileImageUrl: null },
-    likeCount: 5,
-    hideLikeCount: false,
-    liked: false,
-    isMine: false,
-    updatedAt: '2026-01-17T15:00:00+09:00',
-    createdAt: '2026-01-17T15:00:00+09:00',
-  },
-];
-
-const getMockFeed = (params) => {
-  const { size = 20 } = params;
-  const items = MOCK_FEED_ITEMS.slice(0, size);
-  const last = items[items.length - 1];
-
-  return {
-    items,
-    hasNext: false,
-    nextCursor: last
-      ? { cursorCreatedAt: last.createdAt, cursorId: last.id }
-      : null,
-  };
-};
+const hasRemoteFeedApi = (base) =>
+  Boolean(base) && !isSameOriginBase(base);
 
 /**
- * 전체 피드 조회 (무한 스크롤)
  * @param {Object} params
  * @param {number} [params.size=20]
  * @param {string} [params.sort=LATEST]
@@ -87,65 +28,62 @@ const getMockFeed = (params) => {
 export const getFeed = async (params = {}) => {
   const {
     size = 20,
-    sort = 'LATEST',
+    sort = "LATEST",
     cursorCreatedAt,
     cursorId,
     cursorLikeCount,
     cursorReviewCount,
   } = params;
 
+  const baseRaw = (typeof API_BASE_URL === "string" && API_BASE_URL.trim()) || "";
+  const base = baseRaw.replace(/\/$/, "");
+
+  const empty = { items: [], hasNext: false, nextCursor: null };
+
+  if (!hasRemoteFeedApi(baseRaw)) {
+    return empty;
+  }
+
   const searchParams = new URLSearchParams();
-  searchParams.set('size', String(size));
-  searchParams.set('sort', sort);
+  searchParams.set("size", String(size));
+  searchParams.set("sort", sort);
 
   if (cursorCreatedAt != null && cursorId != null) {
-    searchParams.set('cursorCreatedAt', cursorCreatedAt);
-    searchParams.set('cursorId', String(cursorId));
+    searchParams.set("cursorCreatedAt", cursorCreatedAt);
+    searchParams.set("cursorId", String(cursorId));
   } else if (cursorLikeCount != null && cursorId != null) {
-    searchParams.set('cursorLikeCount', String(cursorLikeCount));
-    searchParams.set('cursorId', String(cursorId));
+    searchParams.set("cursorLikeCount", String(cursorLikeCount));
+    searchParams.set("cursorId", String(cursorId));
   } else if (cursorReviewCount != null && cursorId != null) {
-    searchParams.set('cursorReviewCount', String(cursorReviewCount));
-    searchParams.set('cursorId', String(cursorId));
+    searchParams.set("cursorReviewCount", String(cursorReviewCount));
+    searchParams.set("cursorId", String(cursorId));
   }
 
   try {
-    const base = (typeof API_BASE_URL === 'string' && API_BASE_URL.trim()) || '';
-    const isSameOrigin =
-      typeof window !== 'undefined' &&
-      base &&
-      (base.startsWith(window.location.origin) || base === window.location.origin);
+    const token = getStoredAccessToken();
+    const headers = {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    };
+    if (token) headers.Authorization = `Bearer ${token}`;
 
-    if (!base || isSameOrigin || !getStoredAccessToken()) {
-      return getMockFeed(params);
-    }
-
-    const url = `${base}/feed?${searchParams.toString()}`;
-    const res = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader(),
-      },
+    const res = await fetch(`${base}/feed?${searchParams.toString()}`, {
+      method: "GET",
+      headers,
+      credentials: "include",
     });
 
     if (!res.ok) {
-      return getMockFeed(params);
+      return empty;
     }
 
-    const contentType = res.headers.get('content-type') || '';
-    if (!contentType.includes('application/json')) {
-      return getMockFeed(params);
+    const contentType = res.headers.get("content-type") || "";
+    if (!contentType.includes("application/json")) {
+      return empty;
     }
 
-    let data;
-    try {
-      data = await res.json();
-    } catch {
-      return getMockFeed(params);
-    }
-
-    const payload = data?.data ?? {};
+    const json = await res.json();
+    const payload = json?.data ?? {};
 
     return {
       items: Array.isArray(payload.items) ? payload.items : [],
@@ -153,7 +91,7 @@ export const getFeed = async (params = {}) => {
       nextCursor: payload.nextCursor ?? null,
     };
   } catch {
-    return getMockFeed(params);
+    return empty;
   }
 };
 

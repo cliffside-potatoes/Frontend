@@ -1,6 +1,7 @@
 import React, { useMemo, useRef, useEffect, useCallback, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import BottomNav from '../../components/common/BottomNav';
+import GuestLoginPrompt from '../../components/common/GuestLoginPrompt';
 import FeedCard from '../../components/card/FeedCard';
 import { useMyPosts } from '../../context/MyPostsContext';
 import { useUser } from '../../context/UserContext';
@@ -59,8 +60,11 @@ const Feed = () => {
   const { user, isLoggedIn } = useUser();
   const { posts: myPosts, setPosts } = useMyPosts();
 
+  const [guestPromptTick, setGuestPromptTick] = useState(0);
+
   const currentNickname = user?.nickname ?? '사용자 닉네임';
   const currentProfileImg = toImageUrl(user?.profileImage) || profileImg;
+  const newStoryAvatarSrc = isLoggedIn ? currentProfileImg : profileImg;
 
   const myPostIds = useMemo(() => new Set((myPosts || []).map((p) => p.id)), [myPosts]);
 
@@ -115,6 +119,10 @@ const Feed = () => {
   };
 
   const feedList = useMemo(() => {
+    if (!isLoggedIn) {
+      return [...serverFeed].sort((a, b) => toTime(b.createdAt) - toTime(a.createdAt));
+    }
+
     const serverIds = new Set(serverFeed.map((p) => p.id));
     const localOnly = (myPosts || []).filter((p) => !serverIds.has(p.id));
 
@@ -128,7 +136,7 @@ const Feed = () => {
     ];
 
     return combined.sort((a, b) => toTime(b.createdAt) - toTime(a.createdAt));
-  }, [serverFeed, myPosts, currentProfileImg]);
+  }, [isLoggedIn, serverFeed, myPosts, currentProfileImg]);
 
   const openPostMenu = (e, postId) => {
     e.stopPropagation();
@@ -222,7 +230,7 @@ const Feed = () => {
 
   const openWriteModal = (post = null) => {
     if (!isLoggedIn) {
-      navigateToSignIn('/feed');
+      setGuestPromptTick((t) => t + 1);
       return;
     }
 
@@ -367,13 +375,21 @@ const Feed = () => {
       <main className="feed-content">
         <button type="button" className="feed-new-story" onClick={() => openWriteModal()}>
           <div className="feed-new-story-avatar">
-            <img src={currentProfileImg} alt="" />
+            <img src={newStoryAvatarSrc} alt="" />
           </div>
-          <span className="feed-new-story-placeholder">새로운 이야기가 있나요?</span>
+          <span className="feed-new-story-placeholder">
+            {isLoggedIn ? '새로운 이야기가 있나요?' : '로그인하여 내 소식을 전해주세요'}
+          </span>
         </button>
 
         {feedLoading && feedList.length === 0 && (
           <p style={{ padding: '16px', textAlign: 'center', color: '#888' }}>피드 불러오는 중...</p>
+        )}
+
+        {!feedLoading && feedList.length === 0 && (
+          <p style={{ padding: '16px', textAlign: 'center', color: '#888' }}>
+            첫 피드를 작성해주세요.
+          </p>
         )}
 
         <div className="feed-list">
@@ -386,7 +402,7 @@ const Feed = () => {
                   post={post}
                   isMine={isMine}
                   avatarUrl={post.avatarUrl || (isMine ? currentProfileImg : profileImg)}
-                  onToggleLike={handleToggleLike}
+                  onToggleLike={isLoggedIn ? handleToggleLike : () => {}}
                   onOpenMenu={isMine ? openPostMenu : undefined}
                 />
 
@@ -555,6 +571,8 @@ const Feed = () => {
       )}
 
       {!writeModalOpen && <BottomNav />}
+
+      <GuestLoginPrompt afterLoginPath="/feed" reopenSignal={guestPromptTick} />
     </div>
   );
 };
