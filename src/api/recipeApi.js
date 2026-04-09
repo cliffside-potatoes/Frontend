@@ -815,10 +815,18 @@ export const removeWishlist = async (recipeId) => {
 export const getWishlistRecipes = async (params = {}) => {
   const { size = 20, cursorId, cursorCreatedAt } = params;
 
+  const fail = (status = 0) => ({
+    items: [],
+    hasNext: false,
+    ok: false,
+    status,
+    nextCursor: null,
+  });
+
   try {
     const base =
       (typeof API_BASE_URL === "string" && API_BASE_URL.trim()) || "";
-    if (!base) return { items: [], hasNext: false };
+    if (!base) return { ...fail(), ok: true };
 
     const searchParams = new URLSearchParams({ size: String(size) });
     if (cursorId && cursorCreatedAt) {
@@ -836,7 +844,9 @@ export const getWishlistRecipes = async (params = {}) => {
       },
     );
 
-    if (!res || !res.ok) return { items: [], hasNext: false };
+    if (!res || !res.ok) {
+      return fail(res?.status ?? 0);
+    }
 
     const data = extractPayloadData(await res.json()) ?? {};
     const rawItems = Array.isArray(data.items)
@@ -855,10 +865,12 @@ export const getWishlistRecipes = async (params = {}) => {
       items: rawItems.map(normalizeRecipeItem),
       hasNext: Boolean(data.hasNext),
       nextCursor: data.nextCursor ?? null,
+      ok: true,
+      status: res.status,
     };
   } catch (error) {
     console.error("찜 목록 조회 실패:", error);
-    return { items: [], hasNext: false };
+    return fail(0);
   }
 };
 

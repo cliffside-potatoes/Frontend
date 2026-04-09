@@ -15,6 +15,10 @@ import {
   mergeRecipeWithStoredWishlist,
   removeRecipeWishlistIdFromStorage,
 } from '../../utils/recipeWishlistIdsStorage';
+import {
+  removeWishlistRecipeSnapshot,
+  upsertWishlistRecipeSnapshot,
+} from '../../utils/recipeWishlistSnapshotCache';
 import naengGuIcon from '../../assets/image/naeng-gu.png';
 import './MainPage.css';
 
@@ -223,8 +227,13 @@ const MainPage = () => {
     if (user?.id) {
       if (nextLiked) {
         addRecipeWishlistIdToStorage(user.id, id);
+        const snap = (displayedRecipes || []).find((r) => Number(r.recipeId) === id);
+        if (snap) {
+          upsertWishlistRecipeSnapshot(user.id, { ...snap, liked: true });
+        }
       } else {
         removeRecipeWishlistIdFromStorage(user.id, id);
+        removeWishlistRecipeSnapshot(user.id, id);
       }
     }
 

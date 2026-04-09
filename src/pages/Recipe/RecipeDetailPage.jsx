@@ -15,6 +15,10 @@ import {
   removeRecipeWishlistIdFromStorage,
 } from '../../utils/recipeWishlistIdsStorage';
 import { applyRecipeWishlistDisplayDeltaChange, getRecipeWishlistDisplayDelta } from '../../utils/recipeWishlistDisplayDelta';
+import {
+  removeWishlistRecipeSnapshot,
+  upsertWishlistRecipeSnapshot,
+} from '../../utils/recipeWishlistSnapshotCache';
 import { toImageUrl } from '../../utils/imageUrl';
 import './RecipeDetailPage.css';
 
@@ -142,8 +146,16 @@ const RecipeDetailPage = () => {
         if (user?.id) {
           if (nextLiked) {
             addRecipeWishlistIdToStorage(user.id, rid);
+            if (recipe) {
+              upsertWishlistRecipeSnapshot(user.id, {
+                ...recipe,
+                recipeId: rid,
+                liked: true,
+              });
+            }
           } else {
             removeRecipeWishlistIdFromStorage(user.id, rid);
+            removeWishlistRecipeSnapshot(user.id, rid);
           }
         }
         notifyRecipeWishlistChanged(
