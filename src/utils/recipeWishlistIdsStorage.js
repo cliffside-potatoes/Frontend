@@ -45,21 +45,16 @@ export const removeRecipeWishlistIdFromStorage = (userId, recipeId) => {
   saveRecipeWishlistIdSet(userId, set);
 };
 
-/** 공개 목록에 liked가 안 올 때(비인증 GET) 저장소와 맞춤 */
+/** 공개 목록에 liked가 안 올 때(비인증 GET) 저장소와 맞춤 — liked만, 찜 수는 recipeWishlistDisplayDelta */
 export const mergeRecipeWithStoredWishlist = (recipe, userId) => {
   const rid = Number(recipe?.recipeId);
   if (!Number.isFinite(rid)) return recipe;
   const key = recipeWishlistIdsStorageKey(userId);
   if (!key) return recipe;
   const wishIds = loadRecipeWishlistIdSet(userId);
-  if (!wishIds.has(rid)) return recipe;
-  const already = Boolean(recipe.liked);
-  return {
-    ...recipe,
-    liked: true,
-    likeCount: Math.max(
-      0,
-      (recipe.likeCount ?? 0) + (already ? 0 : 1),
-    ),
-  };
+  const apiLiked = Boolean(recipe.likedByApi ?? recipe.liked);
+  if (wishIds.has(rid)) {
+    return { ...recipe, liked: true, likedByApi: recipe.likedByApi ?? apiLiked };
+  }
+  return { ...recipe, liked: apiLiked, likedByApi: recipe.likedByApi ?? apiLiked };
 };

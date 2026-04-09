@@ -127,6 +127,7 @@ const MOCK_RECIPE_DETAIL = {
     { name: "고춧가루", checked: false },
   ],
   liked: false,
+  likedByApi: false,
   totalIngredientCount: 7,
   matchedIngredientCount: 4,
 };
@@ -145,6 +146,7 @@ const MOCK_RECIPE_LIST = [
     totalIngredientCount: MOCK_RECIPE_DETAIL.totalIngredientCount,
     matchedIngredientCount: MOCK_RECIPE_DETAIL.matchedIngredientCount,
     liked: MOCK_RECIPE_DETAIL.liked,
+    likedByApi: MOCK_RECIPE_DETAIL.likedByApi,
   },
   {
     recipeId: 2,
@@ -159,6 +161,7 @@ const MOCK_RECIPE_LIST = [
     totalIngredientCount: 5,
     matchedIngredientCount: 2,
     liked: false,
+    likedByApi: false,
   },
   {
     recipeId: 3,
@@ -173,6 +176,7 @@ const MOCK_RECIPE_LIST = [
     totalIngredientCount: 4,
     matchedIngredientCount: 4,
     liked: false,
+    likedByApi: false,
   },
 ];
 
@@ -193,6 +197,7 @@ const getMockReviews = (params) => {
 };
 
 const normalizeRecipeItem = (item) => {
+  const apiLiked = Boolean(item?.liked ?? false);
   return {
     recipeId: item?.recipeId ?? item?.id ?? 0,
     title: item?.title ?? item?.name ?? "레시피",
@@ -209,7 +214,8 @@ const normalizeRecipeItem = (item) => {
     reviewCount: item?.reviewCount ?? 0,
     totalIngredientCount: item?.totalIngredientCount ?? 0,
     matchedIngredientCount: item?.matchedIngredientCount ?? 0,
-    liked: item?.liked ?? false,
+    liked: apiLiked,
+    likedByApi: Boolean(item?.likedByApi ?? item?.liked ?? false),
   };
 };
 
@@ -425,6 +431,12 @@ const normalizeRecipeDetail = (payload, recipeId) => {
       recipeData?.intro ??
       "",
     ingredients,
+    likedByApi: Boolean(
+      recipeData?.liked ??
+        recipeData?.wished ??
+        recipeData?.bookmarked ??
+        recipeData?.isWished
+    ),
     liked: Boolean(
       recipeData?.liked ??
         recipeData?.wished ??

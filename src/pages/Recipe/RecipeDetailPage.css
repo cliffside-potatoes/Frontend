@@ -129,6 +129,11 @@
   color: var(--color-theme-primary, #ea6363);
 }
 
+.like-icon.like-icon--guest {
+  cursor: default;
+  pointer-events: none;
+}
+
 .review-count {
   font-size: 16px;
   color: #9ca3af;

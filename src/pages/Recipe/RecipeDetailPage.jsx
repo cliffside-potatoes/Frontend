@@ -14,6 +14,7 @@ import {
   mergeRecipeWithStoredWishlist,
   removeRecipeWishlistIdFromStorage,
 } from '../../utils/recipeWishlistIdsStorage';
+import { applyRecipeWishlistDisplayDeltaChange, getRecipeWishlistDisplayDelta } from '../../utils/recipeWishlistDisplayDelta';
 import { toImageUrl } from '../../utils/imageUrl';
 import './RecipeDetailPage.css';
 
@@ -33,7 +34,6 @@ const RecipeDetailPage = () => {
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState(RECIPE_TABS.PUBLIC);
   const [isLiked, setIsLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(0);
   const [ingredients, setIngredients] = useState([]);
   const [reviewPreview, setReviewPreview] = useState([]);
   const [isWishlistSubmitting, setIsWishlistSubmitting] = useState(false);
@@ -71,7 +71,6 @@ const RecipeDetailPage = () => {
         setRecipe(mergedRecipe);
         setActiveTab(RECIPE_TABS.PUBLIC);
         setIsLiked(Boolean(mergedRecipe?.liked));
-        setLikeCount(mergedRecipe?.likeCount ?? 0);
         setIngredients(Array.isArray(recipeData?.ingredients) ? recipeData.ingredients : []);
 
         if (isLoggedIn) {
@@ -115,17 +114,14 @@ const RecipeDetailPage = () => {
     if (isWishlistSubmitting) return;
 
     const nextLiked = !isLiked;
-    const previousLikeCount = likeCount;
-    const nextLikeCount = Math.max(0, previousLikeCount + (nextLiked ? 1 : -1));
+    const previousIsLiked = isLiked;
 
     setIsLiked(nextLiked);
-    setLikeCount(nextLikeCount);
     setRecipe((prev) =>
       prev
         ? {
             ...prev,
             liked: nextLiked,
-            likeCount: nextLikeCount,
           }
         : prev
     );
@@ -142,6 +138,7 @@ const RecipeDetailPage = () => {
 
       const rid = Number(recipeId);
       if (Number.isFinite(rid)) {
+        applyRecipeWishlistDisplayDeltaChange(rid, nextLiked ? 1 : -1);
         if (user?.id) {
           if (nextLiked) {
             addRecipeWishlistIdToStorage(user.id, rid);
@@ -157,14 +154,12 @@ const RecipeDetailPage = () => {
       }
     } catch (wishlistError) {
       console.error('Failed to update wishlist:', wishlistError);
-      setIsLiked(!nextLiked);
-      setLikeCount(previousLikeCount);
+      setIsLiked(previousIsLiked);
       setRecipe((prev) =>
         prev
           ? {
               ...prev,
-              liked: !nextLiked,
-              likeCount: previousLikeCount,
+              liked: previousIsLiked,
             }
           : prev
       );
@@ -232,6 +227,17 @@ const RecipeDetailPage = () => {
   const recipeSteps = Array.isArray(recipe.recipeSteps) ? recipe.recipeSteps : [];
   const hasRecipeSteps = recipeSteps.length > 0;
 
+  const rid = Number(recipe.recipeId ?? recipeId);
+  const baseWish = Number(recipe.likeCount ?? 0);
+  const displayWishCount = (() => {
+    if (!Number.isFinite(rid)) return Math.max(0, baseWish);
+    const delta = getRecipeWishlistDisplayDelta(rid);
+    const apiLiked = Boolean(recipe.likedByApi);
+    const extra =
+      isLoggedIn && isLiked && !apiLiked && delta === 0 ? 1 : 0;
+    return Math.max(0, baseWish + delta + extra);
+  })();
+
   return (
     <div className="recipe-detail-page">
       <div className="recipe-image-section">
@@ -267,17 +273,23 @@ const RecipeDetailPage = () => {
           </div>
 
           <div className="recipe-actions">
-            <button
-              type="button"
-              className={`like-icon ${isLiked ? 'liked' : ''}`}
-              onClick={handleLikeToggle}
-              disabled={isWishlistSubmitting}
-            >
-              <span className="material-symbols-outlined like-icon-symbol" aria-hidden="true">
-                {isLiked ? 'favorite' : 'favorite_border'}
+            {isLoggedIn ? (
+              <button
+                type="button"
+                className={`like-icon ${isLiked ? 'liked' : ''}`}
+                onClick={handleLikeToggle}
+                disabled={isWishlistSubmitting}
+              >
+                <span className="material-symbols-outlined like-icon-symbol" aria-hidden="true">
+                  {isLiked ? 'favorite' : 'favorite_border'}
+                </span>
+                <span className="like-icon-count">{displayWishCount}</span>
+              </button>
+            ) : (
+              <span className="like-icon like-icon--guest">
+                <span className="like-icon-count">찜 {displayWishCount}</span>
               </span>
-              <span className="like-icon-count">{likeCount}</span>
-            </button>
+            )}
             <span className="review-count">💬 {recipe.reviewCount}</span>
           </div>
         </div>

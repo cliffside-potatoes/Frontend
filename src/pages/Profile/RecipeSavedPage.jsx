@@ -6,6 +6,7 @@ import RecipeCard from '../../components/card/RecipeCard';
 import { getWishlistRecipes, removeWishlist } from '../../api/recipeApi';
 import { useUser } from '../../context/UserContext';
 import { notifyRecipeWishlistChanged, RECIPE_WISHLIST_CHANGED_EVENT } from '../../utils/recipeWishlistSync';
+import { applyRecipeWishlistDisplayDeltaChange } from '../../utils/recipeWishlistDisplayDelta';
 import { removeRecipeWishlistIdFromStorage } from '../../utils/recipeWishlistIdsStorage';
 import './RecipeSavedPage.css';
 
@@ -65,6 +66,7 @@ const RecipeSavedPage = () => {
       return false;
     }
 
+    applyRecipeWishlistDisplayDeltaChange(id, -1);
     setRecipes((prev) =>
       (prev || []).filter((recipe) => Number(recipe.recipeId) !== id)
     );

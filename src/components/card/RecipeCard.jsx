@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useUser } from '../../context/UserContext';
+import { getRecipeWishlistDisplayDelta } from '../../utils/recipeWishlistDisplayDelta';
 import { toImageUrl } from '../../utils/imageUrl';
 import './RecipeCard.css';
 
 const RecipeCard = ({ recipe, onToggleLike }) => {
   const navigate = useNavigate();
+  const { isLoggedIn } = useUser();
   const {
     recipeId,
     title,
@@ -17,6 +20,7 @@ const RecipeCard = ({ recipe, onToggleLike }) => {
     totalIngredientCount,
     matchedIngredientCount,
     liked,
+    likedByApi,
   } = recipe;
 
   const [isLiked, setIsLiked] = useState(liked);
@@ -27,10 +31,14 @@ const RecipeCard = ({ recipe, onToggleLike }) => {
   }, [liked]);
 
   const isComplete = matchedIngredientCount === totalIngredientCount;
-  const displayLikeCount =
-    likeCount +
-    (isLiked && !liked ? 1 : 0) -
-    (!isLiked && liked ? 1 : 0);
+  const apiLiked = Boolean(likedByApi ?? false);
+  const delta = getRecipeWishlistDisplayDelta(recipeId);
+  const extraWishlist =
+    isLoggedIn && isLiked && !apiLiked && delta === 0 ? 1 : 0;
+  const displayLikeCount = Math.max(
+    0,
+    (likeCount ?? 0) + delta + extraWishlist,
+  );
 
   const handleCardClick = (e) => {
     // 좋아요 버튼 클릭 시에는 카드 클릭 이벤트가 발생하지 않도록
@@ -49,26 +57,30 @@ const RecipeCard = ({ recipe, onToggleLike }) => {
         ) : (
           <div className="recipe-image-placeholder"></div>
         )}
-        <button
-          type="button"
-          className={`like-button ${isLiked ? 'liked' : ''}`}
-          onClick={async (e) => {
-            e.stopPropagation();
-            const prev = isLiked;
-            const next = !prev;
-            if (onToggleLike) {
-              const ret = onToggleLike(recipeId, next);
-              const ok =
-                ret != null && typeof ret.then === "function" ? await ret : ret;
-              if (ok === false) return;
-            }
-            setIsLiked(next);
-          }}
-        >
-          <span className="material-symbols-outlined" aria-hidden="true">
-            {isLiked ? 'favorite' : 'favorite_border'}
-          </span>
-        </button>
+        {isLoggedIn && (
+          <button
+            type="button"
+            className={`like-button ${isLiked ? 'liked' : ''}`}
+            onClick={async (e) => {
+              e.stopPropagation();
+              const prev = isLiked;
+              const next = !prev;
+              if (onToggleLike) {
+                const ret = onToggleLike(recipeId, next);
+                const ok =
+                  ret != null && typeof ret.then === 'function'
+                    ? await ret
+                    : ret;
+                if (ok === false) return;
+              }
+              setIsLiked(next);
+            }}
+          >
+            <span className="material-symbols-outlined" aria-hidden="true">
+              {isLiked ? 'favorite' : 'favorite_border'}
+            </span>
+          </button>
+        )}
       </div>
       <div className="recipe-info">
         <h3 className="recipe-title">{title}</h3>

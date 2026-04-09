@@ -9,6 +9,7 @@ import { fridgeApi } from '../../api/fridgeApi';
 import { addWishlist, getPopularRecipes, removeWishlist } from '../../api/recipeApi';
 import { buildSignInState } from '../../utils/authStorage';
 import { notifyRecipeWishlistChanged } from '../../utils/recipeWishlistSync';
+import { applyRecipeWishlistDisplayDeltaChange } from '../../utils/recipeWishlistDisplayDelta';
 import {
   addRecipeWishlistIdToStorage,
   mergeRecipeWithStoredWishlist,
@@ -17,24 +18,28 @@ import {
 import naengGuIcon from '../../assets/image/naeng-gu.png';
 import './MainPage.css';
 
-const normalizeRecipe = (item) => ({
-  recipeId: item?.recipeId ?? item?.id ?? 0,
-  title: item?.title ?? item?.name ?? '레시피',
-  thumbnailImage:
-    item?.thumbnailImage ??
-    item?.thumbnailImageUrl ??
-    item?.imageUrl ??
-    item?.thumbnailUrl ??
-    '',
-  source: item?.source ?? item?.recipeSource ?? '출처 없음',
-  cookingTime: item?.cookingTime ?? item?.cookTime ?? 0,
-  difficulty: item?.difficulty ?? '초보',
-  likeCount: item?.likeCount ?? 0,
-  reviewCount: item?.reviewCount ?? 0,
-  totalIngredientCount: item?.totalIngredientCount ?? 0,
-  matchedIngredientCount: item?.matchedIngredientCount ?? 0,
-  liked: item?.liked ?? false,
-});
+const normalizeRecipe = (item) => {
+  const apiLiked = Boolean(item?.liked ?? false);
+  return {
+    recipeId: item?.recipeId ?? item?.id ?? 0,
+    title: item?.title ?? item?.name ?? '레시피',
+    thumbnailImage:
+      item?.thumbnailImage ??
+      item?.thumbnailImageUrl ??
+      item?.imageUrl ??
+      item?.thumbnailUrl ??
+      '',
+    source: item?.source ?? item?.recipeSource ?? '출처 없음',
+    cookingTime: item?.cookingTime ?? item?.cookTime ?? 0,
+    difficulty: item?.difficulty ?? '초보',
+    likeCount: item?.likeCount ?? 0,
+    reviewCount: item?.reviewCount ?? 0,
+    totalIngredientCount: item?.totalIngredientCount ?? 0,
+    matchedIngredientCount: item?.matchedIngredientCount ?? 0,
+    liked: apiLiked,
+    likedByApi: Boolean(item?.likedByApi ?? item?.liked ?? false),
+  };
+};
 
 const shuffleArray = (arr) => {
   const out = [...arr];
@@ -203,13 +208,14 @@ const MainPage = () => {
       return false;
     }
 
+    applyRecipeWishlistDisplayDeltaChange(id, nextLiked ? 1 : -1);
+
     setDisplayedRecipes((prev) =>
       (prev || []).map((recipe) => {
         if (Number(recipe.recipeId) !== id) return recipe;
         return {
           ...recipe,
           liked: nextLiked,
-          likeCount: Math.max(0, (recipe.likeCount ?? 0) + (nextLiked ? 1 : -1)),
         };
       })
     );
