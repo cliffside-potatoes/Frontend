@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import BottomNav from '../../components/common/BottomNav';
 import GuestLoginPrompt from '../../components/common/GuestLoginPrompt';
 import RecipeCard from '../../components/card/RecipeCard';
-import { getWishlistRecipes } from '../../api/recipeApi';
+import { getWishlistRecipes, removeWishlist } from '../../api/recipeApi';
 import { useUser } from '../../context/UserContext';
 import './RecipeSavedPage.css';
 
@@ -43,6 +43,24 @@ const RecipeSavedPage = () => {
 
   const handleBack = () => navigate(-1);
 
+  const handleToggleLike = async (recipeId, nextLiked) => {
+    if (nextLiked) return;
+
+    const id = Number(recipeId);
+    if (!Number.isFinite(id)) return;
+
+    try {
+      await removeWishlist(id);
+    } catch (error) {
+      console.error('저장 레시피 찜 해제 실패:', error);
+      return;
+    }
+
+    setRecipes((prev) =>
+      (prev || []).filter((recipe) => Number(recipe.recipeId) !== id)
+    );
+  };
+
   return (
     <div className="recipe-saved-page">
       <header className="recipe-saved-header">
@@ -65,7 +83,11 @@ const RecipeSavedPage = () => {
         ) : recipes.length > 0 ? (
           <div className="recipe-saved-list">
             {recipes.map((recipe) => (
-              <RecipeCard key={recipe.recipeId} recipe={recipe} />
+              <RecipeCard
+                key={recipe.recipeId}
+                recipe={recipe}
+                onToggleLike={handleToggleLike}
+              />
             ))}
           </div>
         ) : (

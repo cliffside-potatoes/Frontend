@@ -6,7 +6,7 @@ import Modal from '../../components/ui/Modal';
 import { useUser } from '../../context/UserContext';
 import { RECIPE_CATEGORIES } from '../../constants/categories';
 import { fridgeApi } from '../../api/fridgeApi';
-import { getPopularRecipes } from '../../api/recipeApi';
+import { addWishlist, getPopularRecipes, removeWishlist } from '../../api/recipeApi';
 import { buildSignInState } from '../../utils/authStorage';
 import naengGuIcon from '../../assets/image/naeng-gu.png';
 import './MainPage.css';
@@ -178,6 +178,38 @@ const MainPage = () => {
 
   const currentPath = `${location.pathname}${location.search}${location.hash}`;
 
+  const handleToggleRecipeLike = async (recipeId, nextLiked) => {
+    if (!isLoggedIn) {
+      setShowLoginModal(true);
+      return;
+    }
+
+    const id = Number(recipeId);
+    if (!Number.isFinite(id)) return;
+
+    try {
+      if (nextLiked) {
+        await addWishlist(id);
+      } else {
+        await removeWishlist(id);
+      }
+    } catch (error) {
+      console.error('메인 레시피 찜 토글 실패:', error);
+      return;
+    }
+
+    setDisplayedRecipes((prev) =>
+      (prev || []).map((recipe) => {
+        if (Number(recipe.recipeId) !== id) return recipe;
+        return {
+          ...recipe,
+          liked: nextLiked,
+          likeCount: Math.max(0, (recipe.likeCount ?? 0) + (nextLiked ? 1 : -1)),
+        };
+      })
+    );
+  };
+
   return (
     <div className="main-page">
       <header className="main-header">
@@ -230,7 +262,11 @@ const MainPage = () => {
           ) : (
             <div className="recipe-list">
               {displayedRecipes.map((recipe) => (
-                <RecipeCard key={recipe.recipeId} recipe={recipe} />
+                <RecipeCard
+                  key={recipe.recipeId}
+                  recipe={recipe}
+                  onToggleLike={handleToggleRecipeLike}
+                />
               ))}
               {displayedRecipes.length === 0 && (
                 <p style={{ padding: '16px', color: '#888' }}>추천 레시피가 없어요</p>
