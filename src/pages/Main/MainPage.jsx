@@ -22,6 +22,15 @@ import {
 import naengGuIcon from '../../assets/image/naeng-gu.png';
 import './MainPage.css';
 
+const mapFridgeDifficulty = (value) => {
+  const u = String(value ?? '').toUpperCase();
+  if (u === 'EASY') return '초보';
+  if (u === 'NORMAL') return '중급';
+  if (u === 'HARD') return '어려움';
+  if (value != null && String(value).trim() !== '') return String(value);
+  return '초보';
+};
+
 const normalizeRecipe = (item) => {
   const apiLiked = Boolean(item?.liked ?? false);
   return {
@@ -35,7 +44,8 @@ const normalizeRecipe = (item) => {
       '',
     source: item?.source ?? item?.recipeSource ?? '출처 없음',
     cookingTime: item?.cookingTime ?? item?.cookTime ?? 0,
-    difficulty: item?.difficulty ?? '초보',
+    servings: Number(item?.servings) || 0,
+    difficulty: mapFridgeDifficulty(item?.difficulty),
     likeCount: item?.likeCount ?? 0,
     reviewCount: item?.reviewCount ?? 0,
     totalIngredientCount: item?.totalIngredientCount ?? 0,

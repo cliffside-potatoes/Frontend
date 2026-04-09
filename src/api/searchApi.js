@@ -1,6 +1,21 @@
 import { refreshAccessToken } from "./tokenApi";
+import { getStoredAccessToken } from "../utils/authStorage";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "";
+
+const getAuthHeader = () => {
+  const token = getStoredAccessToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
+const mapSearchDifficulty = (value) => {
+  const u = String(value ?? "").toUpperCase();
+  if (u === "EASY") return "초보";
+  if (u === "NORMAL") return "중급";
+  if (u === "HARD") return "어려움";
+  if (value != null && String(value).trim() !== "") return String(value);
+  return "초보";
+};
 
 const DEFAULT_RECENT_SEARCHES = ["비빔밥", "김치찌개", "파스타"];
 const DEFAULT_RECOMMENDED_SEARCHES = [
@@ -25,20 +40,22 @@ const normalizeRecipeItem = (item) => ({
     "",
   source: item?.source ?? item?.recipeSource ?? item?.description ?? "",
   cookingTime: item?.cookingTime ?? item?.cookTime ?? 0,
-  difficulty: item?.difficulty ?? "초보",
+  servings: Number(item?.servings) || 0,
+  difficulty: mapSearchDifficulty(item?.difficulty),
   likeCount: item?.likeCount ?? 0,
   reviewCount: item?.reviewCount ?? 0,
   totalIngredientCount: item?.totalIngredientCount ?? 0,
   matchedIngredientCount: item?.matchedIngredientCount ?? 0,
   liked: item?.liked ?? false,
+  likedByApi: Boolean(item?.likedByApi ?? item?.liked ?? false),
 });
 
 const extractRecipeItems = (payload) => {
+  if (Array.isArray(payload?.data?.items)) return payload.data.items;
   if (Array.isArray(payload?.data?.Recipes)) return payload.data.Recipes;
   if (Array.isArray(payload?.Recipes)) return payload.Recipes;
   if (Array.isArray(payload?.data?.recipes)) return payload.data.recipes;
   if (Array.isArray(payload?.recipes)) return payload.recipes;
-  if (Array.isArray(payload?.data?.items)) return payload.data.items;
   if (Array.isArray(payload?.items)) return payload.items;
   if (Array.isArray(payload?.data)) return payload.data;
   if (Array.isArray(payload)) return payload;
@@ -85,6 +102,7 @@ const requestSearchRecipes = async (keyword, options = {}) => {
     method: "GET",
     headers: {
       Accept: "application/json",
+      ...getAuthHeader(),
     },
   });
 };

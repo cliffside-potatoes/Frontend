@@ -196,6 +196,16 @@ const getMockReviews = (params) => {
   };
 };
 
+/** 백엔드 EASY | NORMAL | HARD → 카드 표시용 */
+const mapListDifficultyLabel = (value) => {
+  const u = String(value ?? "").toUpperCase();
+  if (u === "EASY") return "초보";
+  if (u === "NORMAL") return "중급";
+  if (u === "HARD") return "어려움";
+  if (value != null && String(value).trim() !== "") return String(value);
+  return "초보";
+};
+
 const normalizeRecipeItem = (item) => {
   const apiLiked = Boolean(item?.liked ?? false);
   return {
@@ -209,7 +219,8 @@ const normalizeRecipeItem = (item) => {
       "",
     source: item?.source ?? item?.recipeSource ?? "출처 없음",
     cookingTime: item?.cookingTime ?? item?.cookTime ?? 0,
-    difficulty: item?.difficulty ?? "초보",
+    servings: toNumber(item?.servings, 0),
+    difficulty: mapListDifficultyLabel(item?.difficulty),
     likeCount: item?.likeCount ?? 0,
     reviewCount: item?.reviewCount ?? 0,
     totalIngredientCount: item?.totalIngredientCount ?? 0,
@@ -226,12 +237,12 @@ const extractRecipesListFromApiPayload = (payload) => {
   if (!payload || typeof payload !== "object") return [];
   const inner = payload.data;
   const lists = [
+    inner?.items,
     inner?.Recipes,
     inner?.recipes,
-    inner?.items,
+    payload.items,
     payload.Recipes,
     payload.recipes,
-    payload.items,
   ];
   for (let i = 0; i < lists.length; i += 1) {
     if (Array.isArray(lists[i])) return lists[i];
@@ -239,6 +250,16 @@ const extractRecipesListFromApiPayload = (payload) => {
   if (Array.isArray(inner)) return inner;
   if (Array.isArray(payload)) return payload;
   return [];
+};
+
+const parseRecipeListResponse = (json) => {
+  const data = extractPayloadData(json) ?? {};
+  const rawItems = extractRecipesListFromApiPayload(json);
+  return {
+    items: rawItems.map(normalizeRecipeItem),
+    hasNext: Boolean(data.hasNext),
+    nextCursor: data.nextCursor ?? null,
+  };
 };
 
 const extractPayloadData = (payload) => {
@@ -501,10 +522,9 @@ const normalizeReviewItem = (item) => {
 const hasRemoteRecipeApi = (base) => Boolean(base);
 
 /**
- * GET /recipes — axios(apiClient)는 401 시 로그인 리다이렉트가 나와 비로그인 메인 노출에 부적합.
- * 게스트도 서버가 허용하면 목록을 받을 수 있도록 fetch로 호출한다.
- * 인증 헤더는 붙이지 않는다. 일부 환경에서 Bearer 포함 시에만 500이 나고 비로그인과 동작이 달라지는 경우가 있어
- * 공개 목록은 게스트와 동일한 요청으로 맞춘다.
+ * GET /recipes (인기·태그·검색과 동일 엔드포인트)
+ * 백엔드 가이드: Bearer 권장. 저장된 액세스 토큰이 있으면 Authorization 부착.
+ * 토큰 없음(비로그인)은 헤더 없이 요청 — 서버가 401이면 상위에서 목 폴백.
  */
 const fetchRecipeListFromRemote = async (queryParams) => {
   const base = API_BASE_URL.replace(/\/$/, "");
@@ -513,15 +533,28 @@ const fetchRecipeListFromRemote = async (queryParams) => {
     if (value != null && value !== "") searchParams.set(key, String(value));
   });
   const url = `${base}/recipes?${searchParams.toString()}`;
-  const headers = {
+  const buildHeaders = () => ({
     Accept: "application/json",
     "Content-Type": "application/json",
-  };
-
-  const res = await fetch(url, {
-    method: "GET",
-    headers,
+    ...getAuthHeader(),
   });
+
+  let res = await fetch(url, {
+    method: "GET",
+    headers: buildHeaders(),
+  });
+
+  if (res.status === 401 && getAccessToken()) {
+    try {
+      await refreshAccessToken();
+      res = await fetch(url, {
+        method: "GET",
+        headers: buildHeaders(),
+      });
+    } catch {
+      /* leave res as 401 */
+    }
+  }
 
   if (!res.ok) {
     const err = new Error(`GET /recipes ${res.status}`);
@@ -530,8 +563,48 @@ const fetchRecipeListFromRemote = async (queryParams) => {
   }
 
   const json = await res.json();
-  const rawItems = extractRecipesListFromApiPayload(json);
-  return rawItems.map(normalizeRecipeItem);
+  return parseRecipeListResponse(json).items;
+};
+
+/** GET /recipes — items·hasNext·nextCursor 포함 (태그별 페이지 등) */
+const fetchRecipeListPageFromRemote = async (queryParams) => {
+  const base = API_BASE_URL.replace(/\/$/, "");
+  const searchParams = new URLSearchParams();
+  Object.entries(queryParams).forEach(([key, value]) => {
+    if (value != null && value !== "") searchParams.set(key, String(value));
+  });
+  const url = `${base}/recipes?${searchParams.toString()}`;
+  const buildHeaders = () => ({
+    Accept: "application/json",
+    "Content-Type": "application/json",
+    ...getAuthHeader(),
+  });
+
+  let res = await fetch(url, {
+    method: "GET",
+    headers: buildHeaders(),
+  });
+
+  if (res.status === 401 && getAccessToken()) {
+    try {
+      await refreshAccessToken();
+      res = await fetch(url, {
+        method: "GET",
+        headers: buildHeaders(),
+      });
+    } catch {
+      /* leave res as 401 */
+    }
+  }
+
+  if (!res || !res.ok) {
+    const err = new Error(`GET /recipes ${res?.status ?? 0}`);
+    err.status = res?.status ?? 0;
+    throw err;
+  }
+
+  const json = await res.json();
+  return parseRecipeListResponse(json);
 };
 
 const getMockRecipeDetail = (recipeId) => {
@@ -810,7 +883,7 @@ export const removeWishlist = async (recipeId) => {
 
 /**
  * 레시피 찜 목록 조회
- * GET /me/favorites/recipes
+ * GET /me/favorites/recipes — 응답 data.Recipes, nextCursor.cursorCreatedAt + cursorId (스웨거·백엔드 가이드 §6)
  */
 export const getWishlistRecipes = async (params = {}) => {
   const { size = 20, cursorId, cursorCreatedAt } = params;
@@ -916,29 +989,57 @@ export const getPopularRecipes = async (params = {}) => {
 
 /**
  * 태그별 레시피 추천 조회
- * GET /recipes?category={category}&size=20&sort=LATEST
+ * GET /recipes?category={태그명}&sort=LATEST|LIKE_COUNT&size=…
+ * sort=LATEST → cursorCreatedAt+cursorId, sort=LIKE_COUNT → cursorLikeCount+cursorId
+ * @returns {{ items: Array, hasNext: boolean, nextCursor: object|null }}
  */
 export const getTaggedRecipes = async (category, params = {}) => {
-  const { size = 10, sort = "LATEST", cursorCreatedAt, cursorId } = params;
+  const {
+    size = 20,
+    sort = "LATEST",
+    cursorCreatedAt,
+    cursorId,
+    cursorLikeCount,
+  } = params;
+
+  const empty = { items: [], hasNext: false, nextCursor: null, ok: false };
 
   try {
     const base =
       (typeof API_BASE_URL === "string" && API_BASE_URL.trim()) || "";
-    if (!hasRemoteRecipeApi(base)) return getMockRecipeList(size);
+    if (!hasRemoteRecipeApi(base)) {
+      const mock = getMockRecipeList(size);
+      return { items: mock, hasNext: false, nextCursor: null, ok: true };
+    }
+
+    if (
+      category == null ||
+      (typeof category === "string" && category.trim() === "")
+    ) {
+      return { ...empty, ok: true };
+    }
 
     const paramsObj = {
-      category,
+      category: String(category).trim(),
       size,
       sort,
-      ...(cursorCreatedAt != null && cursorId != null
+      ...(sort === "LIKE_COUNT" &&
+      cursorLikeCount != null &&
+      cursorId != null
+        ? { cursorLikeCount, cursorId }
+        : {}),
+      ...(sort !== "LIKE_COUNT" &&
+      cursorCreatedAt != null &&
+      cursorId != null
         ? { cursorCreatedAt, cursorId }
         : {}),
     };
 
-    return await fetchRecipeListFromRemote(paramsObj);
+    const page = await fetchRecipeListPageFromRemote(paramsObj);
+    return { ...page, ok: true };
   } catch (error) {
     console.error("태그별 레시피 조회 실패:", error);
-    return getMockRecipeList(size);
+    return { ...empty, ok: false };
   }
 };
 

@@ -9,6 +9,44 @@
   flex-direction: column;
 }
 
+.situation-recipes-page__toolbar {
+  padding: 12px 16px 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.situation-recipes-page__tag-label {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: #666;
+}
+
+.situation-recipes-page__tag-label strong {
+  color: #333;
+  font-weight: 600;
+}
+
+.situation-recipes-page__sort {
+  display: flex;
+  gap: 8px;
+}
+
+.situation-recipes-page__sort-btn {
+  padding: 8px 14px;
+  font-size: 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  background: #fff;
+  color: #555;
+  cursor: pointer;
+}
+
+.situation-recipes-page__sort-btn.is-active {
+  border-color: var(--color-theme-primary, #ea6363);
+  color: var(--color-theme-primary, #ea6363);
+  background: rgba(234, 99, 99, 0.08);
+}
+
 .situation-recipes-page__main {
   flex: 1;
   padding: 16px;
@@ -28,4 +66,28 @@
   color: #888;
   font-size: 14px;
   line-height: 1.5;
+}
+
+.situation-recipes-page__hint--error {
+  color: #b91c1c;
+}
+
+.situation-recipes-page__more {
+  display: block;
+  width: 100%;
+  max-width: 320px;
+  margin: 20px auto 8px;
+  padding: 12px 16px;
+  font-size: 15px;
+  font-weight: 500;
+  border: 1px solid var(--color-theme-primary, #ea6363);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--color-theme-primary, #ea6363);
+  cursor: pointer;
+}
+
+.situation-recipes-page__more:disabled {
+  opacity: 0.6;
+  cursor: wait;
 }
