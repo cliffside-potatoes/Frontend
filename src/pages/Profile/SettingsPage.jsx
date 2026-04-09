@@ -62,6 +62,11 @@ const SettingsPage = () => {
         return;
       }
 
+      if (error?.serverMessage) {
+        alert(error.serverMessage);
+        return;
+      }
+
       alert('회원탈퇴에 실패했어. 잠시 후 다시 시도해줘.');
     } finally {
       setPermanentWithdrawing(false);
