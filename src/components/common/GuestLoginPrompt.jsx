@@ -5,7 +5,7 @@ import { useUser } from "../../context/UserContext";
 import { buildSignInState } from "../../utils/authStorage";
 
 /**
- * 비로그인 사용자에게 메인과 동일한 로그인 유도 모달 (페이지는 그대로 보이고 오버레이로 어둡게 가림)
+ * 비로그인 사용자 유도 모달 — 홈으로 가기 / 로그인
  */
 const GuestLoginPrompt = ({ afterLoginPath }) => {
   const { isLoggedIn, isInitializing } = useUser();
@@ -26,9 +26,12 @@ const GuestLoginPrompt = ({ afterLoginPath }) => {
       onClose={() => setOpen(false)}
       title="로그인 이후 이용해주세요"
       description="더 많은 기능을 이용할 수 있어요!"
-      cancelLabel="취소"
+      cancelLabel="홈으로 가기"
       confirmLabel="로그인"
-      onCancel={() => setOpen(false)}
+      onCancel={() => {
+        setOpen(false);
+        navigate("/main", { replace: true });
+      }}
       onConfirm={() => {
         setOpen(false);
         navigate("/signin", {
