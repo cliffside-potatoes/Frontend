@@ -6,6 +6,7 @@ import {
   getRecipeReviews,
   removeWishlist,
 } from '../../api/recipeApi';
+import GuestLoginPrompt from '../../components/common/GuestLoginPrompt';
 import { useUser } from '../../context/UserContext';
 import { buildSignInState } from '../../utils/authStorage';
 import { toImageUrl } from '../../utils/imageUrl';
@@ -20,7 +21,7 @@ const RecipeDetailPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { recipeId } = useParams();
-  const { isLoggedIn } = useUser();
+  const { isLoggedIn, isInitializing } = useUser();
 
   const [recipe, setRecipe] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -33,6 +34,13 @@ const RecipeDetailPage = () => {
   const [isWishlistSubmitting, setIsWishlistSubmitting] = useState(false);
 
   useEffect(() => {
+    if (isInitializing) return;
+
+    if (!isLoggedIn) {
+      setLoading(false);
+      return;
+    }
+
     let cancelled = false;
 
     const fetchRecipe = async () => {
@@ -73,7 +81,7 @@ const RecipeDetailPage = () => {
     return () => {
       cancelled = true;
     };
-  }, [recipeId]);
+  }, [recipeId, isLoggedIn, isInitializing]);
 
   const handleLikeToggle = async () => {
     const currentPath = `${location.pathname}${location.search}${location.hash}`;
@@ -168,6 +176,14 @@ const RecipeDetailPage = () => {
 
     window.open(recipeUrl, '_blank', 'noopener,noreferrer');
   };
+
+  if (!isLoggedIn && !isInitializing) {
+    return (
+      <div className="recipe-detail-page">
+        <GuestLoginPrompt afterLoginPath={`/recipe/${recipeId}`} />
+      </div>
+    );
+  }
 
   if (loading) {
     return (
