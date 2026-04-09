@@ -70,6 +70,12 @@ const mapApiItemToPost = (item, likedIdSet) => {
     Number.isFinite(id) && likedIdSet ? likedIdSet.has(id) : false;
   const liked = apiLiked || storedLiked;
 
+  let likeCount = item.likeCount ?? 0;
+  // 로컬에 좋아요 저장됐는데 API는 liked=false·이전 카운트인 경우(새로고침 후 흔함)
+  if (liked && !apiLiked && storedLiked && Number.isFinite(id)) {
+    likeCount = Math.max(0, likeCount + 1);
+  }
+
   return {
     id: item.id,
     type: item.type,
@@ -93,7 +99,7 @@ const mapApiItemToPost = (item, likedIdSet) => {
     image: Array.isArray(item.images)
       ? toImageUrl(item.images[0] ?? '')
       : toImageUrl(item.image ?? ''),
-    likeCount: item.likeCount ?? 0,
+    likeCount,
     liked,
     hideLikeCount: Boolean(item.hidLikeCount ?? item.hideLikeCount),
     pinned: Boolean(item.pinned),
