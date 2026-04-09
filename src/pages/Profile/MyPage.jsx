@@ -342,7 +342,29 @@ const MyPage = () => {
   }
 
   if (!isLoggedIn) {
-    return null;
+    return (
+      <div className="mypage">
+        <header className="mypage-header">
+          <button
+            type="button"
+            className="icon-button"
+            aria-label="뒤로가기"
+            onClick={() => navigate(-1)}
+          >
+            <span className="material-symbols-outlined">arrow_back_ios</span>
+          </button>
+          <h1 className="mypage-title">마이페이지</h1>
+          <span className="mypage-header-spacer" aria-hidden="true" />
+        </header>
+
+        <main className="mypage-content mypage-guest-placeholder">
+          <p>로그인하면 프로필과 게시글을 확인할 수 있어요.</p>
+        </main>
+
+        <BottomNav />
+        <GuestLoginPrompt afterLoginPath="/profile" />
+      </div>
+    );
   }
 
   return (
