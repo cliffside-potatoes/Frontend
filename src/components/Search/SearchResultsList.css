@@ -25,11 +25,16 @@
 
 .recipe-card-small {
   display: flex;
+  width: 100%;
   background-color: #fff;
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   margin-bottom: 10px;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
 }
 
 .recipe-card-small img {
@@ -37,6 +42,14 @@
   height: 100px;
   object-fit: cover;
   border-right: 1px solid #eee;
+}
+
+.recipe-card-small__image-placeholder {
+  width: 100px;
+  height: 100px;
+  border-right: 1px solid #eee;
+  background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+  flex-shrink: 0;
 }
 
 .recipe-card-small .recipe-info {
@@ -63,6 +76,7 @@
   gap: 10px;
   font-size: 11px;
   color: #999;
+  flex-wrap: wrap;
 }
 
 .no-results {
