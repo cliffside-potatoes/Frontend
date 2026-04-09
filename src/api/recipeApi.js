@@ -130,100 +130,6 @@ const MOCK_RECIPE_DETAIL = {
   matchedIngredientCount: 4,
 };
 
-const MOCK_RECIPE_LIST = [
-  {
-    recipeId: 1,
-    title: "김치찌개",
-    thumbnailImage:
-      "https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=800&h=600&fit=crop",
-    source: "유튜브 - 릴리쿡",
-    cookingTime: 30,
-    difficulty: "초보",
-    likeCount: 8,
-    reviewCount: 8,
-    totalIngredientCount: 7,
-    matchedIngredientCount: 4,
-    liked: false,
-  },
-  {
-    recipeId: 2,
-    title: "크림파스타",
-    thumbnailImage:
-      "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=800&h=600&fit=crop",
-    source: "블로그 - 집밥연구소",
-    cookingTime: 20,
-    difficulty: "중급",
-    likeCount: 5,
-    reviewCount: 3,
-    totalIngredientCount: 6,
-    matchedIngredientCount: 2,
-    liked: false,
-  },
-  {
-    recipeId: 3,
-    title: "계란볶음밥",
-    thumbnailImage:
-      "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=800&h=600&fit=crop",
-    source: "유튜브 - 3분요리",
-    cookingTime: 15,
-    difficulty: "초보",
-    likeCount: 11,
-    reviewCount: 6,
-    totalIngredientCount: 5,
-    matchedIngredientCount: 3,
-    liked: false,
-  },
-];
-
-/** Mock 데이터 - 후기 목록 */
-const MOCK_REVIEWS = [
-  {
-    reviewId: 1,
-    profileId: 1,
-    nickName: "사용자 닉네임",
-    profileImage: null,
-    content:
-      "오늘도 이걸 먹었다~~ 너무 맛있었다이슈슬 이걸 먹었다 ~~ 너무 맛있었다~~ 너무 맛있...",
-    images: [
-      "https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=100&h=100&fit=crop",
-    ],
-    updatedAt: "2025년 12월 23일",
-    hideLikeCount: false,
-    likeCount: 5,
-    liked: false,
-  },
-  {
-    reviewId: 2,
-    profileId: 2,
-    nickName: "사용자 닉네임",
-    profileImage: null,
-    content:
-      "오늘도 이걸 먹었다~~ 너무 맛있었다이슈슬 이걸 먹었다 ~~ 너무 맛있었다~~ 너무 맛있...",
-    images: [
-      "https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=100&h=100&fit=crop",
-    ],
-    updatedAt: "2025년 12월 23일",
-    hideLikeCount: false,
-    likeCount: 8,
-    liked: false,
-  },
-  {
-    reviewId: 3,
-    profileId: 3,
-    nickName: "사용자 닉네임",
-    profileImage: null,
-    content:
-      "오늘도 이걸 먹었다~~ 너무 맛있었다이슈슬 이걸 먹었다 ~~ 너무 맛있었다~~ 너무 맛있...",
-    images: [
-      "https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=100&h=100&fit=crop",
-    ],
-    updatedAt: "2025년 12월 23일",
-    hideLikeCount: false,
-    likeCount: 3,
-    liked: false,
-  },
-];
-
 const getMockReviews = (params) => {
   const { size = 20, sort = "LATEST" } = params;
   const items = [...MOCK_REVIEWS];
@@ -282,8 +188,7 @@ const extractRecipesListFromApiPayload = (payload) => {
 };
 
 /** 원격 레시피 API 사용 가능 (목이 아닌 실제 서버로 요청) */
-const hasRemoteRecipeApi = (base) =>
-  Boolean(base) && !isSameOriginBase(base);
+const hasRemoteRecipeApi = (base) => Boolean(base) && !isSameOriginBase(base);
 
 /**
  * GET /recipes — axios(apiClient)는 401 시 로그인 리다이렉트가 나와 비로그인 메인 노출에 부적합.
