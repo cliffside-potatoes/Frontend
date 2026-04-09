@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import BottomNav from '../../components/common/BottomNav';
 import GuestLoginPrompt from '../../components/common/GuestLoginPrompt';
 import FeedCard from '../../components/card/FeedCard';
@@ -7,6 +7,7 @@ import { getMyFeed } from '../../api/meFeedApi';
 import { getFeed } from '../../api/feedApi';
 import { useUser } from '../../context/UserContext';
 import { useMyPosts } from '../../context/MyPostsContext';
+import { buildSignInState } from '../../utils/authStorage';
 import { toImageUrl } from '../../utils/imageUrl';
 import profileImg from '../../assets/image/profile.png';
 import './MyPage.css';
@@ -67,10 +68,22 @@ const sortPosts = (posts) =>
     return bTime - aTime;
   });
 
+/** 비로그인 마이페이지 미리보기(디자인 시안과 동일한 틀용) */
+const GUEST_DEMO_IMAGE =
+  'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=800&h=600&fit=crop';
+
 const MyPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, isLoggedIn, isInitializing } = useUser();
   const { posts: myPosts, setPosts } = useMyPosts();
+
+  const currentPath = `${location.pathname}${location.search}${location.hash}`;
+  const goSignInForProfile = () => {
+    navigate('/signin', {
+      state: buildSignInState('/profile', currentPath),
+    });
+  };
 
   const [activeTab, setActiveTab] = useState('POST');
   const [likedPosts, setLikedPosts] = useState([]);
@@ -84,8 +97,8 @@ const MyPage = () => {
 
   const displayUser = user ?? {
     nickname: '사용자 닉네임',
-    id: '',
-    triedCount: 0,
+    id: '사용자아이디',
+    triedCount: 7,
     bio: '아직 자기소개가 없어요😊',
     profileImage: '',
   };
@@ -233,8 +246,60 @@ const MyPage = () => {
     );
   };
 
-  const sortedPosts =
-    activeTab === 'POST' ? sortPosts(myPosts) : sortPosts(likedPosts);
+  const sortedPosts = useMemo(() => {
+    if (!isLoggedIn) {
+      if (activeTab === 'POST') {
+        return sortPosts([
+          {
+            id: 'guest-preview-post',
+            type: 'POST',
+            author: displayUser.nickname,
+            avatarUrl: profileImageSrc,
+            date: '2025년 12월 23일',
+            content: '오늘은 이걸 먹었다~ 너무 맛있었다!',
+            images: [GUEST_DEMO_IMAGE],
+            image: GUEST_DEMO_IMAGE,
+            likeCount: 5,
+            liked: false,
+            hideLikeCount: false,
+            pinned: false,
+            createdAt: '2025-12-23T12:00:00.000Z',
+            updatedAt: '2025-12-23T12:00:00.000Z',
+            cookCount: 0,
+            isMine: true,
+          },
+        ]);
+      }
+      return sortPosts([
+        {
+          id: 'guest-preview-liked',
+          type: 'POST',
+          author: '다빈',
+          avatarUrl: '',
+          date: '2026년 1월 19일',
+          content: '대파는 이렇게 보관하면 오래 갑니다.',
+          images: [GUEST_DEMO_IMAGE],
+          image: GUEST_DEMO_IMAGE,
+          likeCount: 12,
+          liked: true,
+          hideLikeCount: false,
+          pinned: false,
+          createdAt: '2026-01-19T12:30:00.000Z',
+          updatedAt: '2026-01-19T12:30:00.000Z',
+          cookCount: 0,
+          isMine: false,
+        },
+      ]);
+    }
+    return activeTab === 'POST' ? sortPosts(myPosts) : sortPosts(likedPosts);
+  }, [
+    isLoggedIn,
+    activeTab,
+    myPosts,
+    likedPosts,
+    displayUser.nickname,
+    profileImageSrc,
+  ]);
 
   const openWriteModal = (post = null) => {
     if (post) {
@@ -341,32 +406,6 @@ const MyPage = () => {
     );
   }
 
-  if (!isLoggedIn) {
-    return (
-      <div className="mypage">
-        <header className="mypage-header">
-          <button
-            type="button"
-            className="icon-button"
-            aria-label="뒤로가기"
-            onClick={() => navigate(-1)}
-          >
-            <span className="material-symbols-outlined">arrow_back_ios</span>
-          </button>
-          <h1 className="mypage-title">마이페이지</h1>
-          <span className="mypage-header-spacer" aria-hidden="true" />
-        </header>
-
-        <main className="mypage-content mypage-guest-placeholder">
-          <p>로그인하면 프로필과 게시글을 확인할 수 있어요.</p>
-        </main>
-
-        <BottomNav />
-        <GuestLoginPrompt afterLoginPath="/profile" />
-      </div>
-    );
-  }
-
   return (
     <div className="mypage">
       <header className="mypage-header">
@@ -383,7 +422,9 @@ const MyPage = () => {
           type="button"
           className="icon-button"
           aria-label="설정"
-          onClick={() => navigate('/profile/settings')}
+          onClick={() =>
+            isLoggedIn ? navigate('/profile/settings') : goSignInForProfile()
+          }
         >
           <span className="material-symbols-outlined">settings</span>
         </button>
@@ -414,7 +455,11 @@ const MyPage = () => {
             <p className="profile-bio">{displayUser.bio}</p>
           </div>
 
-          <button type="button" className="profile-edit-button" onClick={() => navigate('/profile/edit')}>
+          <button
+            type="button"
+            className="profile-edit-button"
+            onClick={() => (isLoggedIn ? navigate('/profile/edit') : goSignInForProfile())}
+          >
             프로필 편집
           </button>
 
@@ -458,16 +503,16 @@ const MyPage = () => {
           </div>
 
           <div className="mypage-posts">
-            {loading && sortedPosts.length === 0 && (
+            {isLoggedIn && loading && sortedPosts.length === 0 && (
               <p className="mypage-posts-loading">
                 {activeTab === 'POST' ? '게시글을 불러오는 중...' : '좋아요한 피드를 불러오는 중...'}
               </p>
             )}
-            {feedError && sortedPosts.length === 0 && (
+            {isLoggedIn && feedError && sortedPosts.length === 0 && (
               <p className="mypage-posts-error">{feedError}</p>
             )}
 
-            {!loading && !feedError && sortedPosts.length === 0 && (
+            {isLoggedIn && !loading && !feedError && sortedPosts.length === 0 && (
               <p className="mypage-posts-empty">
                 {activeTab === 'POST' ? '작성한 게시글이 없어요.' : '좋아요한 피드가 없어요.'}
               </p>
@@ -479,11 +524,20 @@ const MyPage = () => {
                   post={post}
                   isMine={activeTab === 'POST'}
                   avatarUrl={post.avatarUrl || profileImageSrc}
-                  onToggleLike={handleToggleLike}
-                  onOpenMenu={activeTab === 'POST' ? openPostMenu : undefined}
+                  onToggleLike={isLoggedIn ? handleToggleLike : () => {}}
+                  onOpenMenu={
+                    activeTab === 'POST'
+                      ? isLoggedIn
+                        ? openPostMenu
+                        : (e, postId) => {
+                            e.stopPropagation();
+                            goSignInForProfile();
+                          }
+                      : undefined
+                  }
                 />
 
-                {activeTab === 'POST' && postMenuPostId === post.id && (
+                {isLoggedIn && activeTab === 'POST' && postMenuPostId === post.id && (
                   <>
                     <div className="modal-backdrop" onClick={closePostMenu} aria-hidden="true" />
                     <div className="modal post-menu-modal">
@@ -517,13 +571,13 @@ const MyPage = () => {
           type="button"
           className="floating-write-button"
           aria-label="게시물 작성"
-          onClick={() => openWriteModal()}
+          onClick={() => (isLoggedIn ? openWriteModal() : goSignInForProfile())}
         >
           <span className="material-symbols-outlined">add</span>
         </button>
       )}
 
-      {deleteConfirmPostId && (
+      {isLoggedIn && deleteConfirmPostId && (
         <>
           <div className="modal-backdrop" onClick={closeDeleteConfirm} aria-hidden="true" />
           <div className="modal delete-confirm-modal">
@@ -543,7 +597,7 @@ const MyPage = () => {
         </>
       )}
 
-      {writeModalOpen && (
+      {isLoggedIn && writeModalOpen && (
         <>
           <div className="modal-backdrop write-modal-backdrop" onClick={closeWriteModal} aria-hidden="true" />
           <div className={`write-modal ${writeModalOpen ? 'write-modal-open' : ''}`}>
