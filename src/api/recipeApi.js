@@ -556,7 +556,6 @@ const fetchRecipeListFromRemote = async (queryParams) => {
   const res = await fetch(url, {
     method: "GET",
     headers,
-    credentials: "include",
   });
 
   if (!res.ok) {
