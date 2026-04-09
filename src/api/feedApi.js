@@ -1,9 +1,7 @@
-import { getStoredAccessToken } from "../utils/authStorage";
-
 /**
  * 전체 피드 GET /feed (커서 기반)
  * - 원격 API가 설정된 경우에만 요청. 목 데이터는 사용하지 않음.
- * - 비로그인도 fetch로 호출(토큰이 있으면 헤더에 포함). 401 등 실패 시 빈 목록.
+ * - Bearer 미포함: 만료·불일치 토큰으로 인한 401 방지, 비로그인·로그인 동일 공개 타임라인 조회.
  */
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "";
@@ -60,18 +58,25 @@ export const getFeed = async (params = {}) => {
   }
 
   try {
-    const token = getStoredAccessToken();
+    const url = `${base}/feed?${searchParams.toString()}`;
     const headers = {
       Accept: "application/json",
       "Content-Type": "application/json",
     };
-    if (token) headers.Authorization = `Bearer ${token}`;
 
-    const res = await fetch(`${base}/feed?${searchParams.toString()}`, {
+    let res = await fetch(url, {
       method: "GET",
       headers,
       credentials: "include",
     });
+
+    if (res.status === 401) {
+      res = await fetch(url, {
+        method: "GET",
+        headers,
+        credentials: "omit",
+      });
+    }
 
     if (!res.ok) {
       return empty;
