@@ -206,16 +206,6 @@ const SignUpPage = () => {
       return;
     }
 
-    if (isNewInfoMode) {
-      const hasNewImage = Boolean(profileImageFile);
-      const hasExistingImage = Boolean(
-        user?.profileImage && String(user.profileImage).trim(),
-      );
-      if (!hasNewImage && !hasExistingImage) {
-        setProfileImageError("프로필 사진을 등록해줘");
-        return;
-      }
-    }
     setProfileImageError("");
 
     /*
@@ -420,7 +410,7 @@ const SignUpPage = () => {
             {profileImageError ? (
               <p className="help bad">{profileImageError}</p>
             ) : isNewInfoMode ? (
-              <p className="help">프로필 사진은 필수로 등록해줘.</p>
+              <p className="help">프로필 사진은 선택이야. 나중에 마이페이지에서도 바꿀 수 있어.</p>
             ) : null}
 
             <div className="form-group">
