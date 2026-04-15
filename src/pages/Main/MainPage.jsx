@@ -92,6 +92,7 @@ const MainPage = () => {
   const { isLoggedIn, isInitializing, user } = useUser();
 
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginTargetPath, setLoginTargetPath] = useState('/refrigerator');
   const [displayedRecipes, setDisplayedRecipes] = useState([]);
   const [recipeSectionKind, setRecipeSectionKind] = useState('popular');
   const [recipesLoading, setRecipesLoading] = useState(false);
@@ -190,6 +191,7 @@ const MainPage = () => {
     if (isLoggedIn) {
       navigate('/refrigerator');
     } else {
+      setLoginTargetPath('/refrigerator');
       setShowLoginModal(true);
     }
   };
@@ -207,8 +209,21 @@ const MainPage = () => {
 
   const currentPath = `${location.pathname}${location.search}${location.hash}`;
 
+  const handleOpenSituationCategory = (categoryId) => {
+    const nextPath = `/situation/${categoryId}`;
+
+    if (!isLoggedIn) {
+      setLoginTargetPath(nextPath);
+      setShowLoginModal(true);
+      return;
+    }
+
+    navigate(nextPath);
+  };
+
   const handleToggleRecipeLike = async (recipeId, nextLiked) => {
     if (!isLoggedIn) {
+      setLoginTargetPath(currentPath);
       setShowLoginModal(true);
       return false;
     }
@@ -288,7 +303,7 @@ const MainPage = () => {
                 key={category.id}
                 type="button"
                 className="category-item"
-                onClick={() => navigate(`/situation/${category.id}`)}
+                onClick={() => handleOpenSituationCategory(category.id)}
               >
                 <div className="category-icon">{category.icon}</div>
                 <span className="category-label">{category.label}</span>
@@ -332,7 +347,7 @@ const MainPage = () => {
         onConfirm={() => {
           setShowLoginModal(false);
           navigate('/signin', {
-            state: buildSignInState('/refrigerator', currentPath),
+            state: buildSignInState(loginTargetPath, currentPath),
           });
         }}
         variant="login"

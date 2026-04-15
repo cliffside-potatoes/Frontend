@@ -54,6 +54,15 @@ const SituationRecipesPage = () => {
       return undefined;
     }
 
+    if (!isLoggedIn) {
+      setLoading(false);
+      setRecipes([]);
+      setHasNext(false);
+      setNextCursor(null);
+      setLoadError('상황별 레시피는 로그인 후 볼 수 있어요.');
+      return undefined;
+    }
+
     let cancelled = false;
 
     const run = async () => {
@@ -94,7 +103,7 @@ const SituationRecipesPage = () => {
     return () => {
       cancelled = true;
     };
-  }, [isInitializing, meta?.apiCategory, sort, isLoggedIn, user?.id]);
+  }, [isInitializing, isLoggedIn, meta?.apiCategory, sort, user?.id]);
 
   const handleLoadMore = async () => {
     if (!meta || !hasNext || loadingMore || loading || !nextCursor) return;

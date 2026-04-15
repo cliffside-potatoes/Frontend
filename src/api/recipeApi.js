@@ -30,6 +30,7 @@ const isSameOriginBase = (base) =>
     base.startsWith("/"));
 
 const shouldUsePublicRecipeMock = (base) => !base;
+const hasRecipeApiAccess = (base) => Boolean(base && getStoredAccessToken());
 
 const redirectToSignIn = () => {
   savePostLoginRedirect(getCurrentPath());
@@ -657,7 +658,7 @@ export const getRecipeDetail = async (recipeId) => {
     const base =
       (typeof API_BASE_URL === "string" && API_BASE_URL.trim()) || "";
 
-    if (shouldUsePublicRecipeMock(base)) {
+    if (shouldUsePublicRecipeMock(base) || !hasRecipeApiAccess(base)) {
       return normalizeRecipeDetail(getMockRecipeDetail(recipeId), recipeId);
     }
 
@@ -691,7 +692,7 @@ export const getRecipeReviews = async (recipeId, params = {}) => {
     const base =
       (typeof API_BASE_URL === "string" && API_BASE_URL.trim()) || "";
 
-    if (shouldUsePublicRecipeMock(base)) {
+    if (shouldUsePublicRecipeMock(base) || !hasRecipeApiAccess(base)) {
       return getMockReviews(params);
     }
 
@@ -964,7 +965,9 @@ export const getPopularRecipes = async (params = {}) => {
   try {
     const base =
       (typeof API_BASE_URL === "string" && API_BASE_URL.trim()) || "";
-    if (!hasRemoteRecipeApi(base)) return getMockRecipeList(size);
+    if (!hasRemoteRecipeApi(base) || !hasRecipeApiAccess(base)) {
+      return getMockRecipeList(size);
+    }
 
     const queryParams = { size, sort };
     if (cursorCreatedAt != null && cursorId != null) {
@@ -1007,7 +1010,7 @@ export const getTaggedRecipes = async (category, params = {}) => {
   try {
     const base =
       (typeof API_BASE_URL === "string" && API_BASE_URL.trim()) || "";
-    if (!hasRemoteRecipeApi(base)) {
+    if (!hasRemoteRecipeApi(base) || !hasRecipeApiAccess(base)) {
       const mock = getMockRecipeList(size);
       return { items: mock, hasNext: false, nextCursor: null, ok: true };
     }

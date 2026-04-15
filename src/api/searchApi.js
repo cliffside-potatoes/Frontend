@@ -122,6 +122,10 @@ export const searchRecipes = async (keyword, options = {}) => {
     return getMockSearchResponse();
   }
 
+  if (!getStoredAccessToken()) {
+    return getMockSearchResponse();
+  }
+
   try {
     let response = await requestSearchRecipes(trimmedKeyword, options);
 
