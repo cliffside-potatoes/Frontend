@@ -6,15 +6,13 @@ import {
   getStoredAccessToken,
   savePostLoginRedirect,
 } from '../utils/authStorage';
+import {
+  DEFAULT_CATEGORY_COLOR_ENUM,
+  DEFAULT_CATEGORY_COLOR_HEX,
+  toCategoryColorEnum,
+} from '../utils/categoryColors';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
-const DEFAULT_CATEGORY_COLOR = '#90CAF9';
-
-const COLOR_ENUM_HEX = {
-  RED: '#EF4444',
-  BLUE: '#3B82F6',
-  GREEN: '#22C55E',
-};
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -76,10 +74,6 @@ apiClient.interceptors.response.use(
   }
 );
 
-const isHexColor = (value) =>
-  typeof value === 'string' &&
-  /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(value.trim());
-
 const normalizeStorageType = (value) => {
   const normalized = String(value ?? '').trim().toUpperCase();
 
@@ -111,51 +105,6 @@ const uniqueByJson = (items) => {
   });
 };
 
-const rgbFromHex = (hex) => {
-  const trimmed = hex.replace('#', '');
-  const normalized =
-    trimmed.length === 3
-      ? trimmed
-          .split('')
-          .map((char) => `${char}${char}`)
-          .join('')
-      : trimmed;
-
-  return {
-    r: Number.parseInt(normalized.slice(0, 2), 16),
-    g: Number.parseInt(normalized.slice(2, 4), 16),
-    b: Number.parseInt(normalized.slice(4, 6), 16),
-  };
-};
-
-const colorDistance = (a, b) =>
-  (a.r - b.r) ** 2 + (a.g - b.g) ** 2 + (a.b - b.b) ** 2;
-
-const toNearestColorEnum = (value) => {
-  const normalized = String(value ?? '').trim().toUpperCase();
-
-  if (COLOR_ENUM_HEX[normalized]) {
-    return normalized;
-  }
-
-  if (!isHexColor(value)) {
-    return 'GREEN';
-  }
-
-  const target = rgbFromHex(value.trim().toUpperCase());
-
-  return Object.entries(COLOR_ENUM_HEX).reduce(
-    (best, [colorEnum, colorHex]) => {
-      const distance = colorDistance(target, rgbFromHex(colorHex));
-      if (distance < best.distance) {
-        return { colorEnum, distance };
-      }
-      return best;
-    },
-    { colorEnum: 'GREEN', distance: Number.POSITIVE_INFINITY }
-  ).colorEnum;
-};
-
 const shouldRetryWithFallback = (error, fallbackStatuses) => {
   const status = error?.response?.status;
   return status != null && fallbackStatuses.includes(status);
@@ -185,11 +134,8 @@ const runWithFallback = async (requestFactories, fallbackStatuses = [404, 405]) 
 const buildCategoryPayloads = ({ name, color, location, storageType }) => {
   const normalizedStorageType = normalizeStorageType(storageType ?? location);
   const trimmedName = String(name ?? '').trim();
-  const colorCandidates = uniqueByJson(
-    [color, toNearestColorEnum(color), DEFAULT_CATEGORY_COLOR]
-      .filter(Boolean)
-      .map((item) => String(item).trim())
-  );
+  const colorEnum = toCategoryColorEnum(color);
+  const colorCandidates = uniqueByJson([colorEnum, DEFAULT_CATEGORY_COLOR_ENUM]);
 
   const payloads = colorCandidates.flatMap((candidateColor) => [
     {
@@ -233,7 +179,7 @@ const buildIngredientPayloads = ({ categoryId, ingredientId, ingredientName, nam
   return uniqueByJson(payloads);
 };
 
-const normalizeIngredient = (item, fallbackColor = DEFAULT_CATEGORY_COLOR) => {
+const normalizeIngredient = (item, fallbackColor = DEFAULT_CATEGORY_COLOR_HEX) => {
   const id =
     item?.fridgeIngredientId ??
     item?.ingredientId ??
@@ -257,7 +203,7 @@ const normalizeIngredient = (item, fallbackColor = DEFAULT_CATEGORY_COLOR) => {
 
 const normalizeCategory = (category, fallbackStorageType) => {
   const id = category?.categoryId ?? category?.id ?? '';
-  const color = category?.color ?? DEFAULT_CATEGORY_COLOR;
+  const color = category?.color ?? DEFAULT_CATEGORY_COLOR_HEX;
 
   return {
     id: String(id),

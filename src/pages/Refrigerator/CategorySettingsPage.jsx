@@ -8,35 +8,11 @@ import Modal from '../../components/ui/Modal';
 import TextInput from '../../components/common/TextInput';
 import ColorPicker from '../../components/ui/ColorPicker';
 import { fridgeApi } from '../../api/fridgeApi';
+import {
+  DEFAULT_CATEGORY_COLOR_HEX,
+  toCategoryColorHex,
+} from '../../utils/categoryColors';
 import './CategorySettingsPage.css';
-
-const COLOR_ENUM_MAP = {
-  RED: '#EF4444',
-  BLUE: '#3B82F6',
-  GREEN: '#22C55E',
-};
-
-const DEFAULT_CATEGORY_COLOR = '#90CAF9';
-
-const isHexColor = (value) =>
-  typeof value === 'string' &&
-  /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(value.trim());
-
-const normalizeCategoryColor = (color) => {
-  if (!color) return DEFAULT_CATEGORY_COLOR;
-
-  const trimmed = String(color).trim().toUpperCase();
-
-  if (isHexColor(trimmed)) {
-    return trimmed;
-  }
-
-  if (COLOR_ENUM_MAP[trimmed]) {
-    return COLOR_ENUM_MAP[trimmed];
-  }
-
-  return DEFAULT_CATEGORY_COLOR;
-};
 
 const DROPDOWN_OPTIONS = [
   { value: 'edit', label: '수정' },
@@ -53,7 +29,7 @@ const CategorySettingsPage = () => {
   const [deleting, setDeleting] = useState(false);
   const [editModalCategory, setEditModalCategory] = useState(null);
   const [editName, setEditName] = useState('');
-  const [editColor, setEditColor] = useState(DEFAULT_CATEGORY_COLOR);
+  const [editColor, setEditColor] = useState(DEFAULT_CATEGORY_COLOR_HEX);
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -95,7 +71,7 @@ const CategorySettingsPage = () => {
 
       setEditModalCategory(targetCategory);
       setEditName(targetCategory.label);
-      setEditColor(normalizeCategoryColor(targetCategory.color));
+      setEditColor(toCategoryColorHex(targetCategory.color));
     }
   };
 
@@ -301,7 +277,7 @@ const CategoryList = ({
       >
         <span
           className="category-settings-page__color"
-          style={{ backgroundColor: normalizeCategoryColor(category.color) }}
+          style={{ backgroundColor: toCategoryColorHex(category.color) }}
         />
         <span className="category-settings-page__label">{category.label}</span>
         <button

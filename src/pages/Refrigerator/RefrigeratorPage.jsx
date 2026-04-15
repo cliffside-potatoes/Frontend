@@ -9,35 +9,8 @@ import { useUser } from '../../context/UserContext';
 import Pill from '../../components/ui/Pill';
 import SuggestionList from '../../components/ui/SuggestionList';
 import { fridgeApi } from '../../api/fridgeApi';
+import { toCategoryColorHex } from '../../utils/categoryColors';
 import './RefrigeratorPage.css';
-
-const COLOR_ENUM_MAP = {
-  RED: '#EF4444',
-  BLUE: '#3B82F6',
-  GREEN: '#22C55E',
-};
-
-const DEFAULT_CATEGORY_COLOR = '#90CAF9';
-
-const isHexColor = (value) =>
-  typeof value === 'string' &&
-  /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(value.trim());
-
-const normalizeCategoryColor = (color) => {
-  if (!color) return DEFAULT_CATEGORY_COLOR;
-
-  const trimmed = String(color).trim().toUpperCase();
-
-  if (isHexColor(trimmed)) {
-    return trimmed;
-  }
-
-  if (COLOR_ENUM_MAP[trimmed]) {
-    return COLOR_ENUM_MAP[trimmed];
-  }
-
-  return DEFAULT_CATEGORY_COLOR;
-};
 
 const RefrigeratorPage = () => {
   const navigate = useNavigate();
@@ -253,11 +226,11 @@ const CategoryBlock = ({
     <div className="refrigerator-page__category-header">
       <span
         className="refrigerator-page__category-color"
-        style={{ backgroundColor: normalizeCategoryColor(category.color) }}
+        style={{ backgroundColor: toCategoryColorHex(category.color) }}
       />
       <h3 className="refrigerator-page__category-title">{category.label}</h3>
       <Pill
-        color={normalizeCategoryColor(category.color)}
+        color={toCategoryColorHex(category.color)}
         asButton
         onClick={() => onOpenInput(category.id)}
         className="refrigerator-page__category-add"
@@ -269,7 +242,7 @@ const CategoryBlock = ({
     <div className="refrigerator-page__ingredients">
       {category.ingredients.map((ingredient) => (
         <div key={ingredient.id} className="refrigerator-page__ingredient">
-          <Pill color={normalizeCategoryColor(ingredient.color)}>
+          <Pill color={toCategoryColorHex(ingredient.color)}>
             {ingredient.label}
           </Pill>
           <button
