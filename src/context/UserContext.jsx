@@ -127,7 +127,23 @@ export function UserProvider({ children }) {
           return;
         }
 
-        const profile = await getMyProfile();
+        const profile = await getMyProfile({ suppressErrors: false });
+
+        if (!profile) {
+          if (cancelled) return;
+
+          setUser({
+            ...baseUser,
+            nickname: '',
+            profileImage: '',
+          });
+
+          if (initialPath === '/main' || initialPath === '/signin') {
+            navigate('/new-info', { replace: true });
+          }
+          return;
+        }
+
         const nextUser = {
           ...baseUser,
           id: String(profile?.id ?? baseUser.id),

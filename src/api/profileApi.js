@@ -18,10 +18,22 @@ const getAuthHeader = () => {
 };
 
 const handle401 = () => {
-  alert('로그인 정보가 만료되었습니다. 다시 로그인해주세요.');
+  alert('로그인 정보가 만료되었어. 다시 로그인해줘.');
   savePostLoginRedirect(getCurrentPath());
   clearStoredAuth();
   window.location.href = '/signin';
+};
+
+const buildApiError = (res, data, fallbackMessage) => {
+  const message =
+    data?.resultMessage ||
+    data?.message ||
+    fallbackMessage;
+
+  const error = new Error(message);
+  error.status = res.status;
+  error.responseData = data;
+  return error;
 };
 
 const requestGetMyProfile = async () => {
@@ -33,6 +45,7 @@ const requestGetMyProfile = async () => {
       ...getAuthHeader(),
     },
   });
+
   console.log('[profileApi] /profiles status:', res.status);
 
   if (res.status === 404) {
@@ -46,7 +59,6 @@ const requestGetMyProfile = async () => {
     try {
       data = await res.json();
       console.log('[profileApi] /profiles data:', data);
-
     } catch {
       data = null;
     }
@@ -55,7 +67,9 @@ const requestGetMyProfile = async () => {
   return { res, data };
 };
 
-export const getMyProfile = async () => {
+export const getMyProfile = async (options = {}) => {
+  const { suppressErrors = true } = options;
+
   try {
     let { res, data } = await requestGetMyProfile();
 
@@ -72,7 +86,7 @@ export const getMyProfile = async () => {
           return null;
         }
       } catch (error) {
-        console.error('getMyProfile 토큰 재발급 실패:', error);
+        console.error('getMyProfile token refresh failed:', error);
         handle401();
         return null;
       }
@@ -83,13 +97,18 @@ export const getMyProfile = async () => {
     }
 
     if (!res.ok) {
-      throw new Error(`프로필 조회 실패 (${res.status})`);
+      throw buildApiError(res, data, `프로필 조회 실패 (${res.status})`);
     }
 
     return data?.data ?? data ?? null;
   } catch (error) {
-    console.error('getMyProfile 실패:', error);
-    return null;
+    console.error('getMyProfile failed:', error);
+
+    if (suppressErrors) {
+      return null;
+    }
+
+    throw error;
   }
 };
 
@@ -146,24 +165,16 @@ export const createOrUpdateProfile = async ({ nickname, bio, profileImage }) => 
         data = retryResult.data;
       } else {
         handle401();
-        return;
+        return null;
       }
-    } catch (e) {
+    } catch (error) {
       handle401();
-      return;
+      return null;
     }
   }
 
   if (!res.ok) {
-    const message =
-      data?.resultMessage ||
-      data?.message ||
-      `프로필 저장 실패 (${res.status})`;
-
-    const error = new Error(message);
-    error.status = res.status;
-    error.responseData = data;
-    throw error;
+    throw buildApiError(res, data, `프로필 저장 실패 (${res.status})`);
   }
 
   return data?.data ?? null;

@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import naengGuIcon from "../../assets/image/naeng-gu.png";
 import "./SignUpPage.css";
-import { createOrUpdateProfile } from "../../api/profileApi";
+import { createOrUpdateProfile, getMyProfile } from "../../api/profileApi";
 import { requestProfilePresignedUrl } from "../../api/presignedApi";
 import { uploadFileToS3 } from "../../api/uploadToS3";
 import { useUser } from "../../context/UserContext";
@@ -190,6 +190,22 @@ const SignUpPage = () => {
     };
   };
 
+  const fetchSavedProfile = async () => {
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      const profile = await getMyProfile({ suppressErrors: false });
+
+      if (profile) {
+        return profile;
+      }
+
+      if (attempt === 0) {
+        await new Promise((resolve) => window.setTimeout(resolve, 250));
+      }
+    }
+
+    throw new Error("프로필 저장 후 조회에 실패했어. 다시 시도해줘.");
+  };
+
   const handleSubmitProfile = async () => {
     const v = nickname.trim();
     const finalBio = bio.trim() ? bio.trim() : DEFAULT_BIO;
@@ -231,24 +247,33 @@ const SignUpPage = () => {
         profileImage: uploadedProfileImage,
       });
 
+      const savedProfile = await fetchSavedProfile();
       const nextProfileImageKey =
-        uploadedProfileImage?.s3Key ?? user?.profileImage ?? "";
+        savedProfile?.profileImage?.s3Key ??
+        savedProfile?.profileImageUrl ??
+        uploadedProfileImage?.s3Key ??
+        user?.profileImage ??
+        "";
 
       setUser({
         ...(user ?? {}),
-        id: String(user?.id ?? ""),
-        email: userEmail ?? "",
-        nickname: v,
+        id: String(savedProfile?.id ?? user?.id ?? ""),
+        email: savedProfile?.email ?? userEmail ?? "",
+        nickname: savedProfile?.nickname ?? v,
         profileImage: nextProfileImageKey,
-        triedCount: user?.triedCount ?? 0,
-        bio: finalBio,
+        triedCount:
+          savedProfile?.triedCount ??
+          savedProfile?.tryCount ??
+          user?.triedCount ??
+          0,
+        bio: savedProfile?.bio ?? finalBio,
       });
 
       // 내가 쓴 기존 게시글 author도 새 닉네임으로 동기화
       setPosts((prev) =>
         (prev || []).map((post) => ({
           ...post,
-          author: v,
+          author: savedProfile?.nickname ?? v,
         })),
       );
 

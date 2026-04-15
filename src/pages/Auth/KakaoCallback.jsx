@@ -5,19 +5,21 @@ import { getMyProfile } from '../../api/profileApi';
 import { useUser } from '../../context/UserContext';
 import { consumePostLoginRedirect } from '../../utils/authStorage';
 
+const DEFAULT_BIO = '아직 자기소개가 없어요.';
+
 const KakaoCallback = () => {
   const navigate = useNavigate();
   const { setUser } = useUser();
 
   useEffect(() => {
     const loginProcess = async () => {
-      console.log('[KakaoCallback] 시작');
+      console.log('[KakaoCallback] start');
 
       const payload = await refreshAccessToken();
-      console.log('[KakaoCallback] refreshAccessToken 결과:', payload);
+      console.log('[KakaoCallback] refreshAccessToken result:', payload);
 
       if (!payload?.accessToken) {
-        console.log('[KakaoCallback] accessToken 없음 -> /signin');
+        console.log('[KakaoCallback] no accessToken -> /signin');
         navigate('/signin', { replace: true });
         return;
       }
@@ -28,11 +30,11 @@ const KakaoCallback = () => {
         nickname: payload?.nickname ?? '사용자',
         profileImage: '',
         triedCount: 0,
-        bio: '아직 자기소개가 없어요😊',
+        bio: DEFAULT_BIO,
       };
 
       if (payload?.newMember) {
-        console.log('[KakaoCallback] 신규 회원 -> /new-info');
+        console.log('[KakaoCallback] new member -> /new-info');
         setUser({
           ...baseUser,
           nickname: '',
@@ -42,11 +44,20 @@ const KakaoCallback = () => {
         return;
       }
 
-      const profile = await getMyProfile();
-      console.log('[KakaoCallback] getMyProfile 결과:', profile);
+      let profile = null;
+
+      try {
+        profile = await getMyProfile({ suppressErrors: false });
+        console.log('[KakaoCallback] getMyProfile result:', profile);
+      } catch (error) {
+        console.error('[KakaoCallback] getMyProfile failed:', error);
+        alert('프로필 정보를 불러오지 못했어. 다시 로그인해줘.');
+        navigate('/signin', { replace: true });
+        return;
+      }
 
       if (!profile) {
-        console.log('[KakaoCallback] profile 없음 -> /new-info');
+        console.log('[KakaoCallback] profile missing -> /new-info');
         setUser({
           ...baseUser,
           nickname: '',
@@ -67,6 +78,7 @@ const KakaoCallback = () => {
           profile?.profileImageUrl ??
           '',
       };
+
       console.log('[KakaoCallback] nextUser:', nextUser);
       console.log('[KakaoCallback] redirectPath:', redirectPath);
 
@@ -74,7 +86,7 @@ const KakaoCallback = () => {
       navigate(redirectPath, { replace: true });
     };
 
-    loginProcess();
+    void loginProcess();
   }, [navigate, setUser]);
 
   return (
