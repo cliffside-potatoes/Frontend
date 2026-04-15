@@ -11,15 +11,8 @@ const SETTINGS_ITEMS = [
   { id: 'mypage', icon: 'person', label: '마이페이지', path: '/profile' },
   { id: 'my-recipes', icon: 'edit_note', label: '내가 쓴 레시피', path: '/profile/my-recipes' },
   { id: 'my-reviews', icon: 'rate_review', label: '내가 쓴 후기', path: '/profile/my-reviews' },
-  { id: 'saved', icon: 'bookmark', label: '저장', path: '/recipe-saved' },
+  { id: 'saved', icon: 'bookmark', label: '저장한 레시피', path: '/recipe-saved' },
 ];
-
-const clearLocalUserData = () => {
-  localStorage.removeItem('accessToken');
-  localStorage.removeItem('token');
-  localStorage.removeItem('user');
-  localStorage.removeItem('myPosts');
-};
 
 const SettingsPage = () => {
   const navigate = useNavigate();
@@ -35,6 +28,7 @@ const SettingsPage = () => {
       navigate('/profile');
       return;
     }
+
     navigate(item.path);
   };
 
@@ -51,9 +45,8 @@ const SettingsPage = () => {
 
     try {
       await withdrawMePermanent();
-      clearLocalUserData();
       alert('회원탈퇴가 완료되었습니다.');
-      navigate('/main', { replace: true });
+      logout({ redirectTo: '/main' });
     } catch (error) {
       console.error('회원탈퇴 실패:', error);
 
@@ -77,7 +70,12 @@ const SettingsPage = () => {
   return (
     <div className="settings-page">
       <header className="settings-header">
-        <button type="button" className="settings-header__back" onClick={handleBack} aria-label="뒤로가기">
+        <button
+          type="button"
+          className="settings-header__back"
+          onClick={handleBack}
+          aria-label="뒤로가기"
+        >
           <span className="material-symbols-outlined">arrow_back_ios</span>
         </button>
         <h1 className="settings-header__title">설정</h1>
@@ -137,7 +135,7 @@ const SettingsPage = () => {
         isOpen={permanentWithdrawModalOpen}
         onClose={() => setPermanentWithdrawModalOpen(false)}
         title="회원탈퇴 하시겠어요?"
-        description="계정과 연관된 데이터가 삭제되며, 복구할 수 없습니다."
+        description="계정과 관련된 데이터가 삭제되며, 복구할 수 없습니다."
         cancelLabel="취소"
         confirmLabel={permanentWithdrawing ? '처리 중...' : '탈퇴하기'}
         onCancel={() => setPermanentWithdrawModalOpen(false)}
