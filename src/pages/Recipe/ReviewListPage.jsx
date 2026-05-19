@@ -169,10 +169,6 @@ const ReviewListPage = () => {
           <div className="recipe-summary-info">
             <h2 className="recipe-title">{recipe.title}</h2>
             <p className="recipe-source">{recipe.source}</p>
-            <div className="recipe-tabs">
-              <button className="tab-button active">공개자</button>
-              <button className="tab-button">레시피</button>
-            </div>
           </div>
         </div>
       )}

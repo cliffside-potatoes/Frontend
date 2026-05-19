@@ -79,6 +79,21 @@
   flex-wrap: wrap;
 }
 
+.recipe-card-small .ingredients-status {
+  font-size: 12px;
+  font-weight: 500;
+  margin: 6px 0 0;
+  line-height: 1.4;
+}
+
+.recipe-card-small .ingredients-status.complete {
+  color: #16a34a;
+}
+
+.recipe-card-small .ingredients-status.incomplete {
+  color: var(--color-theme-primary, #ea6363);
+}
+
 .no-results {
   text-align: center;
   color: #777;

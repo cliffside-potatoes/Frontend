@@ -20,6 +20,11 @@ const RecipeCardSmall = ({ recipe, onClick }) => {
   const difficulty = recipe.difficulty ?? '';
   const likeCount = recipe.likeCount ?? recipe.rating ?? 0;
   const reviewCount = recipe.reviewCount ?? recipe.reviews ?? 0;
+  const totalIngredientCount = recipe.totalIngredientCount ?? 0;
+  const matchedIngredientCount = recipe.matchedIngredientCount ?? 0;
+  const showIngredientsStatus = totalIngredientCount > 0;
+  const isComplete =
+    showIngredientsStatus && matchedIngredientCount === totalIngredientCount;
 
   return (
     <button
@@ -41,6 +46,13 @@ const RecipeCardSmall = ({ recipe, onClick }) => {
           <span>난이도 {difficulty}</span>
           <span>❤️ {likeCount} · 💬 {reviewCount}</span>
         </div>
+        {showIngredientsStatus && (
+          <p
+            className={`ingredients-status ${isComplete ? 'complete' : 'incomplete'}`}
+          >
+            내 냉장고 재료상황 ({matchedIngredientCount}/{totalIngredientCount})
+          </p>
+        )}
       </div>
     </button>
   );

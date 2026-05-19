@@ -348,14 +348,16 @@ const RecipeDetailPage = () => {
               </div>
             </div>
 
-            <div className="recipe-link-section">
-              <h3 className="section-title">원본 레시피 링크</h3>
-              <p className="recipe-source">{recipe.source || '출처 정보 없음'}</p>
-              <button className="link-button" onClick={handleLinkClick}>
-                원본 레시피 보러가기
-                <span>&gt;</span>
-              </button>
-            </div>
+            {(recipe.sourceUrl || recipe.recipewithLink?.url) && (
+              <div className="recipe-link-section">
+                <h3 className="section-title">원본 레시피 링크</h3>
+                <p className="recipe-source">{recipe.source || '출처 정보 없음'}</p>
+                <button className="link-button" onClick={handleLinkClick}>
+                  원본 레시피 보러가기
+                  <span>&gt;</span>
+                </button>
+              </div>
+            )}
 
             <div className="ingredients-section">
               <h3 className="section-title">준비할 재료</h3>
