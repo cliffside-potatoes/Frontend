@@ -150,20 +150,22 @@ const RefrigeratorPage = () => {
               {freezerCategories.length === 0 ? (
                 <p className="refrigerator-page__empty">현재 냉동실이 비어있어요!</p>
               ) : (
-                freezerCategories.map((category) => (
-                  <CategoryBlock
-                    key={category.id}
-                    category={category}
-                    activeCategoryId={activeCategoryId}
-                    inputValue={inputValue}
-                    onOpenInput={handleOpenCategoryInput}
-                    onInputChange={handleInputChange}
-                    onSelectSuggestion={handleSelectSuggestion}
-                    onDeleteIngredient={handleDeleteIngredient}
-                    suggestions={suggestions}
-                    searchLoading={searchLoading}
-                  />
-                ))
+                <div className="refrigerator-page__content">
+                  {freezerCategories.map((category) => (
+                    <CategoryBlock
+                      key={category.id}
+                      category={category}
+                      activeCategoryId={activeCategoryId}
+                      inputValue={inputValue}
+                      onOpenInput={handleOpenCategoryInput}
+                      onInputChange={handleInputChange}
+                      onSelectSuggestion={handleSelectSuggestion}
+                      onDeleteIngredient={handleDeleteIngredient}
+                      suggestions={suggestions}
+                      searchLoading={searchLoading}
+                    />
+                  ))}
+                </div>
               )}
             </section>
 
