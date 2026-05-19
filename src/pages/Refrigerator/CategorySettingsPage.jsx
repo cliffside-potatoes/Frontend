@@ -6,6 +6,7 @@ import BottomNav from '../../components/common/BottomNav';
 import Dropdown from '../../components/ui/Dropdown';
 import Modal from '../../components/ui/Modal';
 import TextInput from '../../components/common/TextInput';
+import ToggleButton from '../../components/common/ToggleButton';
 import ColorPicker from '../../components/ui/ColorPicker';
 import { fridgeApi } from '../../api/fridgeApi';
 import {
@@ -21,6 +22,11 @@ const DROPDOWN_OPTIONS = [
 
 const CATEGORY_NAME_MAX_LENGTH = 20;
 
+const LOCATION_OPTIONS = [
+  { value: 'FROZEN', label: '냉동실' },
+  { value: 'REFRIGERATED', label: '냉장고' },
+];
+
 const CategorySettingsPage = () => {
   const navigate = useNavigate();
   const [categories, setCategories] = useState([]);
@@ -32,6 +38,7 @@ const CategorySettingsPage = () => {
   const [editModalCategory, setEditModalCategory] = useState(null);
   const [editName, setEditName] = useState('');
   const [editColor, setEditColor] = useState(DEFAULT_CATEGORY_COLOR_HEX);
+  const [editStorageType, setEditStorageType] = useState('REFRIGERATED');
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -74,6 +81,7 @@ const CategorySettingsPage = () => {
       setEditModalCategory(targetCategory);
       setEditName(targetCategory.label);
       setEditColor(toCategoryColorHex(targetCategory.color));
+      setEditStorageType(targetCategory.location === 'FROZEN' ? 'FROZEN' : 'REFRIGERATED');
     }
   };
 
@@ -121,7 +129,7 @@ const CategorySettingsPage = () => {
       await fridgeApi.updateCategory(editModalCategory.id, {
         name: trimmedName,
         color: editColor,
-        storageType: editModalCategory.location,
+        storageType: editStorageType,
       });
 
       setEditModalCategory(null);
@@ -211,14 +219,25 @@ const CategorySettingsPage = () => {
       />
 
       {editModalCategory && (
-        <>
+        <div
+          className="modal-overlay"
+          onClick={() => setEditModalCategory(null)}
+        >
           <div
-            className="modal-backdrop"
-            onClick={() => setEditModalCategory(null)}
-            aria-hidden="true"
-          />
-          <div className="modal category-edit-modal">
-            <h3 className="modal-title">카테고리 수정</h3>
+            className="modal category-edit-modal"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h3 className="modal__title">카테고리 수정</h3>
+
+            <div className="category-edit-modal__field">
+              <label className="category-edit-modal__label">위치</label>
+              <ToggleButton
+                options={LOCATION_OPTIONS}
+                value={editStorageType}
+                onChange={setEditStorageType}
+              />
+            </div>
+
             <div className="category-edit-modal__field">
               <TextInput
                 label="카테고리 이름"
@@ -228,6 +247,7 @@ const CategorySettingsPage = () => {
                 maxLength={CATEGORY_NAME_MAX_LENGTH}
               />
             </div>
+
             <div className="category-edit-modal__field">
               <label className="category-edit-modal__label">색상</label>
               <button
@@ -237,28 +257,26 @@ const CategorySettingsPage = () => {
               >
                 <span
                   className="category-edit-modal__color-preview"
-                  style={{
-                    backgroundColor: editColor,
-                    width: 24,
-                    height: 24,
-                    borderRadius: 4,
-                    display: 'inline-block',
-                  }}
+                  style={{ backgroundColor: editColor }}
                 />
+                <span className="category-edit-modal__color-text">
+                  색상 선택
+                </span>
                 <span className="material-symbols-outlined">expand_more</span>
               </button>
             </div>
-            <div className="modal-actions">
+
+            <div className="modal__actions category-edit-modal__actions">
               <button
                 type="button"
-                className="modal-btn modal-btn--cancel"
+                className="modal__btn modal__btn--cancel"
                 onClick={() => setEditModalCategory(null)}
               >
                 취소
               </button>
               <button
                 type="button"
-                className="modal-btn modal-btn--confirm"
+                className="modal__btn modal__btn--confirm modal__btn--primary"
                 onClick={handleSaveEdit}
                 disabled={saving || !editName.trim()}
               >
@@ -266,7 +284,7 @@ const CategorySettingsPage = () => {
               </button>
             </div>
           </div>
-        </>
+        </div>
       )}
 
       <ColorPicker
