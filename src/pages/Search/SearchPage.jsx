@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import SearchBar from '../../components/Search/SearchBar';
 import RecentSearches from '../../components/Search/RecentSearches';
 import RecommendedSearches from '../../components/Search/RecommendedSearches';
@@ -11,13 +11,37 @@ import {
   saveRecentSearch,
   searchRecipes,
 } from '../../api/searchApi';
+import { addWishlist, removeWishlist } from '../../api/recipeApi';
+import { useUser } from '../../context/UserContext';
+import { buildSignInState } from '../../utils/authStorage';
+import { applyRecipeWishlistDisplayDeltaChange } from '../../utils/recipeWishlistDisplayDelta';
+import {
+  addRecipeWishlistIdToStorage,
+  mergeRecipeWithStoredWishlist,
+  removeRecipeWishlistIdFromStorage,
+} from '../../utils/recipeWishlistIdsStorage';
+import {
+  removeWishlistRecipeSnapshot,
+  upsertWishlistRecipeSnapshot,
+} from '../../utils/recipeWishlistSnapshotCache';
+import { notifyRecipeWishlistChanged } from '../../utils/recipeWishlistSync';
 import './SearchPage.css';
 
 const SearchPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { isLoggedIn, user } = useUser();
   const searchInputRef = useRef(null);
   const observerRef = useRef(null);
   const loadMoreTriggerRef = useRef(null);
+
+  const mergeRecipesWithWishlist = useCallback(
+    (recipes) => {
+      if (!isLoggedIn || !user?.id) return recipes;
+      return recipes.map((recipe) => mergeRecipeWithStoredWishlist(recipe, user.id));
+    },
+    [isLoggedIn, user?.id],
+  );
 
   const [inputValue, setInputValue] = useState('');
   const [searchText, setSearchText] = useState('');
@@ -50,7 +74,7 @@ const SearchPage = () => {
           ? data.Recipes
           : [];
 
-      setSearchResults((prev) => [...prev, ...newRecipes]);
+      setSearchResults((prev) => [...prev, ...mergeRecipesWithWishlist(newRecipes)]);
       setHasNext(Boolean(data?.hasNext));
       setNextCursor(data?.nextCursor ?? null);
     } catch (err) {
@@ -58,7 +82,7 @@ const SearchPage = () => {
     } finally {
       setLoadingMore(false);
     }
-  }, [hasNext, loadingMore, nextCursor, searchText]);
+  }, [hasNext, loadingMore, mergeRecipesWithWishlist, nextCursor, searchText]);
 
   useEffect(() => {
     const loadInitialData = async () => {
@@ -127,7 +151,7 @@ const SearchPage = () => {
           ? data.Recipes
           : [];
 
-      setSearchResults(recipes);
+      setSearchResults(mergeRecipesWithWishlist(recipes));
       setHasNext(Boolean(data?.hasNext));
       setNextCursor(data?.nextCursor ?? null);
 
@@ -148,6 +172,55 @@ const SearchPage = () => {
 
   const handleSelectKeyword = (keyword) => {
     void handleSearch(keyword);
+  };
+
+  const handleToggleLike = async (recipeId, nextLiked) => {
+    if (!isLoggedIn) {
+      const currentPath = `${location.pathname}${location.search}${location.hash}`;
+      navigate('/signin', {
+        state: buildSignInState(currentPath, currentPath),
+      });
+      return false;
+    }
+
+    const id = Number(recipeId);
+    if (!Number.isFinite(id)) return false;
+
+    const result = nextLiked ? await addWishlist(id) : await removeWishlist(id);
+    if (!result?.success) {
+      console.error('검색 결과 찜 처리 실패:', result?.error);
+      return false;
+    }
+
+    applyRecipeWishlistDisplayDeltaChange(id, nextLiked ? 1 : -1);
+
+    setSearchResults((prev) =>
+      (prev || []).map((recipe) =>
+        Number(recipe.recipeId) !== id
+          ? recipe
+          : { ...recipe, liked: nextLiked }
+      )
+    );
+
+    if (user?.id) {
+      if (nextLiked) {
+        addRecipeWishlistIdToStorage(user.id, id);
+        const snapshot = (searchResults || []).find(
+          (recipe) => Number(recipe.recipeId) === id,
+        );
+        if (snapshot) {
+          upsertWishlistRecipeSnapshot(user.id, { ...snapshot, liked: true });
+        }
+      } else {
+        removeRecipeWishlistIdFromStorage(user.id, id);
+        removeWishlistRecipeSnapshot(user.id, id);
+      }
+    }
+
+    notifyRecipeWishlistChanged(
+      nextLiked ? { kind: 'add', recipeId: id } : { kind: 'remove', recipeId: id },
+    );
+    return true;
   };
 
   const handleRemoveRecentSearch = async (itemToRemove) => {
@@ -240,7 +313,7 @@ const SearchPage = () => {
 
         {!loading && searchResults.length > 0 ? (
           <>
-            <SearchResultsList results={searchResults} />
+            <SearchResultsList results={searchResults} onToggleLike={handleToggleLike} />
 
             {hasNext && (
               <div

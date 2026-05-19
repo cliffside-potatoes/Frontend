@@ -37,19 +37,75 @@
   cursor: pointer;
 }
 
-.recipe-card-small img {
+.recipe-card-small:focus-visible {
+  outline: 2px solid var(--color-theme-primary, #ea6363);
+  outline-offset: 2px;
+}
+
+.recipe-card-small__image-wrap {
+  position: relative;
   width: 100px;
   height: 100px;
-  object-fit: cover;
+  flex-shrink: 0;
   border-right: 1px solid #eee;
 }
 
+.recipe-card-small__image-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 .recipe-card-small__image-placeholder {
-  width: 100px;
-  height: 100px;
-  border-right: 1px solid #eee;
+  width: 100%;
+  height: 100%;
   background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
-  flex-shrink: 0;
+}
+
+.recipe-card-small__like-button {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: rgba(236, 0, 0, 0.65);
+  border: 3px solid rgba(255, 0, 0, 0.72);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: transform 0.2s, background-color 0.2s, border-color 0.2s;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+  z-index: 5;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.recipe-card-small__like-button .material-symbols-outlined {
+  font-size: 20px;
+  line-height: 1;
+  color: #ffffff;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+.recipe-card-small__like-button:active {
+  transform: scale(0.95);
+}
+
+.recipe-card-small__like-button.liked {
+  background-color: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.recipe-card-small__like-button.liked .material-symbols-outlined {
+  color: var(--color-theme-primary, #ea6363);
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
 }
 
 .recipe-card-small .recipe-info {
