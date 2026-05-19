@@ -9,10 +9,10 @@ const getAuthHeader = () => {
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
-export const requestProfilePresignedUrl = async (file) => {
+const requestPresignedUrl = async (file, path) => {
   const base = API_BASE_URL.replace(/\/$/, '');
 
-  const res = await fetch(`${base}/presigned/profile`, {
+  const res = await fetch(`${base}${path}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -56,6 +56,19 @@ export const requestProfilePresignedUrl = async (file) => {
   };
 };
 
+export const requestProfilePresignedUrl = async (file) =>
+  requestPresignedUrl(file, '/presigned/profile');
+
+export const requestReviewPresignedUrl = async (file) => {
+  try {
+    return await requestPresignedUrl(file, '/presigned/review');
+  } catch (error) {
+    if (error?.status !== 404) throw error;
+    return requestPresignedUrl(file, '/presigned/profile');
+  }
+};
+
 export default {
   requestProfilePresignedUrl,
+  requestReviewPresignedUrl,
 };

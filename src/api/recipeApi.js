@@ -487,7 +487,13 @@ const normalizeReviewItem = (item) => {
       ? item.imageUrls
       : Array.isArray(item?.recipeReviewImageUrls)
         ? item.recipeReviewImageUrls
-      : [];
+        : [
+            item?.image,
+            item?.imageUrl,
+            item?.reviewImage,
+            item?.reviewImageUrl,
+            item?.recipeReviewImageUrl,
+          ].filter(Boolean);
 
   return {
     reviewId: toNumber(item?.reviewId ?? item?.id, 0),

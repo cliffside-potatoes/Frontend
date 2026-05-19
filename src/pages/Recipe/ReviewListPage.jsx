@@ -280,7 +280,7 @@ const ReviewListPage = () => {
                 {!display.hideLikeCount && (
                   <div className="review-actions">
                     <button
-                      className={`like-button ${review.liked ? 'liked' : ''}`}
+                      className={`review-like-button ${review.liked ? 'liked' : ''}`}
                       onClick={() => handleLikeToggle(review.reviewId)}
                     >
                       <span className="material-symbols-outlined">

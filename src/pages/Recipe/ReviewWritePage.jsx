@@ -1,6 +1,8 @@
 import React, { useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { requestReviewPresignedUrl } from '../../api/presignedApi';
 import { createRecipeReview } from '../../api/recipeApi';
+import { uploadFileToS3 } from '../../api/uploadToS3';
 import profileImg from '../../assets/image/profile.png';
 import { useUser } from '../../context/UserContext';
 import { toImageUrl } from '../../utils/imageUrl';
@@ -13,6 +15,7 @@ const ReviewWritePage = () => {
   const fileInputRef = useRef(null);
 
   const [content, setContent] = useState('');
+  const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -23,6 +26,8 @@ const ReviewWritePage = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    setImageFile(file);
+
     const reader = new FileReader();
     reader.onloadend = () => {
       setImagePreview(reader.result);
@@ -32,6 +37,15 @@ const ReviewWritePage = () => {
 
   const handleImageClick = () => {
     fileInputRef.current?.click();
+  };
+
+  const uploadReviewImageIfNeeded = async () => {
+    if (!imageFile) return [];
+
+    const { presignedUrl, s3Key } = await requestReviewPresignedUrl(imageFile);
+    await uploadFileToS3(presignedUrl, imageFile);
+
+    return [s3Key];
   };
 
   const handleSubmit = async () => {
@@ -50,9 +64,10 @@ const ReviewWritePage = () => {
     setIsSubmitting(true);
 
     try {
+      const images = await uploadReviewImageIfNeeded();
       const result = await createRecipeReview(recipeId, {
         content: trimmedContent,
-        images: [],
+        images,
       });
 
       if (result.success) {
