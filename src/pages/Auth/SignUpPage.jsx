@@ -269,11 +269,13 @@ const SignUpPage = () => {
         bio: savedProfile?.bio ?? finalBio,
       });
 
-      // 내가 쓴 기존 게시글 author도 새 닉네임으로 동기화
+      // 내가 쓴 기존 게시글의 닉네임/프로필 사진도 최신 값으로 동기화
+      const nextAvatarUrl = toImageUrl(nextProfileImageKey);
       setPosts((prev) =>
         (prev || []).map((post) => ({
           ...post,
           author: savedProfile?.nickname ?? v,
+          avatarUrl: nextAvatarUrl || post.avatarUrl,
         })),
       );
 

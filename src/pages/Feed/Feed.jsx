@@ -552,7 +552,7 @@ const Feed = () => {
                 <FeedCard
                   post={post}
                   isMine={isMine}
-                  avatarUrl={post.avatarUrl || (isMine ? currentProfileImg : profileImg)}
+                  avatarUrl={isMine ? currentProfileImg : (post.avatarUrl || profileImg)}
                   onToggleLike={isLoggedIn ? handleToggleLike : () => {}}
                   onOpenMenu={isMine ? openPostMenu : undefined}
                 />

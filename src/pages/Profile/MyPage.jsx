@@ -623,7 +623,11 @@ const MyPage = () => {
                 <FeedCard
                   post={post}
                   isMine={activeTab === 'POST' || post.isMine}
-                  avatarUrl={post.avatarUrl || profileImageSrc}
+                  avatarUrl={
+                    activeTab === 'POST' || post.isMine
+                      ? profileImageSrc
+                      : (post.avatarUrl || profileImg)
+                  }
                   onToggleLike={isLoggedIn ? handleToggleLike : () => {}}
                   onOpenMenu={
                     activeTab === 'POST' || post.isMine
