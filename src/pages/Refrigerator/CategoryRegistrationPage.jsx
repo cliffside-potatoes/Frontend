@@ -13,6 +13,8 @@ const LOCATION_OPTIONS = [
   { value: 'REFRIGERATED', label: '냉장고' },
 ];
 
+const CATEGORY_NAME_MAX_LENGTH = 20;
+
 const CategoryRegistrationPage = () => {
   const navigate = useNavigate();
   const [storageType, setStorageType] = useState('REFRIGERATED');
@@ -21,9 +23,17 @@ const CategoryRegistrationPage = () => {
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const handleNameChange = (value) => {
+    setCategoryName(value.slice(0, CATEGORY_NAME_MAX_LENGTH));
+  };
+
   const handleSubmit = async () => {
     const trimmedName = categoryName.trim();
     if (!trimmedName) return;
+    if (trimmedName.length > CATEGORY_NAME_MAX_LENGTH) {
+      alert(`카테고리 이름은 ${CATEGORY_NAME_MAX_LENGTH}자 이내로 입력해주세요.`);
+      return;
+    }
 
     setLoading(true);
 
@@ -36,8 +46,13 @@ const CategoryRegistrationPage = () => {
 
       navigate(-1);
     } catch (error) {
-      console.error('카테고리 생성 실패:', error);
-      alert('카테고리를 추가하지 못했습니다. 잠시 후 다시 시도해주세요.');
+      console.error('카테고리 생성 실패:', error, error?.response?.data);
+      const serverMessage = error?.response?.data?.resultMessage;
+      alert(
+        serverMessage
+          ? `카테고리를 추가하지 못했습니다: ${serverMessage}`
+          : '카테고리를 추가하지 못했습니다. 잠시 후 다시 시도해주세요.'
+      );
     } finally {
       setLoading(false);
     }
@@ -65,8 +80,9 @@ const CategoryRegistrationPage = () => {
           <TextInput
             label="카테고리 입력"
             value={categoryName}
-            onChange={setCategoryName}
+            onChange={handleNameChange}
             placeholder="카테고리 이름을 입력해주세요"
+            maxLength={CATEGORY_NAME_MAX_LENGTH}
           />
         </div>
 

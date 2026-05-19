@@ -85,8 +85,13 @@ const CategorySettingsPage = () => {
       setDeleteModalCategoryId(null);
       await loadCategories();
     } catch (error) {
-      console.error('카테고리 삭제 실패:', error);
-      alert('카테고리를 삭제하지 못했습니다. 잠시 후 다시 시도해주세요.');
+      console.error('카테고리 삭제 실패:', error, error?.response?.data);
+      const serverMessage = error?.response?.data?.resultMessage;
+      alert(
+        serverMessage
+          ? `카테고리를 삭제하지 못했습니다: ${serverMessage}`
+          : '카테고리를 삭제하지 못했습니다. 잠시 후 다시 시도해주세요.'
+      );
     } finally {
       setDeleting(false);
     }
@@ -100,6 +105,12 @@ const CategorySettingsPage = () => {
 
     setSaving(true);
 
+    if (trimmedName.length > 20) {
+      alert('카테고리 이름은 20자 이내로 입력해주세요.');
+      setSaving(false);
+      return;
+    }
+
     try {
       await fridgeApi.updateCategory(editModalCategory.id, {
         name: trimmedName,
@@ -110,8 +121,13 @@ const CategorySettingsPage = () => {
       setEditModalCategory(null);
       await loadCategories();
     } catch (error) {
-      console.error('카테고리 수정 실패:', error);
-      alert('카테고리를 수정하지 못했습니다. 잠시 후 다시 시도해주세요.');
+      console.error('카테고리 수정 실패:', error, error?.response?.data);
+      const serverMessage = error?.response?.data?.resultMessage;
+      alert(
+        serverMessage
+          ? `카테고리를 수정하지 못했습니다: ${serverMessage}`
+          : '카테고리를 수정하지 못했습니다. 잠시 후 다시 시도해주세요.'
+      );
     } finally {
       setSaving(false);
     }
