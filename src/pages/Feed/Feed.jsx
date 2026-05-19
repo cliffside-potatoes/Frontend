@@ -41,7 +41,15 @@ const resolveApiItemLiked = (item) => {
   return v === true || v === 1 || v === '1' || v === 'true';
 };
 
-const mapApiItemToPost = (item, likedIdSet) => {
+const isApiItemMine = (item, currentUserId) => {
+  if (currentUserId == null || String(currentUserId).length === 0) return false;
+  if (item?.isMine === true || item?.isMine === 1 || item?.isMine === '1') return true;
+  const writerId = item?.writer?.id ?? item?.writerId ?? item?.authorId ?? item?.authorProfileId;
+  if (writerId == null || String(writerId).length === 0) return false;
+  return String(writerId) === String(currentUserId);
+};
+
+const mapApiItemToPost = (item, likedIdSet, currentUserId) => {
   const id = Number(item.id);
   const apiLiked = resolveApiItemLiked(item);
   if (Number.isFinite(id) && apiLiked && likedIdSet) {
@@ -85,7 +93,7 @@ const mapApiItemToPost = (item, likedIdSet) => {
     liked,
     hideLikeCount: Boolean(item.hidLikeCount ?? item.hideLikeCount),
     pinned: Boolean(item.pinned),
-    isMine: Boolean(item.isMine),
+    isMine: isApiItemMine(item, currentUserId),
   };
 };
 
@@ -193,7 +201,7 @@ const Feed = () => {
         mergeWriterMetaFromFeedApiItems(user.id, rawItems);
       }
       const idSet = likedPostIdsRef.current;
-      const mapped = rawItems.map((item) => mapApiItemToPost(item, idSet));
+      const mapped = rawItems.map((item) => mapApiItemToPost(item, idSet, user?.id));
       if (likedPostsStorageKey) {
         saveFeedLikedIdSet(likedPostsStorageKey, idSet);
       }
@@ -233,12 +241,21 @@ const Feed = () => {
     const myPostMap = new Map((myPosts || []).map((p) => [String(p.id), p]));
     const mergedServer = (serverFeed || []).map((p) => {
       const local = myPostMap.get(String(p.id));
-      if (!local) return p;
+      if (!local) {
+        return p.isMine
+          ? {
+              ...p,
+              author: currentNickname,
+              avatarUrl: currentProfileImg,
+            }
+          : p;
+      }
       return {
         ...p,
         ...local,
         isMine: true,
-        avatarUrl: local.avatarUrl || p.avatarUrl || currentProfileImg,
+        author: currentNickname,
+        avatarUrl: currentProfileImg,
       };
     });
 
@@ -250,12 +267,13 @@ const Feed = () => {
       ...localOnly.map((p) => ({
         ...p,
         isOther: false,
-        avatarUrl: p.avatarUrl || currentProfileImg,
+        author: currentNickname,
+        avatarUrl: currentProfileImg,
       })),
     ];
 
     return combined.sort((a, b) => toTime(b.createdAt) - toTime(a.createdAt));
-  }, [isLoggedIn, serverFeed, myPosts, currentProfileImg]);
+  }, [isLoggedIn, serverFeed, myPosts, currentNickname, currentProfileImg]);
 
   const openPostMenu = (e, postId) => {
     e.stopPropagation();

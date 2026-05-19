@@ -25,7 +25,7 @@ const MAX_POST_IMAGES = 5;
 const FEED_PAGE_SIZE = 20;
 
 /** API item을 FeedCard용 post 형태로 변환 (createdAt은 정렬/커서용) */
-const mapFeedItemToPost = (item, fallbackAuthorName) => {
+const mapFeedItemToPost = (item, fallbackAuthorName, fallbackAvatarUrl = '') => {
   const createdAt = item.createdAt || '';
   const dateStr =
     createdAt &&
@@ -44,8 +44,8 @@ const mapFeedItemToPost = (item, fallbackAuthorName) => {
   return {
     id: item.id,
     type: item.type,
-    author: item.writer?.nickname ?? fallbackAuthorName,
-    avatarUrl: item.writer?.profileImageUrl ? toImageUrl(item.writer.profileImageUrl) : '',
+    author: fallbackAuthorName,
+    avatarUrl: fallbackAvatarUrl,
     date: dateStr,
     content: item.content ?? '',
     images: (item.images ?? []).map((img) => toImageUrl(img)),
@@ -57,7 +57,7 @@ const mapFeedItemToPost = (item, fallbackAuthorName) => {
     createdAt,
     updatedAt: item.updatedAt ?? createdAt,
     cookCount: item.cookCount ?? 0,
-    isMine: Boolean(item.isMine),
+    isMine: true,
   };
 };
 
@@ -205,10 +205,17 @@ const MyPage = () => {
           if (cancelled) return;
 
           const serverPosts = (items || []).map((item) =>
-            mapFeedItemToPost(item, displayUser.nickname)
+            mapFeedItemToPost(item, displayUser.nickname, profileImageSrc)
           );
 
-          setPosts((prev) => mergePostsByIdPreferLocal(prev, serverPosts));
+          setPosts((prev) =>
+            mergePostsByIdPreferLocal(prev, serverPosts).map((post) => ({
+              ...post,
+              author: displayUser.nickname,
+              avatarUrl: profileImageSrc,
+              isMine: true,
+            }))
+          );
           setHasNext(Boolean(next));
           setNextCursor(cursor ?? null);
         })
@@ -251,7 +258,7 @@ const MyPage = () => {
     return () => {
       cancelled = true;
     };
-  }, [activeTab, isInitializing, isLoggedIn, displayUser.nickname, setPosts, user?.id]);
+  }, [activeTab, isInitializing, isLoggedIn, displayUser.nickname, profileImageSrc, setPosts, user?.id]);
 
   const openPostMenu = (e, postId) => {
     e.stopPropagation();
@@ -368,12 +375,29 @@ const MyPage = () => {
 
   const sortedPosts = useMemo(() => {
     if (!isLoggedIn) return [];
-    if (activeTab === 'POST') return sortPosts(myPosts);
+    if (activeTab === 'POST') {
+      return sortPosts(
+        (myPosts || []).map((post) => ({
+          ...post,
+          author: displayUser.nickname,
+          avatarUrl: profileImageSrc,
+          isMine: true,
+        }))
+      );
+    }
 
     const myPostMap = new Map((myPosts || []).map((p) => [String(p.id), p]));
     const mergedLikedPosts = (likedPosts || []).map((p) => {
       const mine = myPostMap.get(String(p.id));
-      if (!mine) return p;
+      if (!mine) {
+        return p.isMine
+          ? {
+              ...p,
+              author: displayUser.nickname,
+              avatarUrl: profileImageSrc,
+            }
+          : p;
+      }
       return {
         ...p,
         content: mine.content,
@@ -382,14 +406,14 @@ const MyPage = () => {
         updatedAt: mine.updatedAt,
         hideLikeCount: mine.hideLikeCount,
         pinned: mine.pinned,
-        author: mine.author || p.author,
-        avatarUrl: mine.avatarUrl || p.avatarUrl,
+        author: displayUser.nickname,
+        avatarUrl: profileImageSrc,
         isMine: true,
       };
     });
 
     return sortPosts(mergedLikedPosts);
-  }, [isLoggedIn, activeTab, myPosts, likedPosts]);
+  }, [isLoggedIn, activeTab, myPosts, likedPosts, displayUser.nickname, profileImageSrc]);
 
   const openWriteModal = (post = null) => {
     if (post) {
