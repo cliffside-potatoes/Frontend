@@ -77,11 +77,21 @@ apiClient.interceptors.response.use(
 const normalizeStorageType = (value) => {
   const normalized = String(value ?? '').trim().toUpperCase();
 
-  if (normalized === 'FREEZER' || normalized === 'FROZEN') return 'FROZEN';
+  if (
+    normalized === 'FREEZER' ||
+    normalized === 'FROZEN' ||
+    normalized === '냉동' ||
+    normalized === '냉동실'
+  ) {
+    return 'FROZEN';
+  }
+
   if (
     normalized === 'FRIDGE' ||
     normalized === 'REFRIGERATOR' ||
-    normalized === 'REFRIGERATED'
+    normalized === 'REFRIGERATED' ||
+    normalized === '냉장' ||
+    normalized === '냉장고'
   ) {
     return 'REFRIGERATED';
   }
@@ -140,6 +150,7 @@ const buildCategoryPayload = ({ name, color, location, storageType }) => {
     name: trimmedName,
     color: colorEnum,
     storageType: normalizedStorageType,
+    location: toLegacyLocation(normalizedStorageType),
   };
 };
 
