@@ -1,12 +1,9 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useUser } from '../../context/UserContext';
 import { toImageUrl } from '../../utils/imageUrl';
 import './SearchResultsList.css';
 
 const RecipeCardSmall = ({ recipe, onClick, onToggleLike }) => {
-  const { isLoggedIn } = useUser();
-
   if (!recipe) return null;
 
   const isLiked = Boolean(recipe.liked);
@@ -60,22 +57,20 @@ const RecipeCardSmall = ({ recipe, onClick, onToggleLike }) => {
         ) : (
           <div className="recipe-card-small__image-placeholder" aria-hidden="true" />
         )}
-        {isLoggedIn && (
-          <button
-            type="button"
-            className={`recipe-card-small__like-button ${isLiked ? 'liked' : ''}`}
-            onClick={async (e) => {
-              e.stopPropagation();
-              if (!onToggleLike || id == null) return;
-              await onToggleLike(id, !isLiked);
-            }}
-            aria-label={isLiked ? '찜 취소' : '찜하기'}
-          >
-            <span className="material-symbols-outlined" aria-hidden="true">
-              {isLiked ? 'favorite' : 'favorite_border'}
-            </span>
-          </button>
-        )}
+        <button
+          type="button"
+          className={`recipe-card-small__like-button ${isLiked ? 'liked' : ''}`}
+          onClick={async (e) => {
+            e.stopPropagation();
+            if (!onToggleLike || id == null) return;
+            await onToggleLike(id, !isLiked);
+          }}
+          aria-label={isLiked ? '찜 취소' : '찜하기'}
+        >
+          <span className="material-symbols-outlined" aria-hidden="true">
+            {isLiked ? 'favorite' : 'favorite_border'}
+          </span>
+        </button>
       </div>
       <div className="recipe-info">
         <h3>{title}</h3>
