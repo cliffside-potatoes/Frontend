@@ -19,6 +19,8 @@ const DROPDOWN_OPTIONS = [
   { value: 'delete', label: '삭제', danger: true },
 ];
 
+const CATEGORY_NAME_MAX_LENGTH = 20;
+
 const CategorySettingsPage = () => {
   const navigate = useNavigate();
   const [categories, setCategories] = useState([]);
@@ -97,6 +99,10 @@ const CategorySettingsPage = () => {
     }
   };
 
+  const handleEditNameChange = (value) => {
+    setEditName(value.slice(0, CATEGORY_NAME_MAX_LENGTH));
+  };
+
   const handleSaveEdit = async () => {
     if (!editModalCategory) return;
 
@@ -105,8 +111,8 @@ const CategorySettingsPage = () => {
 
     setSaving(true);
 
-    if (trimmedName.length > 20) {
-      alert('카테고리 이름은 20자 이내로 입력해주세요.');
+    if (trimmedName.length > CATEGORY_NAME_MAX_LENGTH) {
+      alert(`카테고리 이름은 ${CATEGORY_NAME_MAX_LENGTH}자 이내로 입력해주세요.`);
       setSaving(false);
       return;
     }
@@ -217,8 +223,9 @@ const CategorySettingsPage = () => {
               <TextInput
                 label="카테고리 이름"
                 value={editName}
-                onChange={setEditName}
+                onChange={handleEditNameChange}
                 placeholder="카테고리 이름을 입력해주세요"
+                maxLength={CATEGORY_NAME_MAX_LENGTH}
               />
             </div>
             <div className="category-edit-modal__field">

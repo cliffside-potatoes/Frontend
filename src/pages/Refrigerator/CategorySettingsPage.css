@@ -1,6 +1,6 @@
 .category-settings-page {
   min-height: 100vh;
-  padding-bottom: calc(60px + env(safe-area-inset-bottom));
+  padding-bottom: calc(var(--bottom-nav-base-height) + var(--safe-bottom));
   background-color: #fff;
 }
 
@@ -35,7 +35,6 @@
   padding: 0;
   list-style: none;
   border-radius: 8px;
-  overflow: hidden;
   background-color: #fff;
   border: 1px solid #e0e0e0;
 }
@@ -71,9 +70,13 @@
 
 .category-settings-page__label {
   flex: 1;
+  min-width: 0;
   font-size: 15px;
   font-weight: 500;
   color: #333;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .category-settings-page__more {
@@ -88,6 +91,7 @@
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .category-settings-page__more .material-symbols-outlined {
@@ -95,13 +99,29 @@
   color: #666;
 }
 
+.category-settings-page__item .dropdown {
+  top: 46px;
+  right: 12px;
+}
+
 .category-settings-page__actions {
   position: fixed;
-  bottom: calc(60px + env(safe-area-inset-bottom));
-  left: 0;
-  right: 0;
+  bottom: calc(var(--bottom-nav-base-height) + var(--safe-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: var(--app-max-width);
   padding: 12px 16px;
+  padding-left: calc(16px + var(--safe-left));
+  padding-right: calc(16px + var(--safe-right));
   background-color: #fff;
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
   box-sizing: border-box;
+  z-index: 900;
+}
+
+@media screen and (min-width: 431px) {
+  .category-settings-page__actions {
+    bottom: calc(var(--bottom-nav-base-height) + 24px + var(--safe-bottom));
+  }
 }

@@ -1,7 +1,7 @@
 import React from 'react';
 import './Dropdown.css';
 
-const Dropdown = ({ isOpen, onClose, anchorRef, options, onSelect }) => {
+const Dropdown = ({ isOpen, onClose, options, onSelect }) => {
   if (!isOpen) return null;
 
   return (
