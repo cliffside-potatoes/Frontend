@@ -61,10 +61,15 @@ export const requestProfilePresignedUrl = async (file) =>
 
 export const requestReviewPresignedUrl = async (file) => {
   try {
-    return await requestPresignedUrl(file, '/presigned/review');
+    return await requestPresignedUrl(file, '/presigned/recipe');
   } catch (error) {
     if (error?.status !== 404) throw error;
-    return requestPresignedUrl(file, '/presigned/profile');
+    try {
+      return await requestPresignedUrl(file, '/presigned/post');
+    } catch (innerError) {
+      if (innerError?.status !== 404) throw innerError;
+      return requestPresignedUrl(file, '/presigned/profile');
+    }
   }
 };
 

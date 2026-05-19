@@ -65,55 +65,42 @@
 
 .recipe-card-small__like-button {
   position: absolute;
-  bottom: 8px;
-  right: 8px;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background-color: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(210, 210, 210, 0.9);
+  bottom: 6px;
+  right: 6px;
+  width: 32px;
+  height: 32px;
+  border-radius: 0;
+  background: transparent;
+  border: none;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0;
-  transition: transform 0.2s, background-color 0.2s, border-color 0.2s, box-shadow 0.2s;
+  transition: transform 0.15s;
   -webkit-tap-highlight-color: transparent;
   outline: none;
   z-index: 5;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-  backdrop-filter: blur(2px);
-}
-
-.recipe-card-small__like-button .material-symbols-outlined {
-  font-size: 21px;
-  line-height: 1;
-  color: #c8c8c8;
-  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-  text-shadow: none;
-}
-
-.recipe-card-small__like-button:hover,
-.recipe-card-small__like-button:focus-visible {
-  background-color: rgba(255, 255, 255, 0.88);
-  border-color: rgba(190, 190, 190, 0.95);
-}
-
-.recipe-card-small__like-button:active {
-  transform: scale(0.95);
-}
-
-.recipe-card-small__like-button.liked {
-  background-color: transparent;
-  border-color: transparent;
   box-shadow: none;
   backdrop-filter: none;
 }
 
+.recipe-card-small__like-button .material-symbols-outlined {
+  font-size: 26px;
+  line-height: 1;
+  color: #ffffff;
+  font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
+}
+
+.recipe-card-small__like-button:active {
+  transform: scale(0.9);
+}
+
 .recipe-card-small__like-button.liked .material-symbols-outlined {
   color: var(--color-theme-primary, #ea6363);
-  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25));
 }
 
 .recipe-card-small .recipe-info {

@@ -45,7 +45,14 @@ const ReviewWritePage = () => {
     const { presignedUrl, s3Key } = await requestReviewPresignedUrl(imageFile);
     await uploadFileToS3(presignedUrl, imageFile);
 
-    return [s3Key];
+    return [
+      {
+        s3Key,
+        contentType: imageFile.type || 'application/octet-stream',
+        size: imageFile.size,
+        accessType: 'public',
+      },
+    ];
   };
 
   const handleSubmit = async () => {
