@@ -131,26 +131,16 @@ const runWithFallback = async (requestFactories, fallbackStatuses = [404, 405]) 
   throw lastError;
 };
 
-const buildCategoryPayloads = ({ name, color, location, storageType }) => {
+const buildCategoryPayload = ({ name, color, location, storageType }) => {
   const normalizedStorageType = normalizeStorageType(storageType ?? location);
   const trimmedName = String(name ?? '').trim();
   const colorEnum = toCategoryColorEnum(color);
-  const colorCandidates = uniqueByJson([colorEnum, DEFAULT_CATEGORY_COLOR_ENUM]);
 
-  const payloads = colorCandidates.flatMap((candidateColor) => [
-    {
-      name: trimmedName,
-      color: candidateColor,
-      storageType: normalizedStorageType,
-    },
-    {
-      name: trimmedName,
-      color: candidateColor,
-      location: toLegacyLocation(normalizedStorageType),
-    },
-  ]);
-
-  return uniqueByJson(payloads);
+  return {
+    name: trimmedName,
+    color: colorEnum,
+    storageType: normalizedStorageType,
+  };
 };
 
 const buildIngredientPayloads = ({ categoryId, ingredientId, ingredientName, name }) => {
@@ -345,35 +335,17 @@ export const fridgeApi = {
   },
 
   createCategory: async (input) => {
-    const payloads = buildCategoryPayloads(input);
-
-    const response = await runWithFallback(
-      payloads.map((payload) => () => apiClient.post('/ingredients/categories', payload)),
-      [400, 404, 405, 422]
-    );
-
+    const payload = buildCategoryPayload(input);
+    const response = await apiClient.post('/ingredients/categories', payload);
     return toResponseData(response);
   },
 
   updateCategory: async (id, input) => {
-    const payloads = buildCategoryPayloads(input).map((payload) => {
-      const nextPayload = {};
-
-      if (payload.name) nextPayload.name = payload.name;
-      if (payload.color) nextPayload.color = payload.color;
-      if (payload.storageType) nextPayload.storageType = payload.storageType;
-      if (payload.location) nextPayload.location = payload.location;
-
-      return nextPayload;
-    });
-
-    const response = await runWithFallback(
-      payloads.map(
-        (payload) => () => apiClient.patch(`/ingredients/categories/${id}`, payload)
-      ),
-      [400, 404, 405, 422]
+    const payload = buildCategoryPayload(input);
+    const response = await apiClient.patch(
+      `/ingredients/categories/${id}`,
+      payload
     );
-
     return toResponseData(response);
   },
 
